@@ -221,7 +221,7 @@ stich_get_card_value(game_rules *gr, card *c0, card *c) {
 }
 
 int
-stich_get_winner(game_rules *gr, card_id *stich, int *result) {
+stich_get_winner(game_rules *gr, stich *stich, int *result) {
   card c0, c1, c2;
   if (card_get(stich, &c0) || card_get(stich + 1, &c1) ||
 	  card_get(stich + 2, &c2)) {
@@ -241,7 +241,7 @@ stich_get_winner(game_rules *gr, card_id *stich, int *result) {
 	winner = 2;
   }
 
-  *result = winner;
+  *result = (stich->vorhand + winner) % 3;
   return 0;
 }
 
