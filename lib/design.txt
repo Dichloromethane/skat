@@ -1,0 +1,31 @@
+
+Halllo
+C1 = Client 1
+C2 = Client 2
+C3 = Client 3
+S  = Server
+
+C1 -> S : JoinAction(optional: requested connection id)
+S  -> C1: STATUS_OK
+S assigns UAOID 1 to JoinEvent
+S  -> C1: JoinEvent(C1 just joined, he is connection id 1)
+
+C2 -> S : JoinAction(optional: requested connection id)
+S  ->C2 : STATUS_OK
+S assigns UAOID 2 to JoinEvent
+S  -> C2: All events with UAOID > last_known (JoinEvent(C1 has already joined, was id 1))
+S  -> C1,C2: JoinEvent(C2 just joined, that one is connection id 2)
+
+C3 -> S : JoinAction(optional: requested connection id)
+S  -> C3: STATUS_OK
+S assigns UAOID 3 to JoinEvent
+S  -> C3: all events with UAOID > last_known_event (both JoinEvents)
+S  -> C1,C2,C3: JoinEvent(C3 just joined with connection id 3)
+
+S prepares game and selects the 3 people that actually play the game
+S    -> C123: wait for ready, you are player vorhand(1)/mittelhand(2)/hinterhand(3) in this game
+C123 -> S: ready action
+S -> C123: STATUS_OK (server responds to each action with STATUS_OK)
+
+S -> C123: deal cards
+S -> C123: game transition to reizen, vh=hÃren, mh=sagen, hh=weitersagen
