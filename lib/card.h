@@ -18,7 +18,7 @@ typedef enum {
   CARD_TYPE_K,
   CARD_TYPE_10,
   CARD_TYPE_A
-} card_type; 
+} card_type;
 
 typedef struct {
   card_color cc;
@@ -44,7 +44,6 @@ int card_collection_get_score(card_collection *, int *);
 int card_collection_empty(card_collection *);
 int card_collection_fill(card_collection *);
 int card_collection_draw_random(card_collection *, card_id *);
-
 
 typedef struct game_rules game_rules;
 
