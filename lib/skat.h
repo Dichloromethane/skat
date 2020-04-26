@@ -44,6 +44,8 @@ typedef struct {
       card_id played_cards[3];
 	  int stich_num; 
       int vorhand;
+      card_collection last_stich;
+	  int alleinspieler;
 	};
   };
 } shared_game_state;
@@ -58,6 +60,8 @@ typedef struct {
   shared_game_state sgs;
   card_collection player_hands[3];
   card_id skat[2];
+  card_collection stiche_alleinspieler;
+  card_collection stiche_other;
   int last_active_player_index;
   int spielwert;
 } skat_state;

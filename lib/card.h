@@ -36,6 +36,7 @@ int card_get_score(card_id *, int *);
 
 int card_collection_contains(card_collection *, card_id *, int *);
 int card_collection_add_card(card_collection *, card_id *);
+int card_collection_add_card_array(card_collection *, card_id *, int);
 int card_collection_remove_card(card_collection *, card_id *);
 int card_collection_get_card_count(card_collection *, int *);
 int card_collection_get_card(card_collection *, int, card_id *);

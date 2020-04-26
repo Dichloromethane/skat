@@ -154,7 +154,7 @@ apply_action_stich(skat_state *ss, action *a, player *pl, server *s, int card) {
   event e;
   e.answer_to = a->id;
   e.player = pl->id;
-  int cpi;
+  int cpi, winner;
   switch(a->type) {
 	case ACTION_PLAY_CARD:
 	  cpi = (ss->sgs.vorhand + card) % 3;
@@ -174,8 +174,17 @@ apply_action_stich(skat_state *ss, action *a, player *pl, server *s, int card) {
 		return GAME_PHASE_PLAY_STICH_C2;
 	  if (card == 1)
 		return GAME_PHASE_PLAY_STICH_C3;
-	
-	   
+
+	  stich_get_winner(&ss->sgs.gr, ss->sgs.played_cards, &winner);
+
+	  ss->sgs.vorhand = (ss->sgs.vorhand + winner)%3;
+
+	  if (winner == ss->sgs.alleinspieler) 
+		
+	  
+	  e.answer_to = -1;
+	  e.type = EVENT_STICH_DONE;
+	  e.stich_winner = ss->sgs.active_players[ss->sgs.vorhand + winner];
 	  
 	  
 	default:

@@ -26,6 +26,6 @@ typedef struct {
 	player_id current_active_players[3];
 	card_collection hand;
 	card_id card;
-	player_id 
+	player_id stich_winner;
   };
 } event;
