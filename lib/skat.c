@@ -201,6 +201,8 @@ apply_action_stich(skat_state *ss, action *a, player *pl, server *s, int card) {
 		return GAME_PHASE_PLAY_STICH_C1;
 
 
+	  return GAME_PHASE_START_ROUND;
+
 	default:
 	  return GAME_PHASE_INVALID;
   }
