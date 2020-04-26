@@ -115,6 +115,13 @@ apply_action_between_rounds(skat_state *ss, action *a, player *pl, server *s) {
 
 	  ss->last_active_player_index = (ss->last_active_player_index + 1) % ss->sgs.num_players;
 
+	  card_collection_empty(&stiche_buf[0]);
+	  card_collection_empty(&stiche_buf[1]);
+	  card_collection_empty(&stiche_buf[2]);
+	  ss->sgs.curr_stich = { .vorhand = 0, .winner = -1 };
+	  ss->sgs.last_stich = { .vorhand = -1, .winner = -1 };
+	  ss->sgs.stich_num = 0;
+
 	  server_distribute_event(s, &e, NULL);
 
 	  distribute_cards(ss);
@@ -139,6 +146,7 @@ apply_action_between_rounds(skat_state *ss, action *a, player *pl, server *s) {
 
 static game_phase
 apply_action_reizen_begin(skat_state *ss, action *a, player *pl, server *s) {
+  // remember to initialize stiche!
   event e;
   e.answer_to = a->id;
   e.player = pl->id;
@@ -156,13 +164,13 @@ apply_action_stich(skat_state *ss, action *a, player *pl, server *s, int card) {
   int cpi, winner;
   switch (a->type) {
 	case ACTION_PLAY_CARD:
-	  cpi = (ss->sgs.vorhand + card) % 3;
+	  cpi = (ss->sgs.curr_stich.vorhand + card) % 3;
 	  if (!player_id_equals(&pl->id, &ss->sgs.active_players[cpi]))
 		return GAME_PHASE_INVALID;
-	  if (!stich_card_legal(ss->sgs.played_cards, a->card,
+	  if (!stich_card_legal(ss->sgs.curr_stich.cs, a->card,
 							&ss->player_hands[cpi], card, &ss->sgs.gr))
 		return GAME_PHASE_INVALID;
-	  ss->sgs.played_cards[card] = a->card;
+	  ss->sgs.curr_stich.cs[card] = a->card;
 
 	  e.type = EVENT_PLAY_CARD;
 	  e.card = a->card;
@@ -174,17 +182,25 @@ apply_action_stich(skat_state *ss, action *a, player *pl, server *s, int card) {
 	  if (card == 1)
 		return GAME_PHASE_PLAY_STICH_C3;
 
-	  stich_get_winner(&ss->sgs.gr, ss->sgs.played_cards, &winner);
+	  stich_get_winner(&ss->sgs.gr, &ss->sgs.curr_stich, &ss->sgs.curr_stich.winner);
 
-	  ss->sgs.vorhand = (ss->sgs.vorhand + winner) % 3;
-
-	  if (winner == ss->sgs.alleinspieler)
-
-
-		e.answer_to = -1;
+	  card_collection_add_card_array(ss->stiche[ss->sgs.curr_stich.winner], 
+	  								 ss->sgs.curr_stich.cs, 3)
+	  
+	  e.answer_to = -1;
 	  e.type = EVENT_STICH_DONE;
-	  e.stich_winner = ss->sgs.active_players[ss->sgs.vorhand + winner];
+	  e.stich_winner = ss->sgs.active_players[ss->sgs.curr_stich.winner];
 
+	  ss->sgs.last_stich = ss->sgs.curr_stich;
+	  ss->sgs.curr_stich = {.vorhand = ss->sgs.last_stich.winner, 
+	  						.winner = -1 };
+
+	  server_distribute_event(s, &e, NULL);
+	  
+	  if (ss->sgs.stich_num++ < 9)
+	    return GAME_PHASE_PLAY_STICH_C1;
+	
+	   
 
 	default:
 	  return GAME_PHASE_INVALID;

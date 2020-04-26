@@ -32,6 +32,12 @@ typedef struct {
   unsigned re : 1;
 } reiz_resultat;
 
+typedef struct stich {
+  card_id cs[3];
+  int vorhand;
+  int winner;
+} stich;
+
 typedef struct {
   game_phase cgphase;
   game_rules gr;
@@ -41,10 +47,9 @@ typedef struct {
   int last_active_player_index;
   union {
 	struct {
-	  card_id played_cards[3];
+	  stich curr_stich;
+	  stich last_stich;
 	  int stich_num;
-	  int vorhand;
-	  card_collection last_stich;
 	  int alleinspieler;
 	};
   };
@@ -60,8 +65,8 @@ typedef struct {
   shared_game_state sgs;
   card_collection player_hands[3];
   card_id skat[2];
-  card_collection stiche_alleinspieler;
-  card_collection stiche_other;
+  card_collection *stiche[3];
+  card_collection stiche_buf[3];
   int last_active_player_index;
   int spielwert;
 } skat_state;
