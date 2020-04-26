@@ -97,10 +97,8 @@ server_release_state_lock(server *s) {
 }
 
 void
-server_resync_player(server *s, player *pl) {
-  client_skat_state cs;
-  skat_build_client_state(&cs, pl);
-  //exit(1);
+server_resync_player(server *s, player *pl, skat_client_state *cs) {
+  skat_resync_player(cs, pl);
 }
 
 void

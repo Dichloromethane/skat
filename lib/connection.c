@@ -109,6 +109,18 @@ establish_connection_server(server *s, int fd, pthread_t handler) {
   CH_ASSERT_NULL(0, &c, CONN_ERROR_INVALID_CONN_STATE);
 }
 
+static void
+conn_resync_player(server *s, connection_s2c *c, package *req_p) {
+  package p;
+  p.type = REQ_RSP_RESYNC;
+  p.rsp.seq = req_p->req.seq;
+
+  player *pl = server_get_player_by_pid(s, c->pid);
+  server_resync_player(s, pl, &p.rsp.scs);
+
+  send_package(&c->c, &p);
+}
+
 int
 conn_handle_incoming_packages_server(server *s, connection_s2c *c) {
   package p;
@@ -126,7 +138,7 @@ conn_handle_incoming_packages_server(server *s, connection_s2c *c) {
 	  break;
 	case REQ_RSP_RESYNC:
 	  server_acquire_state_lock(s);
-	  server_resync_player(s, server_get_player_by_pid(s, c->pid));
+	  conn_resync_player(s, c, &p);
 	  server_release_state_lock(s);
 	  break;
 	case REQ_RSP_DISCONNECT:

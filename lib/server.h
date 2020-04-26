@@ -21,7 +21,7 @@ connection_s2c *server_get_connection_by_pid(server *, player_id);
 player *server_get_player_by_pid(server *, player_id);
 void server_add_player(server *, player *);
 void server_notify_join(server *, player *);
-void server_resync_player(server *, player *);
+void server_resync_player(server *, player *, skat_client_state *);
 
 void server_acquire_state_lock(server *);
 void server_release_state_lock(server *);

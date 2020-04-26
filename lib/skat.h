@@ -83,3 +83,5 @@ void skat_state_notify_join(skat_state *, player *, server *);
 
 int skat_state_apply(skat_state *, action *, player *, server *);
 void skat_state_tick(skat_state *, server *);
+
+void skat_resync_player(skat_client_state *, player *);
