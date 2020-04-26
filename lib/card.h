@@ -29,6 +29,8 @@ typedef unsigned int card_collection;
 
 typedef char card_id;
 
+typedef struct stich stich;
+
 int card_get_id(card *, card_id *);
 int card_get(card_id *, card *);
 int card_get_name(card_id *, char *);
@@ -48,4 +50,4 @@ int card_collection_draw_random(card_collection *, card_id *);
 typedef struct game_rules game_rules;
 
 int stich_card_legal(card_id *, card_id, card_collection *, int, game_rules *);
-int stich_get_winner(game_rules *, card_id *, int *);
+int stich_get_winner(game_rules *, stich *, int *);
