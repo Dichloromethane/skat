@@ -32,6 +32,9 @@ distclean:
 
 force_rebuild: | distclean all
 
+format: $(SOURCE) $(SOURCE:.c=.h) $(EXTRA_HEADERS)
+	clang-format -i $^
+
 png_gone:
 	$(RM) dep_graph.png
 

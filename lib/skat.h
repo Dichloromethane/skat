@@ -1,11 +1,11 @@
 
 #pragma once
 
-#include"player.h"
-#include"action.h"
-#include"event.h"
-#include"game_rules.h"
-#include"card.h"
+#include "action.h"
+#include "card.h"
+#include "event.h"
+#include "game_rules.h"
+#include "player.h"
 
 struct server;
 typedef struct server server;
@@ -24,16 +24,16 @@ typedef enum {
 
 typedef struct {
   int reizwert;
-  unsigned hand:1;
-  unsigned schneider:1;
-  unsigned schwarz:1;
-  unsigned ouvert:1;
-  unsigned contra:1;
-  unsigned re:1;
+  unsigned hand : 1;
+  unsigned schneider : 1;
+  unsigned schwarz : 1;
+  unsigned ouvert : 1;
+  unsigned contra : 1;
+  unsigned re : 1;
 } reiz_resultat;
 
 typedef struct {
-  game_phase cgphase; 
+  game_phase cgphase;
   game_rules gr;
   reiz_resultat rr;
   player_id active_players[3];
@@ -41,10 +41,10 @@ typedef struct {
   int last_active_player_index;
   union {
 	struct {
-      card_id played_cards[3];
-	  int stich_num; 
-      int vorhand;
-      card_collection last_stich;
+	  card_id played_cards[3];
+	  int stich_num;
+	  int vorhand;
+	  card_collection last_stich;
 	  int alleinspieler;
 	};
   };
@@ -66,15 +66,22 @@ typedef struct {
   int spielwert;
 } skat_state;
 
-int game_setup_server(skat_state *ss);
-int game_start_server(skat_state *ss);
+int
+game_setup_server(skat_state *ss);
+int
+game_start_server(skat_state *ss);
 
-int rand_int(int min, int max);
+int
+rand_int(int min, int max);
 
 typedef void (*send_event_f)(event *, void (*)(event *, player *));
 
-void skat_state_notify_disconnect(skat_state *, player *, server *);
-void skat_state_notify_join(skat_state *, player *, server *);
+void
+skat_state_notify_disconnect(skat_state *, player *, server *);
+void
+skat_state_notify_join(skat_state *, player *, server *);
 
-int skat_state_apply(skat_state *, action *, player *, server *);
-void skat_state_tick(skat_state *, server *);
+int
+skat_state_apply(skat_state *, action *, player *, server *);
+void
+skat_state_tick(skat_state *, server *);

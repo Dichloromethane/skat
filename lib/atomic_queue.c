@@ -1,7 +1,7 @@
 
-#include"atomic_queue.h"
-#include<stdlib.h>
-#include<malloc.h>
+#include "atomic_queue.h"
+#include <malloc.h>
+#include <stdlib.h>
 
 static void
 init_queue(action_event_queue *q) {
@@ -9,19 +9,19 @@ init_queue(action_event_queue *q) {
   pthread_mutex_init(&q->lock, NULL);
 }
 
-void 
+void
 init_action_queue(action_event_queue *q) {
   q->type = AEQUE_ACTION;
   init_queue(q);
 }
 
-void 
+void
 init_event_queue(action_event_queue *q) {
   q->type = AEQUE_EVENT;
   init_queue(q);
 }
 
-static void 
+static void
 enqueue(action_event_queue *q, aeque_node *n) {
   n->next = NULL;
   pthread_mutex_lock(&q->lock);
@@ -34,14 +34,14 @@ enqueue(action_event_queue *q, aeque_node *n) {
   pthread_mutex_unlock(&q->lock);
 }
 
-void 
+void
 enqueue_action(action_event_queue *q, action *a) {
   aeque_node *n = malloc(sizeof(aeque_node));
   n->a = *a;
   enqueue(q, n);
 }
 
-void 
+void
 enqueue_event(action_event_queue *q, event *e) {
   aeque_node *n = malloc(sizeof(aeque_node));
   n->e = *e;
@@ -62,7 +62,7 @@ dequeue(action_event_queue *q) {
   return ret;
 }
 
-int 
+int
 dequeue_action(action_event_queue *q, action *a) {
   aeque_node *res;
   pthread_mutex_lock(&q->lock);
@@ -75,7 +75,7 @@ dequeue_action(action_event_queue *q, action *a) {
   return 1;
 }
 
-int 
+int
 dequeue_event(action_event_queue *q, event *e) {
   aeque_node *res;
   pthread_mutex_lock(&q->lock);
@@ -92,17 +92,17 @@ static inline void
 clear_queue(action_event_queue *q) {
   void *p;
   pthread_mutex_lock(&q->lock);
-  while((p = dequeue(q)))
+  while ((p = dequeue(q)))
 	free(p);
   pthread_mutex_unlock(&q->lock);
 }
 
-void 
+void
 clear_action_queue(action_queue *q) {
   clear_queue(q);
 }
 
-void 
+void
 clear_event_queue(action_queue *q) {
   clear_queue(q);
 }

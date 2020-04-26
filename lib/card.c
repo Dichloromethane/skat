@@ -1,10 +1,10 @@
-#include<unistd.h>
-#include<sys/types.h>
-#include<sys/stat.h>
-#include<fcntl.h>
-#include<stdlib.h>
-#include<stdio.h>
-#include"card.h"
+#include "card.h"
+#include <fcntl.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 const char *CARD_TYPE_NAMES = "789BDK0A";
 const char CARD_SCORES[] = {0, 0, 0, 2, 3, 4, 10, 11};
@@ -273,8 +273,7 @@ static int
 stich_bekennt_any(game_rules *gr, card_id first_id, card_collection *hand) {
   int result;
   for (card_id cid = 0; cid < 32; cid++)
-	if (!card_collection_contains(hand, &cid, &result) && result
-		&& stich_bekennt(fr, first_id, cid))
+	if (!card_collection_contains(hand, &cid, &result) && result && stich_bekennt(fr, first_id, cid))
 	  return 1;
   return 0;
 }
