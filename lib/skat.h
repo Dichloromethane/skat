@@ -38,6 +38,7 @@ typedef struct {
   reiz_resultat rr;
   player_id active_players[3];
   int num_players;
+  int last_active_player_index;
   union {
 	struct {
       card_id played_cards[3];

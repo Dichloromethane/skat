@@ -1,6 +1,6 @@
 CC=gcc
 #CFLAGS=-Wall -O3 -mcpu=native -pthread -flto
-CFLAGS=-Wall -Wextra -pthread -O0 -ggdb3 -Wfatal-errors -Wno-unused-parameter -Wno-unused-function
+CFLAGS=-Wall -Wextra -pthread -O0 -ggdb3 -Wfatal-errors -Wno-unused-parameter -Wno-unused-function -Wno-unused-but-set-variable
 
 BUILDDIR=build/
 
@@ -10,7 +10,9 @@ EXTRA_HEADERS=
 
 .PHONY: default clean png_gone distclean png
 
-default: server client
+default: all
+
+all: server client
 
 server: $(OBJS) main_server.o 
 	$(CC) $(CFLAGS) -o $@ $^
@@ -27,6 +29,8 @@ clean:
 distclean:
 	$(RM) $(OBJS) main_server.o main_client.o dep_graph.png
 	$(RM) server client
+
+force_rebuild: | distclean all
 
 png_gone:
 	$(RM) dep_graph.png

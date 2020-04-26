@@ -13,7 +13,8 @@ typedef enum {
   EVENT_START_ROUND,
   EVENT_PLAYER_READY,
   EVENT_DISTRIBUTE_CARDS,
-  EVENT_PLAY_CARD
+  EVENT_PLAY_CARD,
+  EVENT_STICH_DONE
 } event_type;
 
 typedef struct {
@@ -25,5 +26,6 @@ typedef struct {
 	player_id current_active_players[3];
 	card_collection hand;
 	card_id card;
+	player_id 
   };
 } event;

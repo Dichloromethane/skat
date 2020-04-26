@@ -11,5 +11,5 @@ typedef struct {
   player_id id;
 } player;
 
-int player_id_equals(player *, player *);
+int player_id_equals(player_id *, player_id *);
 

@@ -6,6 +6,7 @@
 #include<stdlib.h>
 #include"player.h"
 #include"skat.h"
+#include"server.h"
 
 
 int
@@ -70,7 +71,7 @@ apply_action_setup(skat_state *ss, action *a, player *pl, server *s) {
   e.player = pl->id;
   switch(a->type) {
 	case ACTION_READY:
-	  if (ss->sgs.num_players < 3) {
+	  if (ss->sgs.num_players < 3) 
 		return GAME_PHASE_INVALID;
 	  
 	  e.type = EVENT_START_GAME;
@@ -122,7 +123,7 @@ apply_action_between_rounds(skat_state *ss, action *a, player *pl, server *s) {
       e.type = EVENT_DISTRIBUTE_CARDS;
 
 	  void mask_hands(event *ev, player *pl) {
-	    if (!is_active_player(ss->sgs, pl)) {
+	    if (!is_active_player(&ss->sgs, pl)) {
 	      card_collection_empty(&ev->hand);
 	  	  return;
 	    }
@@ -149,7 +150,7 @@ apply_action_reizen_begin(skat_state *ss, action *a, player *pl, server *s) {
 }
 
 static game_phase
-apply_action_play_stich(skat_state *ss, action *a, player *pl, server *s, int card) {
+apply_action_stich(skat_state *ss, action *a, player *pl, server *s, int card) {
   event e;
   e.answer_to = a->id;
   e.player = pl->id;
@@ -157,12 +158,26 @@ apply_action_play_stich(skat_state *ss, action *a, player *pl, server *s, int ca
   switch(a->type) {
 	case ACTION_PLAY_CARD:
 	  cpi = (ss->sgs.vorhand + card) % 3;
-	  if (!player_id_equals(&pl->id, active_players[cpi]))
+	  if (!player_id_equals(&pl->id, &ss->sgs.active_players[cpi]))
 		return GAME_PHASE_INVALID;
 	  if (!stich_card_legal(ss->sgs.played_cards, a->card, 
 		                    &ss->player_hands[cpi], card, &ss->sgs.gr))
 		return GAME_PHASE_INVALID;
-	       	   
+	  ss->sgs.played_cards[card] = a->card;
+
+	  e.type = EVENT_PLAY_CARD;
+	  e.card = a->card;
+
+	  server_distribute_event(s, &e, NULL);
+	  
+	  if (!card)
+		return GAME_PHASE_PLAY_STICH_C2;
+	  if (card == 1)
+		return GAME_PHASE_PLAY_STICH_C3;
+	
+	   
+	  
+	  
 	default:
 	  return GAME_PHASE_INVALID;
   }
@@ -178,12 +193,11 @@ apply_action(skat_state *ss, action *a, player *pl, server *s) {
 	case GAME_PHASE_REIZEN_BEGIN:
 	  return apply_action_reizen_begin(ss, a, pl, s);
 	case GAME_PHASE_PLAY_STICH_C1:
-	  apply_action_stich(ss, a, pl, s, 0);
+	  return apply_action_stich(ss, a, pl, s, 0);
 	case GAME_PHASE_PLAY_STICH_C2:
-	  apply_action_stich(ss, a, pl, s, 1);
+	  return apply_action_stich(ss, a, pl, s, 1);
 	case GAME_PHASE_PLAY_STICH_C3:
-	  apply_action_stich(ss, a, pl, s, 2);
-	case GAME_PHASE_PLAY:
+	  return apply_action_stich(ss, a, pl, s, 2);
 	default:
 	  return GAME_PHASE_INVALID; 
   }
@@ -192,7 +206,7 @@ apply_action(skat_state *ss, action *a, player *pl, server *s) {
 int 
 skat_state_apply(skat_state *ss, action *a, player *pl, server *s) {
   game_phase new;
-  new = apply_action(ss, a, pl, s)
+  new = apply_action(ss, a, pl, s);
   if (new == GAME_PHASE_INVALID)
 	return 0;
   ss->sgs.cgphase = new;
