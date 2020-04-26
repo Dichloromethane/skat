@@ -1,0 +1,11 @@
+*.o
+*.out
+*.swp
+/.idea
+*.iml
+*.png
+
+/lib/server
+/lib/client
+
+/cmake-build*
