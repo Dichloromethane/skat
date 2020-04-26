@@ -115,11 +115,11 @@ apply_action_between_rounds(skat_state *ss, action *a, player *pl, server *s) {
 
 	  ss->last_active_player_index = (ss->last_active_player_index + 1) % ss->sgs.num_players;
 
-	  card_collection_empty(&stiche_buf[0]);
-	  card_collection_empty(&stiche_buf[1]);
-	  card_collection_empty(&stiche_buf[2]);
-	  ss->sgs.curr_stich = { .vorhand = 0, .winner = -1 };
-	  ss->sgs.last_stich = { .vorhand = -1, .winner = -1 };
+	  card_collection_empty(&ss->stiche_buf[0]);
+	  card_collection_empty(&ss->stiche_buf[1]);
+	  card_collection_empty(&ss->stiche_buf[2]);
+	  ss->sgs.curr_stich = (stich) { .vorhand = 0, .winner = -1 };
+	  ss->sgs.last_stich = (stich) { .vorhand = -1, .winner = -1 };
 	  ss->sgs.stich_num = 0;
 
 	  server_distribute_event(s, &e, NULL);
@@ -185,25 +185,22 @@ apply_action_stich(skat_state *ss, action *a, player *pl, server *s, int card) {
 	  stich_get_winner(&ss->sgs.gr, &ss->sgs.curr_stich, &ss->sgs.curr_stich.winner);
 
 	  card_collection_add_card_array(ss->stiche[ss->sgs.curr_stich.winner], 
-	  								 ss->sgs.curr_stich.cs, 3)
+	  								 ss->sgs.curr_stich.cs, 3);
 	  
 	  e.answer_to = -1;
 	  e.type = EVENT_STICH_DONE;
 	  e.stich_winner = ss->sgs.active_players[ss->sgs.curr_stich.winner];
 
 	  ss->sgs.last_stich = ss->sgs.curr_stich;
-	  ss->sgs.curr_stich = {.vorhand = ss->sgs.last_stich.winner, 
-	  						.winner = -1 };
+	  ss->sgs.curr_stich = (stich) {.vorhand = ss->sgs.last_stich.winner, 
+	  						        .winner = -1 };
 
 	  server_distribute_event(s, &e, NULL);
 	  
 	  if (ss->sgs.stich_num++ < 9)
 	    return GAME_PHASE_PLAY_STICH_C1;
 	
-	  
-	
-	  return GAME_PHASE_START_ROUND;    
-
+	  return GAME_PHASE_BETWEEN_ROUND;    
 	default:
 	  return GAME_PHASE_INVALID;
   }
