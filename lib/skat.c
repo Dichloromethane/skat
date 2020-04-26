@@ -1,4 +1,5 @@
 #include "skat.h"
+#include "game_rules.h"
 #include "player.h"
 #include "server.h"
 #include <fcntl.h>
@@ -7,7 +8,6 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
-
 
 int
 game_setup_server(skat_state *ss) {
