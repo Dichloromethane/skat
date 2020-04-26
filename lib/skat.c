@@ -187,13 +187,13 @@ apply_action_stich(skat_state *ss, action *a, player *pl, server *s, int card) {
 	  card_collection_add_card_array(ss->stiche[ss->sgs.curr_stich.winner],
 									 ss->sgs.curr_stich.cs, 3);
 
-			  e.answer_to = -1;
+	  e.answer_to = -1;
 	  e.type = EVENT_STICH_DONE;
 	  e.stich_winner = ss->sgs.active_players[ss->sgs.curr_stich.winner];
 
 	  ss->sgs.last_stich = ss->sgs.curr_stich;
-	  ss->sgs.curr_stich = (stich){.vorhand = ss->sgs.last_stich.winner,
-							.winner = -1};
+	  ss->sgs.curr_stich = (stich) {.vorhand = ss->sgs.last_stich.winner,
+									.winner = -1};
 
 	  server_distribute_event(s, &e, NULL);
 
