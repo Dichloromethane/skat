@@ -7,3 +7,5 @@
 
 /lib/server
 /lib/client
+
+/cmake-build*
