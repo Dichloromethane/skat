@@ -33,7 +33,7 @@ server_distribute_event(server *s, event *ev, void (*mask_event)(event *, player
 	  mask_event(&e, &s->ps[i]);
 	  server_send_event(s, &e, &s->ps[i]);
 	} else
-	  server_send_event(s, &ev, &s->ps[i]);
+	  server_send_event(s, ev, &s->ps[i]);
   }
 }
 
