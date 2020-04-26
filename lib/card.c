@@ -1,4 +1,5 @@
 #include "card.h"
+#include "skat.h"
 #include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -194,7 +195,7 @@ card_collection_draw_random(card_collection *col, card_id *cid) {
   return 0;
 }
 
-static int
+static unsigned int
 stich_get_card_value(game_rules *gr, card *c0, card *c) {
   switch (gr->type) {
 	case GAME_TYPE_COLOR:
@@ -223,14 +224,14 @@ stich_get_card_value(game_rules *gr, card *c0, card *c) {
 int
 stich_get_winner(game_rules *gr, stich *stich, int *result) {
   card c0, c1, c2;
-  if (card_get(stich, &c0) || card_get(stich + 1, &c1) ||
-	  card_get(stich + 2, &c2)) {
+  if (card_get(&stich->cs[0], &c0) || card_get(&stich->cs[1], &c1) ||
+	  card_get(&stich->cs[2], &c2)) {
 	return 1;
   }
 
-  int t0 = stich_get_card_value(gr, &c0, &c0);
-  int t1 = stich_get_card_value(gr, &c0, &c1);
-  int t2 = stich_get_card_value(gr, &c0, &c2);
+  unsigned int t0 = stich_get_card_value(gr, &c0, &c0);
+  unsigned int t1 = stich_get_card_value(gr, &c0, &c1);
+  unsigned int t2 = stich_get_card_value(gr, &c0, &c2);
 
   int winner = 0;
 
@@ -286,7 +287,7 @@ stich_card_legal(game_rules *gr, card_id *played_cards,
   if (card_collection_contains(hand, &new_card, &result) || !result)
 	return 0;
 
-  if (!player_cards_size)
+  if (!played_cards_size)
 	return 1;
 
   if (stich_bekennt(gr, played_cards[0], new_card))
