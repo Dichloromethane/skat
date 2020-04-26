@@ -1,9 +1,9 @@
 
 #pragma once
 
-#include "player.h"
 #include "action.h"
 #include "card.h"
+#include "player.h"
 
 typedef enum {
   EVENT_INVALID = 0,

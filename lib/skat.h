@@ -66,22 +66,15 @@ typedef struct {
   int spielwert;
 } skat_state;
 
-int
-game_setup_server(skat_state *ss);
-int
-game_start_server(skat_state *ss);
+int game_setup_server(skat_state *ss);
+int game_start_server(skat_state *ss);
 
-int
-rand_int(int min, int max);
+int rand_int(int min, int max);
 
 typedef void (*send_event_f)(event *, void (*)(event *, player *));
 
-void
-skat_state_notify_disconnect(skat_state *, player *, server *);
-void
-skat_state_notify_join(skat_state *, player *, server *);
+void skat_state_notify_disconnect(skat_state *, player *, server *);
+void skat_state_notify_join(skat_state *, player *, server *);
 
-int
-skat_state_apply(skat_state *, action *, player *, server *);
-void
-skat_state_tick(skat_state *, server *);
+int skat_state_apply(skat_state *, action *, player *, server *);
+void skat_state_tick(skat_state *, server *);

@@ -1,6 +1,6 @@
-#pragma once 
+#pragma once
 
-#include"card.h"
+#include "card.h"
 
 typedef enum {
   GAME_TYPE_INVALID = 0,
@@ -14,4 +14,3 @@ typedef struct game_rules {
   game_type type;
   card_color trumpf;
 } game_rules;
-

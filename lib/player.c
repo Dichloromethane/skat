@@ -1,4 +1,4 @@
-#include"player.h"
+#include "player.h"
 
 int
 player_id_equals(player_id *p1, player_id *p2) {

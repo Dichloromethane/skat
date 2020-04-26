@@ -78,27 +78,17 @@ typedef struct {
   connection c;
 } connection_c2s;
 
-connection_s2c *
-establish_connection_server(server *, int, pthread_t);
+connection_s2c *establish_connection_server(server *, int, pthread_t);
 
-int
-conn_handle_incoming_packages_server(server *, connection_s2c *);
-void
-conn_handle_events_server(connection_s2c *);
+int conn_handle_incoming_packages_server(server *, connection_s2c *);
+void conn_handle_events_server(connection_s2c *);
 
-void
-conn_notify_join(connection_s2c *, player *);
-void
-conn_notify_disconnect(connection_s2c *, player *);
+void conn_notify_join(connection_s2c *, player *);
+void conn_notify_disconnect(connection_s2c *, player *);
 
-void
-conn_disable_conn(connection_s2c *);
+void conn_disable_conn(connection_s2c *);
 
-int
-conn_dequeue_action(connection_s2c *, action *);
-void
-conn_enqueue_event(connection_s2c *, event *);
-void
-conn_enqueue_action(connection_s2c *, action *);
-int
-conn_dequeue_event(connection_s2c *, event *);
+int conn_dequeue_action(connection_s2c *, action *);
+void conn_enqueue_event(connection_s2c *, event *);
+void conn_enqueue_action(connection_s2c *, action *);
+int conn_dequeue_event(connection_s2c *, event *);

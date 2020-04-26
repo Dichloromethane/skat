@@ -1,7 +1,7 @@
 #pragma once
 
-#include<stdint.h>
-#include"card.h"
+#include "card.h"
+#include <stdint.h>
 
 typedef int64_t action_id;
 
