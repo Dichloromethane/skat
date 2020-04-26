@@ -274,7 +274,7 @@ static int
 stich_bekennt_any(game_rules *gr, card_id first_id, card_collection *hand) {
   int result;
   for (card_id cid = 0; cid < 32; cid++)
-	if (!card_collection_contains(hand, &cid, &result) && result && stich_bekennt(fr, first_id, cid))
+	if (!card_collection_contains(hand, &cid, &result) && result && stich_bekennt(gr, first_id, cid))
 	  return 1;
   return 0;
 }

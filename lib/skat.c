@@ -167,8 +167,7 @@ apply_action_stich(skat_state *ss, action *a, player *pl, server *s, int card) {
 	  cpi = (ss->sgs.curr_stich.vorhand + card) % 3;
 	  if (!player_id_equals(&pl->id, &ss->sgs.active_players[cpi]))
 		return GAME_PHASE_INVALID;
-	  if (!stich_card_legal(ss->sgs.curr_stich.cs, a->card,
-							&ss->player_hands[cpi], card, &ss->sgs.gr))
+	  if (!stich_card_legal(&ss->sgs.gr, ss->sgs.curr_stich.cs, a->card, &ss->player_hands[cpi], card))
 		return GAME_PHASE_INVALID;
 	  ss->sgs.curr_stich.cs[card] = a->card;
 
@@ -201,7 +200,7 @@ apply_action_stich(skat_state *ss, action *a, player *pl, server *s, int card) {
 		return GAME_PHASE_PLAY_STICH_C1;
 
 
-	  return GAME_PHASE_BETWEEN_ROUND;
+	  return GAME_PHASE_BETWEEN_ROUNDS;
 	default:
 	  return GAME_PHASE_INVALID;
   }
