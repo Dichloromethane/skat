@@ -49,5 +49,5 @@ int card_collection_draw_random(card_collection *, card_id *);
 
 typedef struct game_rules game_rules;
 
-int stich_card_legal(card_id *, card_id, card_collection *, int, game_rules *);
+int stich_card_legal(game_rules *, card_id *, card_id, card_collection *, int);
 int stich_get_winner(game_rules *, stich *, int *);
