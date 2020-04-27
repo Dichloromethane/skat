@@ -21,19 +21,19 @@
 #define CH_ASSERT_NULL(stmt, c, err) CH_ASSERT(stmt, c, err, NULL)
 
 static void
-send_package(connection *c, package *p) {
+		send_package(connection *c, package *p) {
   send(c->fd, p, sizeof(package), 0);
 }
 
 static int
-retrieve_package(connection *c, package *p) {
+		retrieve_package(connection *c, package *p) {
   size_t res;
   res = read(c->fd, p, sizeof(package));
   return res == sizeof(package);
 }
 
 static void
-conn_error(connection *c, conn_error_type cet) {
+		conn_error(connection *c, conn_error_type cet) {
   package p;
   p.type = REQ_RSP_ERROR;
   p.rsp.cet = cet;
@@ -42,14 +42,14 @@ conn_error(connection *c, conn_error_type cet) {
 }
 
 static void
-init_conn_s2c(connection_s2c *c) {
+		init_conn_s2c(connection_s2c *c) {
   init_action_queue(&c->aq);
   init_event_queue(&c->aq);
   c->active = 0;
 }
 
 connection_s2c *
-establish_connection_server(server *s, int fd, pthread_t handler) {
+		establish_connection_server(server *s, int fd, pthread_t handler) {
   package p, re;
   connection c;
   connection_s2c *s2c;
@@ -110,7 +110,7 @@ establish_connection_server(server *s, int fd, pthread_t handler) {
 }
 
 static void
-conn_resync_player(server *s, connection_s2c *c, package *req_p) {
+		conn_resync_player(server *s, connection_s2c *c, package *req_p) {
   package p;
   p.type = REQ_RSP_RESYNC;
   p.rsp.seq = req_p->req.seq;
@@ -122,7 +122,7 @@ conn_resync_player(server *s, connection_s2c *c, package *req_p) {
 }
 
 int
-conn_handle_incoming_packages_server(server *s, connection_s2c *c) {
+		conn_handle_incoming_packages_server(server *s, connection_s2c *c) {
   package p;
   int still_connected;
   still_connected = retrieve_package(&c->c, &p);
@@ -133,7 +133,9 @@ conn_handle_incoming_packages_server(server *s, connection_s2c *c) {
 	return 0;
   }
   switch (p.type) {
-	case REQ_RSP_ACTION: conn_enqueue_action(c, &p.req.ac); break;
+	case REQ_RSP_ACTION:
+	  conn_enqueue_action(c, &p.req.ac);
+	  break;
 	case REQ_RSP_RESYNC:
 	  server_acquire_state_lock(s);
 	  conn_resync_player(s, c, &p);
@@ -144,13 +146,14 @@ conn_handle_incoming_packages_server(server *s, connection_s2c *c) {
 	  server_disconnect_connection(s, c);
 	  server_release_state_lock(s);
 	  return 0;
-	default: CH_ASSERT_0(0, &c->c, CONN_ERROR_INVALID_PACKAGE_TYPE);
+	default:
+	  CH_ASSERT_0(0, &c->c, CONN_ERROR_INVALID_PACKAGE_TYPE);
   }
   return 1;
 }
 
 void
-conn_handle_events_server(connection_s2c *c) {
+		conn_handle_events_server(connection_s2c *c) {
   package p;
   while (conn_dequeue_event(c, &p.req.ev)) {
 	p.type = REQ_RSP_EVENT;
@@ -160,7 +163,7 @@ conn_handle_events_server(connection_s2c *c) {
 }
 
 void
-conn_notify_join(connection_s2c *c, player *pl) {
+		conn_notify_join(connection_s2c *c, player *pl) {
   package p;
   if (!c->active)
 	return;
@@ -171,7 +174,7 @@ conn_notify_join(connection_s2c *c, player *pl) {
 }
 
 void
-conn_notify_disconnect(connection_s2c *c, player *pl) {
+		conn_notify_disconnect(connection_s2c *c, player *pl) {
   package p;
   if (!c->active)
 	return;
@@ -182,7 +185,7 @@ conn_notify_disconnect(connection_s2c *c, player *pl) {
 }
 
 void
-conn_disable_conn(connection_s2c *c) {
+		conn_disable_conn(connection_s2c *c) {
   close(c->c.fd);
   c->active = 0;
   clear_action_queue(&c->aq);
@@ -190,21 +193,21 @@ conn_disable_conn(connection_s2c *c) {
 }
 
 int
-conn_dequeue_action(connection_s2c *c, action *a) {
+		conn_dequeue_action(connection_s2c *c, action *a) {
   return dequeue_action(&c->aq, a);
 }
 
 void
-conn_enqueue_event(connection_s2c *c, event *e) {
+		conn_enqueue_event(connection_s2c *c, event *e) {
   enqueue_event(&c->eq, e);
 }
 
 void
-conn_enqueue_action(connection_s2c *c, action *a) {
+		conn_enqueue_action(connection_s2c *c, action *a) {
   enqueue_action(&c->aq, a);
 }
 
 int
-conn_dequeue_event(connection_s2c *c, event *e) {
+		conn_dequeue_event(connection_s2c *c, event *e) {
   return dequeue_event(&c->eq, e);
 }

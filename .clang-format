@@ -9,7 +9,7 @@ AllowAllArgumentsOnNextLine: false
 AllowAllConstructorInitializersOnNextLine: false
 AllowAllParametersOfDeclarationOnNextLine: false
 AllowShortBlocksOnASingleLine: false
-AllowShortCaseLabelsOnASingleLine: true
+AllowShortCaseLabelsOnASingleLine: false
 AllowShortFunctionsOnASingleLine: Inline
 AllowShortIfStatementsOnASingleLine: Never
 AllowShortLambdasOnASingleLine: All
@@ -30,14 +30,14 @@ BraceWrapping:
   IndentBraces: false
   SplitEmptyFunction: false
   SplitEmptyRecord: false
-BreakBeforeBinaryOperators: All
+BreakBeforeBinaryOperators: NonAssignment
 BreakBeforeTernaryOperators: true
 BreakBeforeBraces: Attach
 BreakConstructorInitializers: AfterColon
 BreakInheritanceList: AfterColon
 ColumnLimit: 80
 CompactNamespaces: false
-ContinuationIndentWidth: 0
+ContinuationIndentWidth: 8
 Cpp11BracedListStyle: true
 IndentCaseLabels: true
 IndentPPDirectives: None

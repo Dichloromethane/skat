@@ -9,7 +9,7 @@
 #include <unistd.h>
 
 int
-server_has_player_id(server *s, player_id pid) {
+		server_has_player_id(server *s, player_id pid) {
   for (int i = 0; i < s->ncons; i++)
 	if (player_id_equals(&s->ps[i].id, &pid))
 	  return 1;
@@ -17,7 +17,7 @@ server_has_player_id(server *s, player_id pid) {
 }
 
 void
-server_send_event(server *s, event *e, player *pl) {
+		server_send_event(server *s, event *e, player *pl) {
   connection_s2c *c = server_get_connection_by_pid(s, pl->id);
   if (c) {
 	conn_enqueue_event(c, e);
@@ -25,8 +25,8 @@ server_send_event(server *s, event *e, player *pl) {
 }
 
 void
-server_distribute_event(server *s, event *ev,
-						void (*mask_event)(event *, player *)) {
+		server_distribute_event(server *s, event *ev,
+								void (*mask_event)(event *, player *)) {
   event e;
   for (int i = 0; i < s->ncons; i++) {
 	if (mask_event) {
@@ -39,7 +39,7 @@ server_distribute_event(server *s, event *ev,
 }
 
 connection_s2c *
-server_get_free_connection(server *s) {
+		server_get_free_connection(server *s) {
   connection_s2c *conns = malloc(sizeof(connection_s2c) * (s->ncons + 1));
   player *ps = malloc(sizeof(player) * (s->ncons + 1));
   if (s->conns)
@@ -54,13 +54,13 @@ server_get_free_connection(server *s) {
 }
 
 void
-server_add_player(server *s, player *pl) {
+		server_add_player(server *s, player *pl) {
   server_get_free_connection(s);
   memcpy(&s->ps[s->ncons - 1], pl, sizeof(player));
 }
 
 connection_s2c *
-server_get_connection_by_pid(server *s, player_id pid) {
+		server_get_connection_by_pid(server *s, player_id pid) {
   for (int i = 0; i < s->ncons; i++)
 	if (player_id_equals(&s->ps[i].id, &pid))
 	  return &s->conns[i];
@@ -68,7 +68,7 @@ server_get_connection_by_pid(server *s, player_id pid) {
 }
 
 player *
-server_get_player_by_pid(server *s, player_id pid) {
+		server_get_player_by_pid(server *s, player_id pid) {
   for (int i = 0; i < s->ncons; i++)
 	if (player_id_equals(&s->ps[i].id, &pid))
 	  return &s->ps[i];
@@ -76,7 +76,7 @@ server_get_player_by_pid(server *s, player_id pid) {
 }
 
 void
-server_disconnect_connection(server *s, connection_s2c *c) {
+		server_disconnect_connection(server *s, connection_s2c *c) {
   player *pl;
   pl = server_get_player_by_pid(s, c->pid);
 
@@ -88,22 +88,22 @@ server_disconnect_connection(server *s, connection_s2c *c) {
 }
 
 void
-server_acquire_state_lock(server *s) {
+		server_acquire_state_lock(server *s) {
   pthread_mutex_lock(&s->lock);
 }
 
 void
-server_release_state_lock(server *s) {
+		server_release_state_lock(server *s) {
   pthread_mutex_unlock(&s->lock);
 }
 
 void
-server_resync_player(server *s, player *pl, skat_client_state *cs) {
+		server_resync_player(server *s, player *pl, skat_client_state *cs) {
   skat_resync_player(cs, pl);
 }
 
 void
-server_tick(server *s, long time) {
+		server_tick(server *s, long time) {
   action a;
   event err_ev;
   server_acquire_state_lock(s);
@@ -125,7 +125,7 @@ server_tick(server *s, long time) {
 }
 
 void
-server_notify_join(server *s, player *pl) {
+		server_notify_join(server *s, player *pl) {
   skat_state_notify_join(&s->skat_state, pl, s);
   for (int i = 0; i < s->ncons; i++)
 	if (!player_equals_by_id(pl, &s->ps[i]))
@@ -138,7 +138,7 @@ typedef struct {
 } handler_args;
 
 static void *
-handler(void *args) {
+		handler(void *args) {
   connection_s2c *conn;
   handler_args *hargs = args;
   conn = establish_connection_server(hargs->s, hargs->conn_fd, pthread_self());
@@ -161,7 +161,7 @@ typedef struct {
 } listener_args;
 
 static void *
-listener(void *args) {
+		listener(void *args) {
   listener_args *largs = args;
   handler_args *hargs;
   pthread_t h;
@@ -183,7 +183,7 @@ listener(void *args) {
 }
 
 static void
-start_conn_listener(server *s, int p) {
+		start_conn_listener(server *s, int p) {
   listener_args *args;
   int opt = 1;
   args = malloc(sizeof(listener_args));
