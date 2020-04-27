@@ -15,6 +15,21 @@ game_setup_server(skat_state *ss) {
   return 0;
 }
 
+int
+game_start_server(skat_state *ss) {
+  // TODO: implement
+  return 0;
+}
+
+void
+skat_state_notify_disconnect(skat_state *ss, player *pl, server *s) {
+  // TODO: implement
+}
+void
+skat_state_notify_join(skat_state *ss, player *pl, server *s) {
+  // TODO: implement
+}
+
 // returns pos+1 on find, 0 otherwise
 static int
 is_active_player(shared_game_state *sgs, player *pl) {
@@ -62,7 +77,6 @@ distribute_cards(skat_state *ss) {
 
   return 0;
 }
-
 
 static game_phase
 apply_action_setup(skat_state *ss, action *a, player *pl, server *s) {
@@ -161,13 +175,13 @@ apply_action_stich(skat_state *ss, action *a, player *pl, server *s, int card) {
   event e;
   e.answer_to = a->id;
   e.player = pl->id;
-  int cpi, winner;
+  int cpi, winner, result;
   switch (a->type) {
 	case ACTION_PLAY_CARD:
 	  cpi = (ss->sgs.curr_stich.vorhand + card) % 3;
 	  if (!player_id_equals(&pl->id, &ss->sgs.active_players[cpi]))
 		return GAME_PHASE_INVALID;
-	  if (!stich_card_legal(&ss->sgs.gr, ss->sgs.curr_stich.cs, a->card, &ss->player_hands[cpi], card))
+	  if (stich_card_legal(&ss->sgs.gr, ss->sgs.curr_stich.cs, &card, &a->card, &ss->player_hands[cpi], &result) || !result)
 		return GAME_PHASE_INVALID;
 	  ss->sgs.curr_stich.cs[card] = a->card;
 

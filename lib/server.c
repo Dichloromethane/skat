@@ -11,7 +11,7 @@
 int
 server_has_player_id(server *s, player_id pid) {
   for (int i = 0; i < s->ncons; i++)
-	if (!memcmp(&s->ps[i].id, &pid, sizeof(player_id)))
+	if (player_id_equals(&s->ps[i].id, &pid))
 	  return 1;
   return 0;
 }
@@ -61,7 +61,7 @@ server_add_player(server *s, player *pl) {
 connection_s2c *
 server_get_connection_by_pid(server *s, player_id pid) {
   for (int i = 0; i < s->ncons; i++)
-	if (!memcmp(&s->ps[i].id, &pid, sizeof(player_id)))
+	if (player_id_equals(&s->ps[i].id, &pid))
 	  return &s->conns[i];
   return NULL;
 }
@@ -69,7 +69,7 @@ server_get_connection_by_pid(server *s, player_id pid) {
 player *
 server_get_player_by_pid(server *s, player_id pid) {
   for (int i = 0; i < s->ncons; i++)
-	if (!memcmp(&s->ps[i].id, &pid, sizeof(player_id)))
+	if (player_id_equals(&s->ps[i].id, &pid))
 	  return &s->ps[i];
   return NULL;
 }
@@ -81,7 +81,7 @@ server_disconnect_connection(server *s, connection_s2c *c) {
 
   skat_state_notify_disconnect(&s->skat_state, pl, s);
   for (int i = 0; i < s->ncons; i++)
-	if (memcmp(&pl->id, &s->ps[i].id, sizeof(player_id)))
+	if (!player_equals_by_id(pl, &s->ps[i]))
 	  conn_notify_disconnect(&s->conns[i], pl);
   conn_disable_conn(c);
 }
@@ -127,7 +127,7 @@ void
 server_notify_join(server *s, player *pl) {
   skat_state_notify_join(&s->skat_state, pl, s);
   for (int i = 0; i < s->ncons; i++)
-	if (memcmp(&pl->id, &s->ps[i].id, sizeof(player_id)))
+	if (!player_equals_by_id(pl, &s->ps[i]))
 	  conn_notify_join(&s->conns[i], pl);
 }
 

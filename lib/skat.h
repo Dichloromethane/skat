@@ -75,8 +75,6 @@ typedef struct {
 int game_setup_server(skat_state *ss);
 int game_start_server(skat_state *ss);
 
-int rand_int(int min, int max);
-
 typedef void (*send_event_f)(event *, void (*)(event *, player *));
 
 void skat_state_notify_disconnect(skat_state *, player *, server *);

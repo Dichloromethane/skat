@@ -3,16 +3,14 @@
 #include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <sys/stat.h>
-#include <sys/types.h>
 #include <unistd.h>
 
 const char *CARD_TYPE_NAMES = "789BDK0A";
 const char CARD_SCORES[] = {0, 0, 0, 2, 3, 4, 10, 11};
 const char *CARD_COLOR_NAMES = "KaHePiKr";
 
-int
-rand_int(int min, int max) {
+static int
+rand_int(const int min, const int max) {
   int fd = open("/dev/urandom", O_RDONLY);
   if (fd == -1) {
 	perror("Error while accessing '/dev/urandom': ");
@@ -28,37 +26,29 @@ rand_int(int min, int max) {
 
 
 int
-card_get(card_id *cid, card *c) {
-  c->cc = (*cid & 3) + 1;
-  c->ct = ((*cid >> 2) & 15) + 1;
+card_get(const card_id *const cid, card *const c) {
+  c->cc = (*cid & 0b11u) + 1;
+  c->ct = ((*cid & 0b111100u) >> 2u) + 1;
 
-  if (c->cc == COLOR_INVALID || c->ct == CARD_TYPE_INVALID) {
-	return 1;
-  }
+  if (c->cc == COLOR_INVALID || c->ct == CARD_TYPE_INVALID) { return 1; }
 
   return 0;
 }
 
 int
-card_get_id(card *c, card_id *cid) {
-  if (c->cc == COLOR_INVALID || c->ct == CARD_TYPE_INVALID) {
-	return 1;
-  }
+card_get_id(const card *const c, card_id *const cid) {
+  if (c->cc == COLOR_INVALID || c->ct == CARD_TYPE_INVALID) { return 1; }
 
-  *cid = ((c->cc - 1) & 3) | (((c->ct - 1) & 15) << 2);
+  *cid = ((c->cc - 1) & 0b11u) | (((c->ct - 1) & 0b1111u) << 2u);
   return 0;
 }
 
 int
-card_get_name(card_id *cid, char *str) {
+card_get_name(const card_id *const cid, char *const str) {
   card c;
-  if (card_get(cid, &c)) {
-	return 1;
-  }
+  if (card_get(cid, &c)) { return 1; }
 
-  if (c.cc == COLOR_INVALID || c.ct == CARD_TYPE_INVALID) {
-	return 1;
-  }
+  if (c.cc == COLOR_INVALID || c.ct == CARD_TYPE_INVALID) { return 1; }
 
   str[0] = CARD_COLOR_NAMES[2 * (c.cc - 1)];
   str[1] = CARD_COLOR_NAMES[(2 * (c.cc - 1)) + 1];
@@ -69,28 +59,25 @@ card_get_name(card_id *cid, char *str) {
 }
 
 int
-card_get_score(card_id *cid, int *score) {
+card_get_score(const card_id *const cid, int *const score) {
   card c;
-  if (card_get(cid, &c)) {
-	return 1;
-  }
+  if (card_get(cid, &c)) { return 1; }
 
-  if (c.ct == CARD_TYPE_INVALID) {
-	return 1;
-  }
+  if (c.ct == CARD_TYPE_INVALID) { return 1; }
 
   *score = CARD_SCORES[c.ct - 1];
   return 0;
 }
 
 int
-card_collection_contains(card_collection *col, card_id *cid, int *result) {
-  *result = (*col >> *cid) & 1;
+card_collection_contains(const card_collection *const col,
+						 const card_id *const cid, int *const result) {
+  *result = (int) ((*col >> *cid) & 0b1u);
   return 0;
 }
 
 int
-card_collection_add_card(card_collection *col, card_id *cid) {
+card_collection_add_card(card_collection *const col, const card_id *const cid) {
   int result;
   card_collection_contains(col, cid, &result);
   if (result) {
@@ -98,24 +85,23 @@ card_collection_add_card(card_collection *col, card_id *cid) {
 	return 1;
   }
 
-  *col |= 1 << *cid;
+  *col |= 0b1u << *cid;
   return 0;
 }
 
 int
-card_collection_add_card_array(card_collection *col, card_id *cid_array,
-							   int array_size) {
+card_collection_add_card_array(card_collection *col,
+							   const card_id *const cid_array,
+							   const int array_size) {
   for (int i = 0; i < array_size; i++) {
-	if (!card_collection_add_card(col, cid_array + i)) {
-	  return 1;
-	}
+	if (!card_collection_add_card(col, cid_array + i)) { return 1; }
   }
 
   return 0;
 }
 
 int
-card_collection_remove_card(card_collection *col, card_id *cid) {
+card_collection_remove_card(card_collection *col, const card_id *const cid) {
   int result;
   card_collection_contains(col, cid, &result);
   if (!result) {
@@ -123,21 +109,23 @@ card_collection_remove_card(card_collection *col, card_id *cid) {
 	return 1;
   }
 
-  *col &= ~(1 << *cid);
+  *col &= ~(0b1u << *cid);
   return 0;
 }
 
 int
-card_collection_get_card_count(card_collection *col, int *count) {
+card_collection_get_card_count(const card_collection *const col,
+							   int *const count) {
   *count = __builtin_popcount(*col);
   return 0;
 }
 
 // XXX:
 int
-card_collection_get_card(card_collection *col, int idx, card_id *cid) {
+card_collection_get_card(const card_collection *const col,
+						 const unsigned int idx, card_id *const cid) {
   int result;
-  int found = 0;
+  unsigned int found = 0;
 
   for (card_id cur = 0; cur < 32; cur++) {
 	card_collection_contains(col, &cur, &result);
@@ -151,7 +139,7 @@ card_collection_get_card(card_collection *col, int idx, card_id *cid) {
 }
 
 int
-card_collection_get_score(card_collection *col, int *score) {
+card_collection_get_score(const card_collection *const col, int *const score) {
   int card_score;
   int total_score = 0;
   int result;
@@ -169,34 +157,32 @@ card_collection_get_score(card_collection *col, int *score) {
 }
 
 int
-card_collection_empty(card_collection *col) {
+card_collection_empty(card_collection *const col) {
   *col = 0;
   return 0;
 }
 
 int
-card_collection_fill(card_collection *col) {
+card_collection_fill(card_collection *const col) {
   *col = -1;
   return 0;
 }
 
 int
-card_collection_draw_random(card_collection *col, card_id *cid) {
+card_collection_draw_random(const card_collection *const col,
+							card_id *const cid) {
   int count;
-  if (card_collection_get_card_count(col, &count) || count == 0) {
-	return 1;
-  }
+  if (card_collection_get_card_count(col, &count) || count == 0) { return 1; }
 
   int i = rand_int(0, count);
-  if (card_collection_get_card(col, i, cid)) {
-	return 1;
-  }
+  if (card_collection_get_card(col, i, cid)) { return 1; }
 
   return 0;
 }
 
 static unsigned int
-stich_get_card_value(game_rules *gr, card *c0, card *c) {
+stich_get_card_value(const game_rules *const gr, const card *const c0,
+					 const card *const c) {
   switch (gr->type) {
 	case GAME_TYPE_COLOR:
 	case GAME_TYPE_GRAND:
@@ -222,10 +208,10 @@ stich_get_card_value(game_rules *gr, card *c0, card *c) {
 }
 
 int
-stich_get_winner(game_rules *gr, stich *stich, int *result) {
+stich_get_winner(const game_rules *const gr, const stich *const stich,
+				 int *const result) {
   card c0, c1, c2;
-  if (card_get(&stich->cs[0], &c0) || card_get(&stich->cs[1], &c1) ||
-	  card_get(&stich->cs[2], &c2)) {
+  if (card_get(&stich->cs[0], &c0) || card_get(&stich->cs[1], &c1) || card_get(&stich->cs[2], &c2)) {
 	return 1;
   }
 
@@ -235,66 +221,66 @@ stich_get_winner(game_rules *gr, stich *stich, int *result) {
 
   int winner = 0;
 
-  if (t1 > t0) {
-	winner = 1;
-  }
-  if (t2 > t0 || t2 > t1) {
-	winner = 2;
-  }
+  if (t1 > t0) { winner = 1; }
+  if (t2 > t0 || t2 > t1) { winner = 2; }
 
   *result = (stich->vorhand + winner) % 3;
   return 0;
 }
 
-static int
-stich_is_trumpf(game_rules *gr, card_id cid) {
-  if (gr->type == GAME_TYPE_NULL)
-	return 0;
+static unsigned int
+stich_is_trumpf(const game_rules *const gr, const card_id *const cid) {
+  if (gr->type == GAME_TYPE_NULL) return 0;
 
   card c;
-  card_get(&cid, &c);
+  card_get(cid, &c);
   int b = c.ct == CARD_TYPE_B;
 
   return b || (gr->type == GAME_TYPE_COLOR && c.cc == gr->trumpf);
 }
 
 static int
-stich_bekennt(game_rules *gr, card_id first_id, card_id cid) {
-  if (stich_is_trumpf(gr, first_id) && stich_is_trumpf(gr, cid))
-	return 1;
+stich_bekennt(const game_rules *const gr, const card_id *const first_id,
+			  const card_id *const cid) {
+  if (stich_is_trumpf(gr, first_id) && stich_is_trumpf(gr, cid)) return 1;
 
   card first, c;
-  card_get(&first_id, &first);
-  card_get(&cid, &c);
+  card_get(first_id, &first);
+  card_get(cid, &c);
 
   return first.cc == c.cc;
 }
 
 static int
-stich_bekennt_any(game_rules *gr, card_id first_id, card_collection *hand) {
+stich_bekennt_any(const game_rules *const gr, const card_id *const first_id,
+				  const card_collection *const hand) {
   int result;
   for (card_id cid = 0; cid < 32; cid++)
-	if (!card_collection_contains(hand, &cid, &result) && result && stich_bekennt(gr, first_id, cid))
+	if (!card_collection_contains(hand, &cid, &result) && result &&
+		stich_bekennt(gr, first_id, &cid))
 	  return 1;
   return 0;
 }
 
+#pragma clang diagnostic push
+#pragma ide diagnostic ignored "bugprone-branch-clone"
 int
-stich_card_legal(game_rules *gr, card_id *played_cards,
-				 card_id new_card, card_collection *hand,
-				 int played_cards_size) {
-  int result;
-  if (card_collection_contains(hand, &new_card, &result) || !result)
-	return 0;
+stich_card_legal(const game_rules *const gr, const card_id *const played_cards,
+				 const int *const played_cards_size,
+				 const card_id *const new_card,
+				 const card_collection *const hand, int *const result) {
+  int result_, contains;
+  if (card_collection_contains(hand, new_card, &contains)) return 1;
+  else if (!contains)
+	result_ = 0;
+  else if (!*played_cards_size || stich_bekennt(gr, &played_cards[0], new_card))
+	result_ = 1;
+  else if (stich_bekennt_any(gr, &played_cards[0], hand))
+	result_ = 0;
+  else
+	result_ = 1;
 
-  if (!played_cards_size)
-	return 1;
-
-  if (stich_bekennt(gr, played_cards[0], new_card))
-	return 1;
-
-  if (stich_bekennt_any(gr, played_cards[0], hand))
-	return 0;
-
-  return 1;
+  *result = result_;
+  return 0;
 }
+#pragma clang diagnostic pop
