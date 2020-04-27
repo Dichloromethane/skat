@@ -1,4 +1,3 @@
-
 #pragma once
 
 #define PLAYER_ID_LENGTH 16
