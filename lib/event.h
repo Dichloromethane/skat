@@ -2,6 +2,7 @@
 
 #include "action.h"
 #include "card.h"
+#include "card_collection.h"
 #include "player.h"
 
 typedef enum {

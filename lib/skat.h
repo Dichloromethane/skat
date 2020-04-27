@@ -2,11 +2,12 @@
 
 #include "action.h"
 #include "card.h"
+#include "card_collection.h"
 #include "event.h"
 #include "game_rules.h"
 #include "player.h"
+#include "stich.h"
 
-struct server;
 typedef struct server server;
 
 typedef enum {
@@ -30,12 +31,6 @@ typedef struct {
   unsigned contra : 1;
   unsigned re : 1;
 } reiz_resultat;
-
-typedef struct stich {
-  card_id cs[3];
-  int vorhand;
-  int winner;
-} stich;
 
 typedef struct {
   game_phase cgphase;

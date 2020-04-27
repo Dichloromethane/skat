@@ -7,10 +7,10 @@ CFLAGS=-pthread -O0 -ggdb3 $(WARNINGS)
 
 BUILDDIR=build/
 
-SOURCE=skat.c server.c connection.c atomic_queue.c card.c player.c
+SOURCE=skat.c server.c connection.c atomic_queue.c card.c card_collection.c stich.c player.c util.c
 OBJS=$(SOURCE:.c=.o)
 HEADERS=$(SOURCE:.c=.h)
-EXTRA_HEADERS=event.h action.h
+EXTRA_HEADERS=event.h action.h game_rules.h
 EXTRA_SOURCE=main_client.c main_server.c
 
 .PHONY: default clean png_gone distclean png

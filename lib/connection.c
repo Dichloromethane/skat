@@ -1,8 +1,6 @@
 #include "connection.h"
 #include "server.h"
-#include <pthread.h>
 #include <stddef.h>
-#include <string.h>
 #include <sys/socket.h>
 #include <unistd.h>
 
@@ -65,10 +63,11 @@ establish_connection_server(server *s, int fd, pthread_t handler) {
 
   if (p.type == REQ_RSP_JOIN) {
 	server_acquire_state_lock(s);
-	CH_ASSERT_NULL(!server_has_player_id(s, p.req.pid), &c,
-				   CONN_ERROR_PLAYER_ID_IN_USE);
 
-	memcpy(&pl.id, &p.req.pid, sizeof(player_id));
+	copy_player_id(&pl.id, &p.req.pid);
+
+	CH_ASSERT_NULL(!server_has_player_id(s, &pl.id), &c,
+				   CONN_ERROR_PLAYER_ID_IN_USE);
 
 	s2c = server_get_free_connection(s);
 	init_conn_s2c(s2c);
@@ -169,7 +168,7 @@ conn_notify_join(connection_s2c *c, player *pl) {
 	return;
   p.type = REQ_RSP_NOTIFY_JOIN;
   p.req.seq = ++c->c.cseq;
-  memcpy(&p.req.pid, &pl->id, sizeof(player_id));
+  copy_player_id(&p.req.pid, &pl->id);
   send_package(&c->c, &p);
 }
 
@@ -180,7 +179,7 @@ conn_notify_disconnect(connection_s2c *c, player *pl) {
 	return;
   p.type = REQ_RSP_NOTIFY_LEAVE;
   p.req.seq = ++c->c.cseq;
-  memcpy(&p.req.pid, &pl->id, sizeof(player_id));
+  copy_player_id(&p.req.pid, &pl->id);
   send_package(&c->c, &p);
 }
 

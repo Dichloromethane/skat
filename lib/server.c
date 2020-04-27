@@ -6,9 +6,9 @@
 #include <unistd.h>
 
 int
-server_has_player_id(server *s, player_id pid) {
+server_has_player_id(server *s, player_id *pid) {
   for (int i = 0; i < s->ncons; i++)
-	if (player_id_equals(&s->ps[i].id, &pid))
+	if (player_id_equals(&s->ps[i].id, pid))
 	  return 1;
   return 0;
 }
@@ -37,22 +37,14 @@ server_distribute_event(server *s, event *ev,
 
 connection_s2c *
 server_get_free_connection(server *s) {
-  connection_s2c *conns = malloc(sizeof(connection_s2c) * (s->ncons + 1));
-  player *ps = malloc(sizeof(player) * (s->ncons + 1));
-  if (s->conns)
-	memcpy(conns, s->conns, sizeof(connection_s2c) * s->ncons);
-  if (s->ps)
-	memcpy(ps, s->ps, sizeof(connection_s2c) * s->ncons);
-  free(s->conns);
-  free(s->ps);
-  s->conns = conns;
-  s->ps = ps;
+  s->conns = realloc(s->ncons ? s->conns : NULL,
+					 sizeof(connection_s2c) * (s->ncons + 1));
+  s->ps = realloc(s->ncons ? s->ps : NULL, sizeof(player) * (s->ncons + 1));
   return &s->conns[s->ncons++];
 }
 
 void
 server_add_player(server *s, player *pl) {
-  server_get_free_connection(s);
   memcpy(&s->ps[s->ncons - 1], pl, sizeof(player));
 }
 
@@ -112,7 +104,7 @@ server_tick(server *s, long time) {
 	  if (!skat_state_apply(&s->skat_state, &a, &s->ps[i], s)) {
 		err_ev.type = EVENT_ILLEGAL_ACTION;
 		err_ev.answer_to = a.id;
-		memcpy(&err_ev.player, &s->ps[i].id, PLAYER_ID_LENGTH);
+		copy_player_id(&err_ev.player, &s->ps[i].id);
 		conn_enqueue_event(&s->conns[i], &err_ev);
 	  }
 	}
@@ -157,7 +149,7 @@ typedef struct {
   struct sockaddr_in addr;
 } listener_args;
 
-static void *
+_Noreturn static void *
 listener(void *args) {
   listener_args *largs = args;
   handler_args *hargs;
@@ -176,7 +168,6 @@ listener(void *args) {
 
 	pthread_create(&h, NULL, handler, hargs);
   }
-  return NULL;
 }
 
 static void
