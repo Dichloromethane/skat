@@ -37,7 +37,7 @@ BreakConstructorInitializers: AfterColon
 BreakInheritanceList: AfterColon
 ColumnLimit: 80
 CompactNamespaces: false
-ContinuationIndentWidth: 8
+ContinuationIndentWidth: 0
 Cpp11BracedListStyle: true
 IndentCaseLabels: true
 IndentPPDirectives: None
