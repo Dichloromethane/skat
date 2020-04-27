@@ -1,6 +1,6 @@
 #! /usr/bin/env bash
 
-print_gr=""
+print_gr=
 
 while getopts "p" name; do
   case "$name" in
