@@ -2,8 +2,7 @@
 
 print_graph=""
 include_libs=""
-source_dir="."
-output_file="dep_out.png"
+output_file="dep_graph.png"
 
 while getopts "pls:o:" name; do
   case "$name" in
@@ -14,10 +13,10 @@ while getopts "pls:o:" name; do
     include_libs=1
     ;;
   s)
-    source_dir="$OPTARG/"
+    source_dir+=("$OPTARG")
   	;;
   o)
-  	output_file="$OPTARG/"
+  	output_file="$OPTARG"
   	;;
   *)
     exit 1
@@ -29,9 +28,9 @@ done
   echo "digraph dep_graph {"
 
   {
-    grep -rH --include="*.c" --include="*.h" "^#include \"" "$source_dir"
+    grep -rH --include="*.c" --include="*.h" "^#include \"" "${source_dir[@]}"
     if test "x$include_libs" != "x"; then
-      grep -rH --include="*.c" --include="*.h" "^#include <" "$source_dir"
+      grep -rH --include="*.c" --include="*.h" "^#include <" "${source_dir[@]}"
     fi
   } \
   | sed -n "s/\(.*\/\)\?\(.*\):#include [\"<]\(.*\)[\">]/\t\"\2\" -> \"\3\";/p"

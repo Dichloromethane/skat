@@ -57,4 +57,4 @@ png_gone:
 	$(RM) dep_graph.png
 
 png:
-	./$(TOOLSDIR)dep_graph.sh
+	./$(TOOLSDIR)dep_graph.sh -s $(SOURCEDIR) -s $(INCLUDEDIR)
