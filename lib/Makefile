@@ -1,6 +1,9 @@
 CC=gcc
-#CFLAGS=-Wall -O3 -mcpu=native -pthread -flto
-CFLAGS=-Wall -Wextra -pthread -O0 -ggdb3 -Wfatal-errors -Wno-unused-parameter -Wno-unused-function -Wno-unused-but-set-variable -Wno-unknown-pragmas
+
+WARNINGS=-Wall -Wextra -Wfatal-errors -Wno-unused-parameter -Wno-unused-function -Wno-unused-but-set-variable -Wno-unknown-pragmas
+
+#CFLAGS=-Wall -O3 -mcpu=native -pthread -flto $(WARNINGS)
+CFLAGS=-pthread -O0 -ggdb3 $(WARNINGS)
 
 BUILDDIR=build/
 
