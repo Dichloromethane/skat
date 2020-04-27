@@ -1,6 +1,13 @@
-cmake_minimum_required(VERSION 3.3)
+cmake_minimum_required(VERSION 3.10)
 project(skat)
 
-FILE(GLOB_RECURSE dummysources *.c *.h)
+file(GLOB_RECURSE dummysources src/*.c)
 add_executable(dummy ${dummysources})
-add_custom_target(skat ALL COMMAND make force_rebuild WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/lib)
+
+target_include_directories(dummy PRIVATE include)
+
+set(THREADS_PREFER_PTHREAD_FLAG ON)
+find_package(Threads REQUIRED)
+target_link_libraries(dummy Threads::Threads)
+
+add_custom_target(skat ALL COMMAND make force_rebuild WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})

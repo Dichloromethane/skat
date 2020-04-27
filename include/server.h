@@ -3,6 +3,7 @@
 #include "connection.h"
 #include "player.h"
 #include "skat.h"
+#include <pthread.h>
 
 typedef struct server {
   pthread_mutex_t lock;

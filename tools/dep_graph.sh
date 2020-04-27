@@ -3,7 +3,7 @@
 print_graph=""
 include_libs=""
 source_dir="."
-output="dep_out.png"
+output_file="dep_out.png"
 
 while getopts "pls:o:" name; do
   case "$name" in
@@ -14,10 +14,10 @@ while getopts "pls:o:" name; do
     include_libs=1
     ;;
   s)
-    source_dir="$OPTARG/"	
+    source_dir="$OPTARG/"
   	;;
   o)
-  	output="$OPTARG/"
+  	output_file="$OPTARG/"
   	;;
   *)
     exit 1
@@ -29,20 +29,16 @@ done
   echo "digraph dep_graph {"
 
   {
-    grep -H "#include \"" -- $( find $source_dir -type f -iregex '.*\.\(h\|c\)') | sed -n "s/\(.*\):#include \"\(.*\)\"/\1 -> \2/p"
+    grep -rH --include="*.c" --include="*.h" "^#include \"" "$source_dir"
     if test "x$include_libs" != "x"; then
-      grep -H "#include <" -- $(find $source_dir -type f -iregex '.*\.\(h\|c\)') | sed -n "s/\(.*\):#include <\(.*\)>/\1 -> lib_\2/p"
-    fi 
+      grep -rH --include="*.c" --include="*.h" "^#include <" "$source_dir"
+    fi
   } \
-  | awk -F' ' '{ 
-		   $1 = gensub(/^.*\/([^/]*)$/, "\\1", "g", $1);
-		   print "\t", $1, $2, $3
-		 }' \
-  | sed "s/\.\|\//_/g"
+  | sed -n "s/\(.*\/\)\?\(.*\):#include [\"<]\(.*\)[\">]/\t\"\2\" -> \"\3\";/p"
 
   echo "}"
 } | if test "x$print_graph" = "x"; then
-  dot -T png -o $output_file
+  dot -T png -o "$output_file"
 else
   cat
 fi

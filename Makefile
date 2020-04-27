@@ -8,10 +8,10 @@ CFLAGS=-pthread -O0 -ggdb3 $(WARNINGS)
 BUILDDIR=build/
 TOOLSDIR=tools/
 SOURCEDIR=src/
-INCLUDEDIR=$(SOURCEDIR)include/
+INCLUDEDIR=include/
 
 SOURCE=skat.c server.c connection.c atomic_queue.c card.c card_collection.c stich.c player.c util.c
-EXTRA_SOURCE=main_client.c main_server.c
+EXTRA_SOURCE=main.c
 
 OBJS=$(addprefix $(BUILDDIR), $(SOURCE:.c=.o))
 EXTRA_OBJS=$(addprefix $(BUILDDIR), $(EXTRA_SOURCE:.c=.o))
@@ -21,20 +21,15 @@ EXTRA_HEADERS=event.h action.h game_rules.h
 ALL_HEADERS=$(addprefix $(INCLUDEDIR), $(HEADERS) $(EXTRA_HEADERS))
 
 
-.PHONY: default clean png_gone distclean png all server client
+.PHONY: default clean png_gone distclean png all skat
 
 default: all
 
-all: server client
+all: skat
 
-server: | $(BUILDDIR) server.elf2
+skat: | $(BUILDDIR) skat.elf2
 
-client: | $(BUILDDIR) client.elf2
-
-server.elf2: $(OBJS) $(BUILDDIR)main_server.o 
-	$(CC) $(CFLAGS) -o $@ $^
-
-client.elf2: $(OBJS) $(BUILDDIR)main_client.o
+skat.elf2: $(OBJS) $(BUILDDIR)main.o
 	$(CC) $(CFLAGS) -o $@ $^
 
 $(EXTRA_OBJS):$(BUILDDIR)%.o:$(SOURCEDIR)%.c $(ALL_HEADERS)
@@ -50,8 +45,8 @@ clean:
 	$(RM) $(OBJS) $(EXTRA_OBJS)
 
 distclean: clean png_gone
-	rmdir $(BUILDDIR)
-	$(RM) server.elf2 client.elf2
+	$(RM) -r $(BUILDDIR)
+	$(RM) skat.elf2
 
 force_rebuild: | distclean all
 
@@ -62,4 +57,4 @@ png_gone:
 	$(RM) dep_graph.png
 
 png:
-	./$(TOOLDIR)dep_graph.sh -o ./dep_graph.png
+	./$(TOOLSDIR)dep_graph.sh

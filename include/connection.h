@@ -9,7 +9,6 @@
 
 typedef int64_t seq_no;
 
-struct server;
 typedef struct server server;
 
 typedef enum {

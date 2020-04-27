@@ -3,6 +3,6 @@
 
 int
 main(int argc, char **argv) {
-  puts("Client");
+  puts("Hello World");
   return EXIT_SUCCESS;
 }
