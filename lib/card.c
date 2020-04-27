@@ -30,14 +30,16 @@ card_get(const card_id *const cid, card *const c) {
   c->cc = (*cid & 0b11u) + 1;
   c->ct = ((*cid & 0b111100u) >> 2u) + 1;
 
-  if (c->cc == COLOR_INVALID || c->ct == CARD_TYPE_INVALID) { return 1; }
+  if (c->cc == COLOR_INVALID || c->ct == CARD_TYPE_INVALID)
+	return 1;
 
   return 0;
 }
 
 int
 card_get_id(const card *const c, card_id *const cid) {
-  if (c->cc == COLOR_INVALID || c->ct == CARD_TYPE_INVALID) { return 1; }
+  if (c->cc == COLOR_INVALID || c->ct == CARD_TYPE_INVALID)
+	return 1;
 
   *cid = ((c->cc - 1) & 0b11u) | (((c->ct - 1) & 0b1111u) << 2u);
   return 0;
@@ -46,9 +48,8 @@ card_get_id(const card *const c, card_id *const cid) {
 int
 card_get_name(const card_id *const cid, char *const str) {
   card c;
-  if (card_get(cid, &c)) { return 1; }
-
-  if (c.cc == COLOR_INVALID || c.ct == CARD_TYPE_INVALID) { return 1; }
+  if (card_get(cid, &c) || c.cc == COLOR_INVALID || c.ct == CARD_TYPE_INVALID)
+	return 1;
 
   str[0] = CARD_COLOR_NAMES[2 * (c.cc - 1)];
   str[1] = CARD_COLOR_NAMES[(2 * (c.cc - 1)) + 1];
@@ -61,9 +62,8 @@ card_get_name(const card_id *const cid, char *const str) {
 int
 card_get_score(const card_id *const cid, int *const score) {
   card c;
-  if (card_get(cid, &c)) { return 1; }
-
-  if (c.ct == CARD_TYPE_INVALID) { return 1; }
+  if (card_get(cid, &c) || c.ct == CARD_TYPE_INVALID)
+	return 1;
 
   *score = CARD_SCORES[c.ct - 1];
   return 0;
@@ -79,11 +79,10 @@ card_collection_contains(const card_collection *const col,
 int
 card_collection_add_card(card_collection *const col, const card_id *const cid) {
   int result;
-  card_collection_contains(col, cid, &result);
-  if (result) {
-	// card_collection already contains given card
+  if (card_collection_contains(col, cid, &result))
 	return 1;
-  }
+  if (result)
+	return 2;
 
   *col |= 0b1u << *cid;
   return 0;
@@ -93,9 +92,9 @@ int
 card_collection_add_card_array(card_collection *col,
 							   const card_id *const cid_array,
 							   const int array_size) {
-  for (int i = 0; i < array_size; i++) {
-	if (!card_collection_add_card(col, cid_array + i)) { return 1; }
-  }
+  for (int i = 0; i < array_size; i++)
+	if (!card_collection_add_card(col, cid_array + i))
+	  return 1;
 
   return 0;
 }
@@ -103,11 +102,10 @@ card_collection_add_card_array(card_collection *col,
 int
 card_collection_remove_card(card_collection *col, const card_id *const cid) {
   int result;
-  card_collection_contains(col, cid, &result);
-  if (!result) {
-	// card_collection does not contain the given card
+  if (card_collection_contains(col, cid, &result))
 	return 1;
-  }
+  if (!result)
+	return 2;
 
   *col &= ~(0b1u << *cid);
   return 0;
@@ -172,10 +170,11 @@ int
 card_collection_draw_random(const card_collection *const col,
 							card_id *const cid) {
   int count;
-  if (card_collection_get_card_count(col, &count) || count == 0) { return 1; }
+  if (card_collection_get_card_count(col, &count) || count == 0) return 1;
 
   int i = rand_int(0, count);
-  if (card_collection_get_card(col, i, cid)) { return 1; }
+  if (card_collection_get_card(col, i, cid))
+	return 1;
 
   return 0;
 }
@@ -211,9 +210,8 @@ int
 stich_get_winner(const game_rules *const gr, const stich *const stich,
 				 int *const result) {
   card c0, c1, c2;
-  if (card_get(&stich->cs[0], &c0) || card_get(&stich->cs[1], &c1) || card_get(&stich->cs[2], &c2)) {
+  if (card_get(&stich->cs[0], &c0) || card_get(&stich->cs[1], &c1) || card_get(&stich->cs[2], &c2))
 	return 1;
-  }
 
   unsigned int t0 = stich_get_card_value(gr, &c0, &c0);
   unsigned int t1 = stich_get_card_value(gr, &c0, &c1);
@@ -242,7 +240,8 @@ stich_is_trumpf(const game_rules *const gr, const card_id *const cid) {
 static int
 stich_bekennt(const game_rules *const gr, const card_id *const first_id,
 			  const card_id *const cid) {
-  if (stich_is_trumpf(gr, first_id) && stich_is_trumpf(gr, cid)) return 1;
+  if (stich_is_trumpf(gr, first_id) && stich_is_trumpf(gr, cid))
+	return 1;
 
   card first, c;
   card_get(first_id, &first);
@@ -256,8 +255,7 @@ stich_bekennt_any(const game_rules *const gr, const card_id *const first_id,
 				  const card_collection *const hand) {
   int result;
   for (card_id cid = 0; cid < 32; cid++)
-	if (!card_collection_contains(hand, &cid, &result) && result &&
-		stich_bekennt(gr, first_id, &cid))
+	if (!card_collection_contains(hand, &cid, &result) && result && stich_bekennt(gr, first_id, &cid))
 	  return 1;
   return 0;
 }
@@ -270,7 +268,8 @@ stich_card_legal(const game_rules *const gr, const card_id *const played_cards,
 				 const card_id *const new_card,
 				 const card_collection *const hand, int *const result) {
   int result_, contains;
-  if (card_collection_contains(hand, new_card, &contains)) return 1;
+  if (card_collection_contains(hand, new_card, &contains))
+	return 1;
   else if (!contains)
 	result_ = 0;
   else if (!*played_cards_size || stich_bekennt(gr, &played_cards[0], new_card))
