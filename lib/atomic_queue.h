@@ -12,11 +12,7 @@ typedef struct aeque_node {
   struct aeque_node *next;
 } aeque_node;
 
-typedef enum {
-  AEQUE_INVALID = 0,
-  AEQUE_ACTION,
-  AEQUE_EVENT
-} aeque_type;
+typedef enum { AEQUE_INVALID = 0, AEQUE_ACTION, AEQUE_EVENT } aeque_type;
 
 typedef struct {
   pthread_mutex_t lock;

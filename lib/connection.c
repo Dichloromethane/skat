@@ -9,15 +9,15 @@
 #define SEQ_NUM_START (1)
 
 #define CH_ASSERT(stmt, c, err, ret) \
-  do {                               \
-	if (!(stmt)) {                   \
-	  conn_error(c, err);            \
-	  return ret;                    \
-	}                                \
+  do { \
+	if (!(stmt)) { \
+	  conn_error(c, err); \
+	  return ret; \
+	} \
   } while (0)
 
-#define CH_ASSERT_1(stmt, c, err) CH_ASSERT(stmt, c, err, 1)
-#define CH_ASSERT_0(stmt, c, err) CH_ASSERT(stmt, c, err, 0)
+#define CH_ASSERT_1(stmt, c, err)    CH_ASSERT(stmt, c, err, 1)
+#define CH_ASSERT_0(stmt, c, err)    CH_ASSERT(stmt, c, err, 0)
 #define CH_ASSERT_NULL(stmt, c, err) CH_ASSERT(stmt, c, err, NULL)
 
 static void
@@ -133,9 +133,7 @@ conn_handle_incoming_packages_server(server *s, connection_s2c *c) {
 	return 0;
   }
   switch (p.type) {
-	case REQ_RSP_ACTION:
-	  conn_enqueue_action(c, &p.req.ac);
-	  break;
+	case REQ_RSP_ACTION: conn_enqueue_action(c, &p.req.ac); break;
 	case REQ_RSP_RESYNC:
 	  server_acquire_state_lock(s);
 	  conn_resync_player(s, c, &p);
@@ -146,8 +144,7 @@ conn_handle_incoming_packages_server(server *s, connection_s2c *c) {
 	  server_disconnect_connection(s, c);
 	  server_release_state_lock(s);
 	  return 0;
-	default:
-	  CH_ASSERT_0(0, &c->c, CONN_ERROR_INVALID_PACKAGE_TYPE);
+	default: CH_ASSERT_0(0, &c->c, CONN_ERROR_INVALID_PACKAGE_TYPE);
   }
   return 1;
 }

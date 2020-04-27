@@ -170,7 +170,8 @@ int
 card_collection_draw_random(const card_collection *const col,
 							card_id *const cid) {
   int count;
-  if (card_collection_get_card_count(col, &count) || count == 0) return 1;
+  if (card_collection_get_card_count(col, &count) || count == 0)
+	return 1;
 
   int i = rand_int(0, count);
   if (card_collection_get_card(col, i, cid))
@@ -201,8 +202,7 @@ stich_get_card_value(const game_rules *const gr, const card *const c0,
 	  } else {
 		return 0;
 	  }
-	default:
-	  return 0;
+	default: return 0;
   }
 }
 
@@ -210,7 +210,8 @@ int
 stich_get_winner(const game_rules *const gr, const stich *const stich,
 				 int *const result) {
   card c0, c1, c2;
-  if (card_get(&stich->cs[0], &c0) || card_get(&stich->cs[1], &c1) || card_get(&stich->cs[2], &c2))
+  if (card_get(&stich->cs[0], &c0) || card_get(&stich->cs[1], &c1)
+	  || card_get(&stich->cs[2], &c2))
 	return 1;
 
   unsigned int t0 = stich_get_card_value(gr, &c0, &c0);
@@ -219,8 +220,12 @@ stich_get_winner(const game_rules *const gr, const stich *const stich,
 
   int winner = 0;
 
-  if (t1 > t0) { winner = 1; }
-  if (t2 > t0 || t2 > t1) { winner = 2; }
+  if (t1 > t0) {
+	winner = 1;
+  }
+  if (t2 > t0 || t2 > t1) {
+	winner = 2;
+  }
 
   *result = (stich->vorhand + winner) % 3;
   return 0;
@@ -228,7 +233,8 @@ stich_get_winner(const game_rules *const gr, const stich *const stich,
 
 static unsigned int
 stich_is_trumpf(const game_rules *const gr, const card_id *const cid) {
-  if (gr->type == GAME_TYPE_NULL) return 0;
+  if (gr->type == GAME_TYPE_NULL)
+	return 0;
 
   card c;
   card_get(cid, &c);
@@ -255,7 +261,8 @@ stich_bekennt_any(const game_rules *const gr, const card_id *const first_id,
 				  const card_collection *const hand) {
   int result;
   for (card_id cid = 0; cid < 32; cid++)
-	if (!card_collection_contains(hand, &cid, &result) && result && stich_bekennt(gr, first_id, &cid))
+	if (!card_collection_contains(hand, &cid, &result) && result
+		&& stich_bekennt(gr, first_id, &cid))
 	  return 1;
   return 0;
 }

@@ -25,7 +25,8 @@ server_send_event(server *s, event *e, player *pl) {
 }
 
 void
-server_distribute_event(server *s, event *ev, void (*mask_event)(event *, player *)) {
+server_distribute_event(server *s, event *ev,
+						void (*mask_event)(event *, player *)) {
   event e;
   for (int i = 0; i < s->ncons; i++) {
 	if (mask_event) {
@@ -188,12 +189,11 @@ start_conn_listener(server *s, int p) {
   args = malloc(sizeof(listener_args));
   args->s = s;
   args->socket_fd = socket(AF_INET, SOCK_STREAM, 0);
-  setsockopt(args->socket_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT,
-			 &opt, sizeof(opt));
+  setsockopt(args->socket_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt,
+			 sizeof(opt));
   args->addr.sin_family = AF_INET;
   args->addr.sin_addr.s_addr = INADDR_ANY;
   args->addr.sin_port = htons(p);
-  bind(args->socket_fd, (struct sockaddr *) &args->addr,
-	   sizeof(args->addr));
+  bind(args->socket_fd, (struct sockaddr *) &args->addr, sizeof(args->addr));
   pthread_create(&s->conn_listener, NULL, listener, args);
 }
