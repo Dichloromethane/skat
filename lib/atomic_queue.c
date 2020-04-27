@@ -1,4 +1,3 @@
-
 #include "atomic_queue.h"
 #include <malloc.h>
 #include <stdlib.h>
