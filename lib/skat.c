@@ -119,15 +119,17 @@ apply_action_between_rounds(skat_state *ss, action *a, player *pl, server *s) {
 	  ss->sgs.active_players[0] = e.current_active_players[0];
 
 	  e.current_active_players[1] =
-	  s->ps[(ss->last_active_player_index + 1) % ss->sgs.num_players].id;
+			  s->ps[(ss->last_active_player_index + 1) % ss->sgs.num_players]
+					  .id;
 	  ss->sgs.active_players[1] = e.current_active_players[1];
 
 	  e.current_active_players[2] =
-	  s->ps[(ss->last_active_player_index + 2) % ss->sgs.num_players].id;
+			  s->ps[(ss->last_active_player_index + 2) % ss->sgs.num_players]
+					  .id;
 	  ss->sgs.active_players[2] = e.current_active_players[2];
 
 	  ss->last_active_player_index =
-	  (ss->last_active_player_index + 1) % ss->sgs.num_players;
+			  (ss->last_active_player_index + 1) % ss->sgs.num_players;
 
 	  card_collection_empty(&ss->stiche_buf[0]);
 	  card_collection_empty(&ss->stiche_buf[1]);
@@ -209,7 +211,7 @@ apply_action_stich(skat_state *ss, action *a, player *pl, server *s, int card) {
 
 	  ss->sgs.last_stich = ss->sgs.curr_stich;
 	  ss->sgs.curr_stich =
-	  (stich){.vorhand = ss->sgs.last_stich.winner, .winner = -1};
+			  (stich){.vorhand = ss->sgs.last_stich.winner, .winner = -1};
 
 	  server_distribute_event(s, &e, NULL);
 
