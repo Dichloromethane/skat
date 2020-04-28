@@ -2,7 +2,7 @@ CC=gcc
 
 WARNINGS=-Wall -Wextra -Wfatal-errors -Wno-unused-parameter -Wno-unused-function -Wno-unused-but-set-variable -Wno-unknown-pragmas
 
-CPPFLAGS=-MMD -pthread -I $(INCLUDEDIR)
+CPPFLAGS=-MMD -pthread -I $(INCLUDEDIR) -I /usr/include/freetype2 # -I /usr/include/libpng16
 #CFLAGS=-Wall -O3 -mcpu=native -pthread -flto
 CFLAGS=-O0 -ggdb3 
 
@@ -10,7 +10,7 @@ LDFLAGS=
 
 LDLIBS=-pthread -lrt -lc
 LDLIBS_SERVER=$(LDLIBS)
-LDLIBS_CLIENT=$(LDLIBS)
+LDLIBS_CLIENT=$(LDLIBS) -lglfw -ldl -lfreetype # -lGL -lX11 -lXrandr -lXi -lm  -lpng16 -lz
 
 TOOLSDIR=tools/
 
