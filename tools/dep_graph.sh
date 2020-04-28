@@ -3,6 +3,7 @@
 print_graph=""
 include_libs=""
 output_file="dep_graph.png"
+source_dir=()
 
 while getopts "pls:o:" name; do
   case "$name" in
@@ -23,6 +24,11 @@ while getopts "pls:o:" name; do
     ;;
   esac
 done
+
+# all hail bash array syntax. It is nothing less than art
+if test "${#source_dir[@]}" -eq 0; then
+  source_dir=( . )
+fi
 
 {
   echo "digraph dep_graph {"
