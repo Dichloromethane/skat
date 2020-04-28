@@ -210,6 +210,12 @@ apply_action_stich(skat_state *ss, action *a, player *pl, server *s, int card) {
 	  if (ss->sgs.stich_num++ < 9)
 		return GAME_PHASE_PLAY_STICH_C1;
 
+	  skat_calculate_game_result(ss, e.score_round);
+
+	  for (int i = 0; i < 3; i++) {
+		e.total_score[i] = ss->
+	  }
+
 	  return GAME_PHASE_BETWEEN_ROUNDS;
 	default:
 	  return GAME_PHASE_INVALID;

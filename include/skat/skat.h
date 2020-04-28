@@ -39,7 +39,6 @@ typedef struct {
   player_id active_players[3];
   int num_players;
   int last_active_player_index;
-  int score[3];
   union {
 	struct {
 	  stich curr_stich;

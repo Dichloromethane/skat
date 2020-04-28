@@ -27,9 +27,6 @@ typedef struct {
 	card_collection hand;
 	card_id card;
 	player_id stich_winner;
-	struct {
-	  int score_round[3];
-	  int total_score[3];
-	};
+	int score_round[3];
   };
 } event;
