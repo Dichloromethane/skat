@@ -30,6 +30,6 @@ typedef struct {
 	struct {
 	  int score_round[3];
 	  int total_score[3];
-	}; 
+	};
   };
 } event;

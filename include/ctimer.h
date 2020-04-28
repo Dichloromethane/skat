@@ -1,11 +1,11 @@
 
 #pragma once
 
-#include<semaphore.h>
+#include <semaphore.h>
 
 typedef struct {
-  void (*timerf) (void *);
-  void *arg; 
+  void (*timerf)(void *);
+  void *arg;
   timer_t timer_id;
   sem_t activations;
   int nsecs;

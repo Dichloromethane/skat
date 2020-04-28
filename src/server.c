@@ -207,11 +207,11 @@ _Noreturn void
 server_run(server *s) {
   ctimer t;
 
-  ctimer_create(&t, s, server_tick_wrap, (1000*1000*1000)/60); // 60Hz
+  ctimer_create(&t, s, server_tick_wrap, (1000 * 1000 * 1000) / 60);// 60Hz
 
   server_acquire_state_lock(s);
   start_conn_listener(s, s->port);
   server_release_state_lock(s);
-  
+
   ctimer_run(&t);
 }
