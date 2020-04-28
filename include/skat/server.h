@@ -1,6 +1,6 @@
 #pragma once
 
-#include "skat.h"
+#include "skat/skat.h"
 #include "skat/connection.h"
 #include "skat/player.h"
 #include <pthread.h>
