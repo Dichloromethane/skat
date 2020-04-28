@@ -18,7 +18,7 @@ const GLuint WIDTH = 640, HEIGHT = 480;
 
 // The MAIN function, from here we start the application and run the game loop
 int
-main(void) {
+main(int argc, char **argv) {
   printf("Starting GLFW context\n");
 
   // Init GLFW
