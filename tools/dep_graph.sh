@@ -14,10 +14,10 @@ while getopts "pls:o:" name; do
     ;;
   s)
     source_dir+=("$OPTARG")
-  	;;
+    ;;
   o)
-  	output_file="$OPTARG"
-  	;;
+    output_file="$OPTARG"
+    ;;
   *)
     exit 1
     ;;
@@ -32,8 +32,7 @@ done
     if test "x$include_libs" != "x"; then
       grep -rH --include="*.c" --include="*.h" "^#include <" "${source_dir[@]}"
     fi
-  } \
-  | sed -n "s/\(.*\/\)\?\(.*\):#include [\"<]\(.*\)[\">]/\t\"\2\" -> \"\3\";/p"
+  } | sed -n "s/\(.*\/\)\?\(.*\):#include [\"<]\(.*\)[\">]/\t\"\2\" -> \"\3\";/p"
 
   echo "}"
 } | if test "x$print_graph" = "x"; then
