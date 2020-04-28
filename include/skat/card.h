@@ -7,7 +7,7 @@ typedef enum {
   COLOR_KARO,
   COLOR_HERZ,
   COLOR_PIK,
-  COLOR_KREUZ,
+  COLOR_KREUZ
 } card_color;
 
 typedef enum {
