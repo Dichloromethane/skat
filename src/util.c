@@ -6,8 +6,8 @@
 
 int random_fd;
 
-__attribute__((constructor(101))) void 
-open_random_fd (void) {
+__attribute__((constructor(101))) void
+open_random_fd(void) {
   random_fd = open("/dev/urandom", O_RDONLY);
   if (random_fd == -1) {
 	perror("Error while accessing '/dev/urandom': ");

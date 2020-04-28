@@ -13,6 +13,8 @@ INCLUDEDIR=include/
 SOURCE=skat.c server.c connection.c atomic_queue.c card.c card_collection.c stich.c player.c util.c
 EXTRA_SOURCE=main.c
 
+SOURCE_WITH_DIR=$(addprefix $(SOURCEDIR), $(SOURCE) $(EXTRA_SOURCE))
+
 OBJS=$(addprefix $(BUILDDIR), $(SOURCE:.c=.o))
 EXTRA_OBJS=$(addprefix $(BUILDDIR), $(EXTRA_SOURCE:.c=.o))
 
@@ -50,7 +52,7 @@ distclean: clean png_gone
 
 force_rebuild: | distclean all
 
-format: $(SOURCE) $(HEADERS) $(EXTRA_HEADERS) $(EXTRA_SOURCE)
+format: $(SOURCE_WITH_DIR) $(ALL_HEADERS)
 	clang-format -i $^
 
 png_gone:
