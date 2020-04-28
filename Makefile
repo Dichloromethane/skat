@@ -3,8 +3,8 @@ CC=gcc
 WARNINGS=-Wall -Wextra -Wfatal-errors -Wno-unused-parameter -Wno-unused-function -Wno-unused-but-set-variable -Wno-unknown-pragmas
 
 CPPFLAGS=-MMD -pthread -I $(INCLUDEDIR)
-#CFLAGS=-Wall -O3 -mcpu=native -pthread -flto $(WARNINGS)
-CFLAGS=-O0 -ggdb3 $(WARNINGS)
+#CFLAGS=-Wall -O3 -mcpu=native -pthread -flto
+CFLAGS=-O0 -ggdb3 
 
 LDFLAGS=
 
@@ -53,13 +53,16 @@ skat_client: $(SKAT_OBJ) $(CLIENT_OBJ)
 	$(CC) $(CFLAGS) $(LDFLAGS) $^ $(LDLIBS_CLIENT) -o $@
 
 $(OBJ): $(BUILDDIR)%.o: $(SOURCEDIR)%.c | $(BUILDDIRS)
-	$(CC) $(CPPFLAGS) $(CFLAGS) -o $@ -c $<
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(WARNINGS) -o $@ -c $<
 
 $(BUILDDIRS):
 	mkdir -p $@
 
+distclean: clean
+	$(RM) skat_server skat_client 
+
 clean:
-	$(RM) $(DEP) $(OBJ) skat_server skat_client dep_graph.png
+	$(RM) $(DEP) $(OBJ) dep_graph.png
 	-rmdir $(BUILDDIRS)
 
 format: $(SOURCE) $(ALL_HEADERS)
