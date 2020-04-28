@@ -1,6 +1,6 @@
 #pragma once
 
-#include "card.h"
+#include "skat/card.h"
 #include <stdint.h>
 
 typedef uint32_t card_collection;

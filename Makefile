@@ -2,64 +2,70 @@ CC=gcc
 
 WARNINGS=-Wall -Wextra -Wfatal-errors -Wno-unused-parameter -Wno-unused-function -Wno-unused-but-set-variable -Wno-unknown-pragmas
 
+CPPFLAGS=-MMD -pthread -I $(INCLUDEDIR)
 #CFLAGS=-Wall -O3 -mcpu=native -pthread -flto $(WARNINGS)
-CFLAGS=-pthread -O0 -ggdb3
+CFLAGS=-O0 -ggdb3 $(WARNINGS)
 
-LIBS=-lrt -lc
+LDFLAGS=
 
-BUILDDIR=build/
+LDLIBS=-pthread -lrt -lc
+LDLIBS_SERVER=$(LDLIBS)
+LDLIBS_CLIENT=$(LDLIBS)
+
 TOOLSDIR=tools/
-SOURCEDIR=src/
+
 INCLUDEDIR=include/
 
-SOURCE=skat.c server.c connection.c atomic_queue.c card.c card_collection.c stich.c player.c util.c ctimer.c
-EXTRA_SOURCE=skat_server_main.c
+SOURCEDIR=src/
+SKAT_SOURCEDIR=$(SOURCEDIR)skat/
+SERVER_SOURCEDIR=$(SOURCEDIR)server/
+CLIENT_SOURCEDIR=$(SOURCEDIR)client/
 
-SOURCE_WITH_DIR=$(addprefix $(SOURCEDIR), $(SOURCE) $(EXTRA_SOURCE))
+BUILDDIR=build/
+SKAT_BUILDDIR=$(BUILDDIR)skat/
+SERVER_BUILDDIR=$(BUILDDIR)server/
+CLIENT_BUILDDIR=$(BUILDDIR)client/
+BUILDDIRS=$(SKAT_BUILDDIR) $(SERVER_BUILDDIR) $(CLIENT_BUILDDIR) $(BUILDDIR)
 
-OBJS=$(addprefix $(BUILDDIR), $(SOURCE:.c=.o))
-EXTRA_OBJS=$(addprefix $(BUILDDIR), $(EXTRA_SOURCE:.c=.o))
+SKAT_SOURCE=$(wildcard $(SKAT_SOURCEDIR)*.c)
+SERVER_SOURCE=$(wildcard $(SERVER_SOURCEDIR)*.c)
+CLIENT_SOURCE=$(wildcard $(CLIENT_SOURCEDIR)*.c)
+SOURCE=$(SKAT_SOURCE) $(SERVER_SOURCE) $(CLIENT_SOURCE)
+HEADER=$(wildcard $(SKAT_SOURCEDIR)*.h) $(wildcard $(SERVER_SOURCEDIR)*.h) $(wildcard $(CLIENT_SOURCEDIR)*.h)
 
-HEADERS=$(SOURCE:.c=.h)
-EXTRA_HEADERS=event.h action.h game_rules.h
-ALL_HEADERS=$(addprefix $(INCLUDEDIR), $(HEADERS) $(EXTRA_HEADERS))
+SKAT_OBJ=$(patsubst $(SOURCEDIR)%,$(BUILDDIR)%,$(SKAT_SOURCE:.c=.o))
+SERVER_OBJ=$(patsubst $(SOURCEDIR)%,$(BUILDDIR)%,$(SERVER_SOURCE:.c=.o))
+CLIENT_OBJ=$(patsubst $(SOURCEDIR)%,$(BUILDDIR)%,$(CLIENT_SOURCE:.c=.o))
+OBJ=$(SKAT_OBJ) $(SERVER_OBJ) $(CLIENT_OBJ)
 
+DEP=$(OBJ:.o=.d)
 
-
-.PHONY: default clean png_gone distclean png all skat
+.PHONY: default all png clean
 
 default: all
 
-all: skat_server
+all: skat_server skat_client
 
-skat_server: | $(BUILDDIR) skat_server.elf2
+skat_server: $(SKAT_OBJ) $(SERVER_OBJ)
+	$(CC) $(LDFLAGS) $^ $(LDLIBS_SERVER) -o $@
 
-skat_server.elf2: $(OBJS) $(BUILDDIR)skat_server_main.o
-	$(CC) $(CFLAGS) -o $@ $^ $(LIBS)
+skat_client: $(SKAT_OBJ) $(CLIENT_OBJ)
+	$(CC) $(LDFLAGS) $^ $(LDLIBS_CLIENT) -o $@
 
-$(EXTRA_OBJS):$(BUILDDIR)%.o:$(SOURCEDIR)%.c $(ALL_HEADERS)
-	$(CC) $(CFLAGS) -I$(INCLUDEDIR) $(WARNINGS) -c -o $@ $<
+$(OBJ): $(BUILDDIR)%.o: $(SOURCEDIR)%.c | $(BUILDDIRS)
+	$(CC) $(CPPFLAGS) $(CFLAGS) -o $@ -c $<
 
-$(OBJS):$(BUILDDIR)%.o:$(SOURCEDIR)%.c $(ALL_HEADERS)
-	$(CC) $(CFLAGS) -I$(INCLUDEDIR) $(WARNINGS) -c -o $@ $<
-
-$(BUILDDIR):
+$(BUILDDIRS):
 	mkdir -p $@
 
 clean:
-	$(RM) $(OBJS) $(EXTRA_OBJS)
+	$(RM) $(DEP) $(OBJ) skat_server skat_client dep_graph.png
+	-rmdir $(BUILDDIRS)
 
-distclean: clean png_gone
-	rmdir $(BUILDDIR)
-	$(RM) skat_server.elf2
-
-force_rebuild: | distclean all
-
-format: $(SOURCE_WITH_DIR) $(ALL_HEADERS)
+format: $(SOURCE) $(ALL_HEADERS)
 	clang-format -i $^
 
-png_gone:
-	$(RM) dep_graph.png
-
 png:
-	./$(TOOLSDIR)dep_graph.sh -s $(SOURCEDIR) -s $(INCLUDEDIR)
+	./$(TOOLSDIR)dep_graph.sh -o dep_graph.png -s $(SOURCEDIR) -s $(INCLUDEDIR)
+
+-include $(DEP)

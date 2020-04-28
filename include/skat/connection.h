@@ -1,9 +1,9 @@
 #pragma once
 
-#include "action.h"
-#include "atomic_queue.h"
-#include "event.h"
-#include "skat.h"
+#include "skat/action.h"
+#include "skat/atomic_queue.h"
+#include "skat/event.h"
+#include "skat/skat.h"
 #include <pthread.h>
 #include <stdint.h>
 

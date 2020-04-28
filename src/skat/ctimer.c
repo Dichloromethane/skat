@@ -1,8 +1,5 @@
-
-#include "ctimer.h"
-#include <pthread.h>
+#include "skat/ctimer.h"
 #include <signal.h>
-#include <sys/time.h>
 #include <time.h>
 
 static void

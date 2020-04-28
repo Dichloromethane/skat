@@ -1,4 +1,4 @@
-#include "stich.h"
+#include "skat/stich.h"
 
 static unsigned int
 stich_get_card_value(const game_rules *const gr, const card *const c0,

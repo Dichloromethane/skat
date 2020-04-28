@@ -1,5 +1,5 @@
-#include "server.h"
-#include "ctimer.h"
+#include "skat/server.h"
+#include "skat/ctimer.h"
 #include <netinet/in.h>
 #include <stdlib.h>
 #include <string.h>

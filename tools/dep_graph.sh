@@ -3,7 +3,7 @@
 print_graph=""
 include_libs=""
 output_file="dep_graph.png"
-source_dir=()
+source_dirs=()
 
 while getopts "pls:o:" name; do
   case "$name" in
@@ -14,7 +14,7 @@ while getopts "pls:o:" name; do
     include_libs=1
     ;;
   s)
-    source_dir+=("$OPTARG")
+    source_dirs+=("$OPTARG")
     ;;
   o)
     output_file="$OPTARG"
@@ -26,19 +26,22 @@ while getopts "pls:o:" name; do
 done
 
 # all hail bash array syntax. It is nothing less than art
-if test "${#source_dir[@]}" -eq 0; then
-  source_dir=( . )
+if test "${#source_dirs[@]}" -eq 0; then
+  source_dirs+=(.)
 fi
 
 {
   echo "digraph dep_graph {"
 
-  {
-    grep -rH --include="*.c" --include="*.h" "^#include \"" "${source_dir[@]}"
-    if test "x$include_libs" != "x"; then
-      grep -rH --include="*.c" --include="*.h" "^#include <" "${source_dir[@]}"
-    fi
-  } | sed -n "s/\(.*\/\)\?\(.*\):#include [\"<]\(.*\)[\">]/\t\"\2\" -> \"\3\";/p"
+  for source_dir in "${source_dirs[@]}"; do
+    {
+      cd "$source_dir" || exit 1
+      grep -rH --include="*.c" --include="*.h" "^#include \""
+      if test "x$include_libs" != "x"; then
+        grep -rH --include="*.c" --include="*.h" "^#include <"
+      fi
+    } | sed -n "s/\(.*\):#include [\"<]\(.*\)[\">]/\t\"\1\" -> \"\2\";/p"
+  done
 
   echo "}"
 } | if test "x$print_graph" = "x"; then

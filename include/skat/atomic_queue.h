@@ -1,7 +1,7 @@
 #pragma once
 
-#include "action.h"
-#include "event.h"
+#include "skat/action.h"
+#include "skat/event.h"
 #include <pthread.h>
 
 typedef struct aeque_node {

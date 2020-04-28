@@ -1,12 +1,12 @@
 #pragma once
 
-#include "action.h"
-#include "card.h"
-#include "card_collection.h"
-#include "event.h"
-#include "game_rules.h"
-#include "player.h"
-#include "stich.h"
+#include "skat/action.h"
+#include "skat/card.h"
+#include "skat/card_collection.h"
+#include "skat/event.h"
+#include "skat/game_rules.h"
+#include "skat/player.h"
+#include "skat/stich.h"
 
 typedef struct server server;
 

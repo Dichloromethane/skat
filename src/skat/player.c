@@ -1,4 +1,4 @@
-#include "player.h"
+#include "skat/player.h"
 #include <string.h>
 
 int

@@ -1,4 +1,4 @@
-#include "atomic_queue.h"
+#include "skat/atomic_queue.h"
 #include <stdlib.h>
 
 static void

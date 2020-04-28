@@ -1,5 +1,5 @@
-#include "skat.h"
-#include "server.h"
+#include "skat/skat.h"
+#include "skat/server.h"
 
 int
 game_setup_server(skat_state *ss) {

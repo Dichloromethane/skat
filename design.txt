@@ -26,4 +26,4 @@ C123 -> S: ready action
 S -> C123: STATUS_OK (server responds to each action with STATUS_OK)
 
 S -> C123: deal cards
-S -> C123: game transition to reizen, vh=h�ren, mh=sagen, hh=weitersagen
+S -> C123: game transition to reizen, vh=hören, mh=sagen, hh=weitersagen

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "card.h"
+#include "skat/card.h"
 
 typedef enum {
   GAME_TYPE_INVALID = 0,

@@ -1,8 +1,8 @@
 #pragma once
 
-#include "card.h"
-#include "card_collection.h"
-#include "game_rules.h"
+#include "skat/card.h"
+#include "skat/card_collection.h"
+#include "skat/game_rules.h"
 
 typedef struct stich {
   card_id cs[3];

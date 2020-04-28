@@ -1,5 +1,5 @@
-#include "card_collection.h"
-#include "util.h"
+#include "skat/card_collection.h"
+#include "skat/util.h"
 
 int
 card_collection_contains(const card_collection *const col,

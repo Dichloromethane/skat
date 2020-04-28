@@ -1,6 +1,6 @@
 #pragma once
 
-#include "card.h"
+#include "skat/card.h"
 #include <stdint.h>
 
 typedef int64_t action_id;
