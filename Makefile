@@ -47,10 +47,10 @@ default: all
 all: skat_server skat_client
 
 skat_server: $(SKAT_OBJ) $(SERVER_OBJ)
-	$(CC) $(LDFLAGS) $^ $(LDLIBS_SERVER) -o $@
+	$(CC) $(CFLAGS) $(LDFLAGS) $^ $(LDLIBS_SERVER) -o $@
 
 skat_client: $(SKAT_OBJ) $(CLIENT_OBJ)
-	$(CC) $(LDFLAGS) $^ $(LDLIBS_CLIENT) -o $@
+	$(CC) $(CFLAGS) $(LDFLAGS) $^ $(LDLIBS_CLIENT) -o $@
 
 $(OBJ): $(BUILDDIR)%.o: $(SOURCEDIR)%.c | $(BUILDDIRS)
 	$(CC) $(CPPFLAGS) $(CFLAGS) -o $@ -c $<
