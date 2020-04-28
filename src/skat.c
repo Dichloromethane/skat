@@ -169,7 +169,7 @@ apply_action_stich(skat_state *ss, action *a, player *pl, server *s, int card) {
   event e;
   e.answer_to = a->id;
   e.player = pl->id;
-  int cpi, winner, result;
+  int cpi, result;
   switch (a->type) {
 	case ACTION_PLAY_CARD:
 	  cpi = (ss->sgs.curr_stich.vorhand + card) % 3;
@@ -209,7 +209,6 @@ apply_action_stich(skat_state *ss, action *a, player *pl, server *s, int card) {
 
 	  if (ss->sgs.stich_num++ < 9)
 		return GAME_PHASE_PLAY_STICH_C1;
-
 
 	  return GAME_PHASE_BETWEEN_ROUNDS;
 	default:
@@ -253,4 +252,9 @@ skat_state_tick(skat_state *ss, server *s) {}
 void
 skat_resync_player(skat_client_state *cs, player *pl) {
   // TODO: this
+}
+
+void
+skat_state_init(skat_state *ss) {
+  // TODO
 }

@@ -1,4 +1,5 @@
 #include "server.h"
+#include "ctimer.h"
 #include <netinet/in.h>
 #include <stdlib.h>
 #include <string.h>
@@ -92,7 +93,7 @@ server_resync_player(server *s, player *pl, skat_client_state *cs) {
 }
 
 void
-server_tick(server *s, long time) {
+server_tick(server *s) {
   action a;
   event err_ev;
   server_acquire_state_lock(s);
@@ -184,4 +185,33 @@ start_conn_listener(server *s, int p) {
   args->addr.sin_port = htons(p);
   bind(args->socket_fd, (struct sockaddr *) &args->addr, sizeof(args->addr));
   pthread_create(&s->conn_listener, NULL, listener, args);
+}
+
+void
+server_init(server *s, int port) {
+  pthread_mutex_init(&s->lock, NULL);
+  s->port = port;
+  s->conns = NULL;
+  s->ps = NULL;
+  skat_state_init(&s->skat_state);
+  s->ncons = 0;
+  s->port = port;
+}
+
+static void
+server_tick_wrap(void *s) {
+  server_tick(s);
+}
+
+_Noreturn void
+server_run(server *s) {
+  ctimer t;
+
+  ctimer_create(&t, s, server_tick_wrap, (1000*1000*1000)/60); // 60Hz
+
+  server_acquire_state_lock(s);
+  start_conn_listener(s, s->port);
+  server_release_state_lock(s);
+  
+  ctimer_run(&t);
 }

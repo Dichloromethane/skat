@@ -12,6 +12,7 @@ typedef struct server {
   skat_state skat_state;
   int ncons;
   pthread_t conn_listener;
+  int port;
 } server;
 
 int server_has_player_id(server *, player_id *);
@@ -27,7 +28,10 @@ void server_release_state_lock(server *);
 
 void server_disconnect_connection(server *, connection_s2c *);
 
-void server_tick(server *s, long time);
+void server_tick(server *s);
 
 void server_send_event(server *, event *, player *);
 void server_distribute_event(server *, event *, void (*)(event *, player *));
+
+void server_init(server *, int);
+_Noreturn void server_run(server *);

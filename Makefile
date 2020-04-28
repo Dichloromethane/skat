@@ -3,15 +3,17 @@ CC=gcc
 WARNINGS=-Wall -Wextra -Wfatal-errors -Wno-unused-parameter -Wno-unused-function -Wno-unused-but-set-variable -Wno-unknown-pragmas
 
 #CFLAGS=-Wall -O3 -mcpu=native -pthread -flto $(WARNINGS)
-CFLAGS=-pthread -O0 -ggdb3 $(WARNINGS)
+CFLAGS=-pthread -O0 -ggdb3
+
+LIBS=-lrt -lc
 
 BUILDDIR=build/
 TOOLSDIR=tools/
 SOURCEDIR=src/
 INCLUDEDIR=include/
 
-SOURCE=skat.c server.c connection.c atomic_queue.c card.c card_collection.c stich.c player.c util.c
-EXTRA_SOURCE=main.c
+SOURCE=skat.c server.c connection.c atomic_queue.c card.c card_collection.c stich.c player.c util.c ctimer.c
+EXTRA_SOURCE=skat_server_main.c
 
 SOURCE_WITH_DIR=$(addprefix $(SOURCEDIR), $(SOURCE) $(EXTRA_SOURCE))
 
@@ -23,22 +25,23 @@ EXTRA_HEADERS=event.h action.h game_rules.h
 ALL_HEADERS=$(addprefix $(INCLUDEDIR), $(HEADERS) $(EXTRA_HEADERS))
 
 
+
 .PHONY: default clean png_gone distclean png all skat
 
 default: all
 
-all: skat
+all: skat_server
 
-skat: | $(BUILDDIR) skat.elf2
+skat_server: | $(BUILDDIR) skat_server.elf2
 
-skat.elf2: $(OBJS) $(BUILDDIR)main.o
-	$(CC) $(CFLAGS) -o $@ $^
+skat_server.elf2: $(OBJS) $(BUILDDIR)skat_server_main.o
+	$(CC) $(CFLAGS) -o $@ $^ $(LIBS)
 
 $(EXTRA_OBJS):$(BUILDDIR)%.o:$(SOURCEDIR)%.c $(ALL_HEADERS)
-	$(CC) $(CFLAGS) -I$(INCLUDEDIR) -c -o $@ $<
+	$(CC) $(CFLAGS) -I$(INCLUDEDIR) $(WARNINGS) -c -o $@ $<
 
 $(OBJS):$(BUILDDIR)%.o:$(SOURCEDIR)%.c $(ALL_HEADERS)
-	$(CC) $(CFLAGS) -I$(INCLUDEDIR) -c -o $@ $<
+	$(CC) $(CFLAGS) -I$(INCLUDEDIR) $(WARNINGS) -c -o $@ $<
 
 $(BUILDDIR):
 	mkdir -p $@
@@ -48,7 +51,7 @@ clean:
 
 distclean: clean png_gone
 	rmdir $(BUILDDIR)
-	$(RM) skat.elf2
+	$(RM) skat_server.elf2
 
 force_rebuild: | distclean all
 
