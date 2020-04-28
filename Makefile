@@ -47,7 +47,7 @@ clean:
 	$(RM) $(OBJS) $(EXTRA_OBJS)
 
 distclean: clean png_gone
-	$(RM) -r $(BUILDDIR)
+	rmdir $(BUILDDIR)
 	$(RM) skat.elf2
 
 force_rebuild: | distclean all
