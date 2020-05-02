@@ -10,7 +10,7 @@ LDFLAGS=
 
 LDLIBS=-pthread -lrt -lc
 LDLIBS_SERVER=$(LDLIBS)
-LDLIBS_CLIENT=$(LDLIBS) -lglfw -ldl -lfreetype # -lGL -lX11 -lXrandr -lXi -lm  -lpng16 -lz
+LDLIBS_CLIENT=$(LDLIBS) -lglfw -lGL -ldl -lfreetype # -lX11 -lXrandr -lXi -lm  -lpng16 -lz
 
 TOOLSDIR=tools/
 
