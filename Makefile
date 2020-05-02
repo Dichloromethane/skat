@@ -1,6 +1,7 @@
 CC=gcc
 
-WARNINGS=-Wall -Wextra -Wfatal-errors -Wno-unused-parameter -Wno-unused-function -Wno-unused-but-set-variable -Wno-unknown-pragmas
+WARNINGS=-Wall -Wextra -Wfatal-errors -Wno-unused-parameter -Wno-unused-function -Wno-unused-but-set-variable \
+         -Wno-unknown-pragmas -Wno-char-subscripts
 
 CPPFLAGS=-MMD -pthread -I $(INCLUDEDIR) -I /usr/include/freetype2 # -I /usr/include/libpng16
 #CFLAGS=-Wall -O3 -mcpu=native -pthread -flto
@@ -10,7 +11,7 @@ LDFLAGS=
 
 LDLIBS=-pthread -lrt -lc
 LDLIBS_SERVER=$(LDLIBS)
-LDLIBS_CLIENT=$(LDLIBS) -lglfw -lGL -ldl -lfreetype # -lX11 -lXrandr -lXi -lm  -lpng16 -lz
+LDLIBS_CLIENT=$(LDLIBS) -lglfw -lGL -ldl -lfreetype -lGLU -lm # -lX11 -lXrandr -lXi -lpng16 -lz
 
 TOOLSDIR=tools/
 
@@ -40,7 +41,7 @@ OBJ=$(SKAT_OBJ) $(SERVER_OBJ) $(CLIENT_OBJ)
 
 DEP=$(OBJ:.o=.d)
 
-.PHONY: default all png clean
+.PHONY: default all png clean force_rebuild
 
 default: all
 
@@ -57,6 +58,8 @@ $(OBJ): $(BUILDDIR)%.o: $(SOURCEDIR)%.c | $(BUILDDIRS)
 
 $(BUILDDIRS):
 	mkdir -p $@
+
+force_rebuild: | distclean all
 
 distclean: clean
 	$(RM) skat_server skat_client 

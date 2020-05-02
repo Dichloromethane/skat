@@ -1,42 +1,75 @@
-#include <stdio.h>
-
-#include <glad/glad.h>
+#include "glad/glad.h"
 
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 
-#include "client/text_render.h"
+#include "linmath.h"
 
-// Function prototypes
-void error_callback(int error, const char *description);
-void key_callback(GLFWwindow *window, int key, int scancode, int action,
-				  int mode);
+#include <stdio.h>
+#include <stdlib.h>
 
-// Window dimensions
-const GLuint WIDTH = 640, HEIGHT = 480;
+static const struct {
+  float x, y;
+  float r, g, b;
+} vertices[3] = {{-0.6f, -0.4f, 1.f, 0.f, 0.f},
+				 {0.6f, -0.4f, 0.f, 1.f, 0.f},
+				 {0.f, 0.6f, 0.f, 0.f, 1.f}};
 
-// The MAIN function, from here we start the application and run the game loop
+static const char *vertex_shader_text =
+		"#version 110\n"
+		"uniform mat4 MVP;\n"
+		"attribute vec3 vCol;\n"
+		"attribute vec2 vPos;\n"
+		"varying vec3 color;\n"
+		"void main()\n"
+		"{\n"
+		"    gl_Position = MVP * vec4(vPos, 0.0, 1.0);\n"
+		"    color = vCol;\n"
+		"}\n";
+
+static const char *fragment_shader_text =
+		"#version 110\n"
+		"varying vec3 color;\n"
+		"void main()\n"
+		"{\n"
+		"    gl_FragColor = vec4(color, 1.0);\n"
+		"}\n";
+
+static void
+error_callback(int error, const char *description) {
+  fprintf(stderr, "Error: %s (%d)\n", description, error);
+}
+
+static void
+key_callback(GLFWwindow *window, int key, int scancode, int action, int mods) {
+  printf("key_callback: key=%d scancode=%d action=%d mods=%d\n", key, scancode,
+		 action, mods);
+  if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
+	glfwSetWindowShouldClose(window, GLFW_TRUE);
+}
+
 int
-main(int argc, char **argv) {
-  printf("Starting GLFW context\n");
+main(void) {
+  GLFWwindow *window;
+  GLuint vertex_buffer, vertex_shader, fragment_shader, program;
+  GLint mvp_location, vpos_location, vcol_location;
 
-  // Init GLFW
-  glfwInit();
+  glfwSetErrorCallback(error_callback);
 
-  // Set all the required options for GLFW
+  if (!glfwInit())
+	exit(EXIT_FAILURE);
+
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-  glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-  glfwWindowHint(GLFW_RESIZABLE, GL_TRUE);
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
 
-  // Create a GLFWwindow object that we can use for GLFW's functions
-  GLFWwindow *window =
-		  glfwCreateWindow(WIDTH, HEIGHT, "LearnOpenGL", NULL, NULL);
-  if (window == NULL) {
+  window = glfwCreateWindow(640, 480, "Simple example", NULL, NULL);
+  if (!window) {
 	printf("Failed to create GLFW window\n");
 	glfwTerminate();
-	return -1;
+	exit(EXIT_FAILURE);
   }
+
+  glfwSetKeyCallback(window, key_callback);
 
   glfwMakeContextCurrent(window);
 
@@ -46,63 +79,71 @@ main(int argc, char **argv) {
 	return -1;
   }
 
-  // Set the required callback functions
-  glfwSetErrorCallback(error_callback);
-  glfwSetKeyCallback(window, key_callback);
+
+
+  //gladLoadGL(/*glfwGetProcAddress*/);
 
   printf("This is OpenGL version %s with renderer %s\n",
 		 glGetString(GL_VERSION), glGetString(GL_RENDERER));
 
-  text_state ts;
-  text_render_init(&ts);
+  glfwSwapInterval(1);
 
-  // Define the viewport dimensions
-  glViewport(0, 0, WIDTH, HEIGHT);
+  // NOTE: OpenGL error checks have been omitted for brevity
 
-  // Game loop
-  unsigned short long_boi1 = 0;
-  unsigned short long_boi2 = 0;
-  unsigned short long_boi3 = 0;
+  glGenBuffers(1, &vertex_buffer);
+  glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+  vertex_shader = glCreateShader(GL_VERTEX_SHADER);
+  glShaderSource(vertex_shader, 1, &vertex_shader_text, NULL);
+  glCompileShader(vertex_shader);
+
+  fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
+  glShaderSource(fragment_shader, 1, &fragment_shader_text, NULL);
+  glCompileShader(fragment_shader);
+
+  program = glCreateProgram();
+  glAttachShader(program, vertex_shader);
+  glAttachShader(program, fragment_shader);
+  glLinkProgram(program);
+
+  mvp_location = glGetUniformLocation(program, "MVP");
+  vpos_location = glGetAttribLocation(program, "vPos");
+  vcol_location = glGetAttribLocation(program, "vCol");
+
+  glEnableVertexAttribArray(vpos_location);
+  glVertexAttribPointer(vpos_location, 2, GL_FLOAT, GL_FALSE,
+						sizeof(vertices[0]), (void *) 0);
+  glEnableVertexAttribArray(vcol_location);
+  glVertexAttribPointer(vcol_location, 3, GL_FLOAT, GL_FALSE,
+						sizeof(vertices[0]), (void *) (sizeof(float) * 2));
+
   while (!glfwWindowShouldClose(window)) {
-	long_boi1 += 31;
-	long_boi1 %= 50000;
+	float ratio;
+	int width, height;
+	mat4x4 m, p, mvp;
 
-	long_boi2 += 29;
-	long_boi2 %= 50000;
+	glfwGetFramebufferSize(window, &width, &height);
+	ratio = width / (float) height;
 
-	long_boi3 += 37;
-	long_boi3 %= 50000;
-
-	// Render
-	// Clear the colorbuffer
-	glClearColor(long_boi1 / 50000.0f, long_boi2 / 50000.0f,
-				 long_boi3 / 50000.0f, 1.0f);
+	glViewport(0, 0, width, height);
 	glClear(GL_COLOR_BUFFER_BIT);
 
-	// Swap the screen buffers (with vsync)
-	glfwSwapInterval(1);
-	glfwSwapBuffers(window);
+	mat4x4_identity(m);
+	mat4x4_rotate_Z(m, m, (float) glfwGetTime());
+	mat4x4_ortho(p, -ratio, ratio, -1.f, 1.f, 1.f, -1.f);
+	mat4x4_mul(mvp, p, m);
 
-	// Check if any events have been activated (key pressed, mouse moved etc.)
-	// and call corresponding response functions
+	glUseProgram(program);
+	glUniformMatrix4fv(mvp_location, 1, GL_FALSE, (const GLfloat *) mvp);
+	glDrawArrays(GL_TRIANGLES, 0, 3);
+
+	glfwSwapBuffers(window);
 	glfwPollEvents();
   }
 
-  // Terminates GLFW, clearing any resources allocated by GLFW.
+  glfwDestroyWindow(window);
+
   glfwTerminate();
-  return 0;
-}
-
-void
-error_callback(int error, const char *description) {
-  fprintf(stderr, "Error (%d): %s\n", error, description);
-}
-
-// Is called whenever a key is pressed/released via GLFW
-void
-key_callback(GLFWwindow *window, int key, int scancode, int action, int mode) {
-  printf("key_callback: key=%d scancode=%d action=%d mode=%d\n", key, scancode,
-		 action, mode);
-  if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
-	glfwSetWindowShouldClose(window, GL_TRUE);
+  exit(EXIT_SUCCESS);
 }
