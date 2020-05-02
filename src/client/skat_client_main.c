@@ -1,12 +1,11 @@
 #include <stdio.h>
 
-#include <ft2build.h>
-#include FT_FREETYPE_H
-
 #include <glad/glad.h>
 
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
+
+#include "client/text_render.h"
 
 // Function prototypes
 void error_callback(int error, const char *description);
@@ -54,13 +53,11 @@ main(int argc, char **argv) {
   printf("This is OpenGL version %s with renderer %s\n",
 		 glGetString(GL_VERSION), glGetString(GL_RENDERER));
 
+  text_state ts;
+  text_render_init(&ts);
+
   // Define the viewport dimensions
   glViewport(0, 0, WIDTH, HEIGHT);
-
-  FT_Library ft_library;
-  // All functions return a value different than 0 whenever an error occurred
-  if (FT_Init_FreeType(&ft_library))
-	printf("ERROR::FREETYPE: Could not init FreeType Library\n");
 
   // Game loop
   unsigned short long_boi1 = 0;
