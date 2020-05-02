@@ -60,7 +60,8 @@ main(void) {
 	exit(EXIT_FAILURE);
 
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
+  glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_COMPAT_PROFILE);
 
   window = glfwCreateWindow(640, 480, "Simple example", NULL, NULL);
   if (!window) {
@@ -78,10 +79,6 @@ main(void) {
 	glfwTerminate();
 	return -1;
   }
-
-
-
-  //gladLoadGL(/*glfwGetProcAddress*/);
 
   printf("This is OpenGL version %s with renderer %s\n",
 		 glGetString(GL_VERSION), glGetString(GL_RENDERER));
