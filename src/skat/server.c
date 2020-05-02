@@ -38,9 +38,8 @@ server_distribute_event(server *s, event *ev,
 
 connection_s2c *
 server_get_free_connection(server *s) {
-  s->conns = realloc(s->ncons ? s->conns : NULL,
-					 sizeof(connection_s2c) * (s->ncons + 1));
-  s->ps = realloc(s->ncons ? s->ps : NULL, sizeof(player) * (s->ncons + 1));
+  if (s->ncons > 4)
+	return NULL;
   return &s->conns[s->ncons++];
 }
 
@@ -191,8 +190,6 @@ void
 server_init(server *s, int port) {
   pthread_mutex_init(&s->lock, NULL);
   s->port = port;
-  s->conns = NULL;
-  s->ps = NULL;
   skat_state_init(&s->skat_state);
   s->ncons = 0;
   s->port = port;

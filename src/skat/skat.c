@@ -22,6 +22,11 @@ skat_state_notify_join(skat_state *ss, player *pl, server *s) {
   // TODO: implement
 }
 
+void
+skat_calculate_game_result(skat_state *ss, int *score) {
+  // TODO: implement
+}
+
 // returns pos+1 on find, 0 otherwise
 static int
 is_active_player(shared_game_state *sgs, player *pl) {
@@ -76,7 +81,7 @@ apply_action_setup(skat_state *ss, action *a, player *pl, server *s) {
   e.player = pl->id;
   switch (a->type) {
 	case ACTION_READY:
-	  if (ss->sgs.num_players < 3)
+	  if (s->ncons < 3)
 		return GAME_PHASE_INVALID;
 
 	  e.type = EVENT_START_GAME;
@@ -98,7 +103,7 @@ apply_action_between_rounds(skat_state *ss, action *a, player *pl, server *s) {
   e.player = pl->id;
   switch (a->type) {
 	case ACTION_READY:
-	  if (ss->sgs.num_players < 3)
+	  if (s->ncons < 3)
 		return GAME_PHASE_INVALID;
 
 	  e.type = EVENT_START_ROUND;
@@ -107,21 +112,21 @@ apply_action_between_rounds(skat_state *ss, action *a, player *pl, server *s) {
 	  e.answer_to = -1;
 	  e.type = EVENT_START_ROUND;
 
-	  e.current_active_players[0] = s->ps[ss->last_active_player_index].id;
+	  e.current_active_players[0] = s->ps[ss->sgs.last_active_player_index].id;
 	  ss->sgs.active_players[0] = e.current_active_players[0];
 
 	  e.current_active_players[1] =
-			  s->ps[(ss->last_active_player_index + 1) % ss->sgs.num_players]
+			  s->ps[(ss->sgs.last_active_player_index + 1) % s->ncons]
 					  .id;
 	  ss->sgs.active_players[1] = e.current_active_players[1];
 
 	  e.current_active_players[2] =
-			  s->ps[(ss->last_active_player_index + 2) % ss->sgs.num_players]
+			  s->ps[(ss->sgs.last_active_player_index + 2) % s->ncons]
 					  .id;
 	  ss->sgs.active_players[2] = e.current_active_players[2];
 
-	  ss->last_active_player_index =
-			  (ss->last_active_player_index + 1) % ss->sgs.num_players;
+	  ss->sgs.last_active_player_index =
+			  (ss->sgs.last_active_player_index + 1) % s->ncons;
 
 	  card_collection_empty(&ss->stiche_buf[0]);
 	  card_collection_empty(&ss->stiche_buf[1]);
@@ -212,9 +217,8 @@ apply_action_stich(skat_state *ss, action *a, player *pl, server *s, int card) {
 
 	  skat_calculate_game_result(ss, e.score_round);
 
-	  for (int i = 0; i < 3; i++) {
-		e.total_score[i] = ss->
-	  }
+	  for (int i = 0; i < 3; i++)
+		ss->sgs.total_score[(ss->sgs.last_active_player_index + i)%s->ncons] += e.score_round[i];
 
 	  return GAME_PHASE_BETWEEN_ROUNDS;
 	default:

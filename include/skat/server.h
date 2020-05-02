@@ -7,8 +7,8 @@
 
 typedef struct server {
   pthread_mutex_t lock;
-  connection_s2c *conns;
-  player *ps;
+  connection_s2c conns[4];
+  player ps[4];
   skat_state skat_state;
   int ncons;
   pthread_t conn_listener;

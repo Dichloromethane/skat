@@ -39,6 +39,7 @@ typedef struct {
   player_id active_players[3];
   int num_players;
   int last_active_player_index;
+  int total_score[4];
   union {
 	struct {
 	  stich curr_stich;
@@ -61,7 +62,6 @@ typedef struct {
   card_id skat[2];
   card_collection *stiche[3];
   card_collection stiche_buf[3];
-  int last_active_player_index;
   int spielwert;
 } skat_state;
 
