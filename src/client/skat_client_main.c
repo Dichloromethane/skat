@@ -7,13 +7,14 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 static const struct {
   float x, y;
   float r, g, b;
 } vertices[3] = {{-0.6f, -0.4f, 1.f, 0.f, 0.f},
 				 {0.6f, -0.4f, 0.f, 1.f, 0.f},
-				 {0.f, 0.6f, 0.f, 0.f, 1.f}};
+				 {0.f, 0.6f, 0.f, 1.f, 0.f}};
 
 static const char *vertex_shader_text =
 		"#version 110\n"
@@ -32,7 +33,11 @@ static const char *fragment_shader_text =
 		"varying vec3 color;\n"
 		"void main()\n"
 		"{\n"
-		"    gl_FragColor = vec4(color, 1.0);\n"
+		"    //vec2 res = vec2(640.0, 480.0);\n"
+		"    //vec2 st = gl_FragCoord.xy / res;\n"
+		"    //;\n"
+		"    //gl_FragColor = vec4(st.x, st.y, 0.0, 1.0);\n"
+		"    gl_FragColor = vec4(color.xy, (gl_FragCoord.y - 240.0) / 60.0, 1.0);\n"
 		"}\n";
 
 static void
@@ -59,9 +64,11 @@ main(void) {
   if (!glfwInit())
 	exit(EXIT_FAILURE);
 
+  // DO NOT UPDATE: indirect drawing via X Forwarding does not support higher GL
+  // versions :(
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
-  glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_COMPAT_PROFILE);
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
+  // glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
 
   window = glfwCreateWindow(640, 480, "Simple example", NULL, NULL);
   if (!window) {
@@ -77,7 +84,7 @@ main(void) {
   if (!gladLoadGLLoader((GLADloadproc) glfwGetProcAddress)) {
 	printf("Failed to initialize OpenGL context\n");
 	glfwTerminate();
-	return -1;
+	exit(EXIT_FAILURE);
   }
 
   printf("This is OpenGL version %s with renderer %s\n",
@@ -91,18 +98,64 @@ main(void) {
   glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
   glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
+  GLint status = GL_FALSE;
+
   vertex_shader = glCreateShader(GL_VERTEX_SHADER);
   glShaderSource(vertex_shader, 1, &vertex_shader_text, NULL);
   glCompileShader(vertex_shader);
 
+  glGetShaderiv(vertex_shader, GL_COMPILE_STATUS, &status);
+  if (status) {
+	printf("Vertex Shader compile success\n");
+  } else {
+	GLint len = 0;
+	glGetShaderiv(vertex_shader, GL_INFO_LOG_LENGTH, &len);
+	GLchar *text = calloc(len, sizeof(GLchar));
+
+	glGetShaderInfoLog(vertex_shader, len, &len, text);
+	printf("Vertex Shader (%d):\n%s\n", len, text);
+	free(text);
+	glDeleteShader(vertex_shader);
+	exit(EXIT_FAILURE);
+  }
+
   fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
   glShaderSource(fragment_shader, 1, &fragment_shader_text, NULL);
   glCompileShader(fragment_shader);
+  glGetShaderiv(fragment_shader, GL_COMPILE_STATUS, &status);
+  if (status) {
+	printf("Fragment Shader compile success\n");
+  } else {
+	GLint len = 0;
+	glGetShaderiv(fragment_shader, GL_INFO_LOG_LENGTH, &len);
+	GLchar *text = calloc(len, sizeof(GLchar));
+
+	glGetShaderInfoLog(fragment_shader, len, &len, text);
+	printf("Fragment Shader Error: %s\n", text);
+	free(text);
+	glDeleteShader(fragment_shader);
+	exit(EXIT_FAILURE);
+  }
 
   program = glCreateProgram();
   glAttachShader(program, vertex_shader);
   glAttachShader(program, fragment_shader);
   glLinkProgram(program);
+
+  glGetProgramiv(program, GL_LINK_STATUS, &status);
+  if (status) {
+	printf("Shader Program link success\n");
+  } else {
+	GLint len = 0;
+	glGetProgramiv(program, GL_INFO_LOG_LENGTH, &len);
+	GLchar *text = calloc(len, sizeof(GLchar));
+
+	glGetProgramInfoLog(program, len, &len, text);
+	printf("Shader Program Error: %s\n", text);
+	free(text);
+	glDeleteProgram(program);
+	exit(EXIT_FAILURE);
+  }
 
   mvp_location = glGetUniformLocation(program, "MVP");
   vpos_location = glGetAttribLocation(program, "vPos");
