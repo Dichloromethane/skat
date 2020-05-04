@@ -1,13 +1,12 @@
 #ifndef LINMATH_H
 #define LINMATH_H
 
-#include <math.h>
-
 /* 2020-03-02 Camilla Löwy <elmindreda@elmindreda.org>
  * - Added inclusion of string.h for memcpy
  * - Replaced tan and acos with tanf and acosf
  * - Replaced double constants with float equivalents
  */
+#include <math.h>
 #include <string.h>
 
 #ifdef LINMATH_NO_INLINE
