@@ -167,12 +167,22 @@ shader_link(shader *shdr) {
 
 GLint
 shader_get_uniform_location(const shader *shdr, const char *name) {
-  return glGetUniformLocation(shdr->program, name);
+  GLint loc = glGetUniformLocation(shdr->program, name);
+  if (loc == -1) {
+	printf("Uniform location could not be found\n");
+	exit(EXIT_FAILURE);
+  }
+  return loc;
 }
 
 GLint
 shader_get_attrib_location(const shader *shdr, const char *name) {
-  return glGetAttribLocation(shdr->program, name);
+  GLint loc = glGetAttribLocation(shdr->program, name);
+  if (loc == -1) {
+	printf("Attrib location could not be found\n");
+	exit(EXIT_FAILURE);
+  }
+  return loc;
 }
 
 void
