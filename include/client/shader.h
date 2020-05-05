@@ -20,6 +20,6 @@ void shader_link(shader *shdr);
 GLint shader_get_uniform_location(const shader *shdr, const char *name);
 GLint shader_get_attrib_location(const shader *shdr, const char *name);
 
-void shader_use(shader *shdr);
+void shader_use(const shader *shdr);
 
-void shader_free(const shader *shdr);
+void shader_free(shader *shdr);

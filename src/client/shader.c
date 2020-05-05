@@ -4,7 +4,7 @@
 #include <string.h>
 
 static void
-print_log(GLuint id) {
+print_log(const GLuint id) {
   int is_shader;
   if (glIsShader(id)) {
 	is_shader = 1;
@@ -165,10 +165,19 @@ shader_link(shader *shdr) {
 	shader_free(shdr);
 	exit(EXIT_FAILURE);
   }
+
+  glValidateProgram(shdr->program);
+  glGetProgramiv(shdr->program, GL_VALIDATE_STATUS, &status);
+  if (!status) {
+	printf("Error while validating Shader Program\n");
+	print_log(shdr->program);
+	shader_free(shdr);
+	exit(EXIT_FAILURE);
+  }
 }
 
 GLint
-shader_get_uniform_location(const shader *shdr, const char *name) {
+shader_get_uniform_location(const shader *const shdr, const char *const name) {
   GLint loc = glGetUniformLocation(shdr->program, name);
   if (loc == -1) {
 	printf("Uniform location could not be found\n");
@@ -178,7 +187,7 @@ shader_get_uniform_location(const shader *shdr, const char *name) {
 }
 
 GLint
-shader_get_attrib_location(const shader *shdr, const char *name) {
+shader_get_attrib_location(const shader *const shdr, const char *const name) {
   GLint loc = glGetAttribLocation(shdr->program, name);
   if (loc == -1) {
 	printf("Attrib location could not be found\n");
@@ -188,14 +197,21 @@ shader_get_attrib_location(const shader *shdr, const char *name) {
 }
 
 void
-shader_use(shader *shdr) {
+shader_use(const shader *const shdr) {
+  if (!shdr->program) {
+	printf("Cannot user invalid Shader Program\n");
+	exit(EXIT_FAILURE);
+  }
   glUseProgram(shdr->program);
 }
 
 void
-shader_free(const shader *const shdr) {
+shader_free(shader *const shdr) {
   glDeleteShader(shdr->vertex_shader);
   glDeleteShader(shdr->fragment_shader);
   glDeleteProgram(shdr->program);
+  shdr->program = 0;
+  shdr->vertex_shader = 0;
+  shdr->fragment_shader = 0;
   free(shdr);
 }

@@ -21,12 +21,12 @@ get_ft_error_message(FT_Error err) {
 
 // This Function Gets The First Power Of 2 >= The
 // Int That We Pass It.
-static int
-next_p2(int a) {
-  int rval = 1;
+static unsigned int
+next_p2(unsigned int a) {
+  unsigned int rval = 1;
   // rval<<=1 Is A Prettier Way Of Writing rval*=2;
   while (rval < a)
-	rval <<= 1;
+	rval <<= 1u;
   return rval;
 }
 
@@ -55,8 +55,8 @@ make_dlist(FT_Face face, char ch, GLuint list_base, GLuint *tex_base) {
   // Use Our Helper Function To Get The Widths Of
   // The Bitmap Data That We Will Need In Order To Create
   // Our Texture.
-  int width = next_p2(bitmap.width);
-  int height = next_p2(bitmap.rows);
+  unsigned int width = next_p2(bitmap.width);
+  unsigned int height = next_p2(bitmap.rows);
 
   // Allocate Memory For The Texture Data.
   GLubyte *expanded_data = malloc(sizeof(GLubyte) * 2 * width * height);
@@ -69,8 +69,8 @@ make_dlist(FT_Face face, char ch, GLuint list_base, GLuint *tex_base) {
   // We Use The ?: Operator To Say That Value Which We Use
   // Will Be 0 If We Are In The Padding Zone, And Whatever
   // Is The FreeType Bitmap Otherwise.
-  for (int j = 0; j < height; j++) {
-	for (int i = 0; i < width; i++) {
+  for (unsigned int j = 0; j < height; j++) {
+	for (unsigned int i = 0; i < width; i++) {
 	  expanded_data[2 * (i + j * width)] = 255;
 	  expanded_data[2 * (i + j * width) + 1] =
 			  (i >= bitmap.width || j >= bitmap.rows)
@@ -278,7 +278,7 @@ text_render_print(text_state *ts, float x, float y, const char *fmt, ...) {
   // Down By h. This Is Because When Each Character Is
   // Drawn It Modifies The Current Matrix So That The Next Character
   // Will Be Drawn Immediately After It.
-  for (int i = 0; i < 1/*lines.size()*/; i++) {
+  for (int i = 0; i < 1 /*lines.size()*/; i++) {
 	glPushMatrix();
 	glLoadIdentity();
 	glTranslatef(x, y - h * i, 0);
@@ -290,7 +290,8 @@ text_render_print(text_state *ts, float x, float y, const char *fmt, ...) {
 	// In make_dlist().
 	// glRasterPos2f(0,0);
 	size_t len = strlen(text);
-	glCallLists(len /*lines[i].length()*/, GL_UNSIGNED_BYTE, text/*lines[i].c_str()*/);
+	glCallLists(len /*lines[i].length()*/, GL_UNSIGNED_BYTE,
+				text /*lines[i].c_str()*/);
 	// float rpos[4];
 	// glGetFloatv(GL_CURRENT_RASTER_POSITION ,rpos);
 	// float len=x-rpos[0]; (Assuming No Rotations Have Happened)
