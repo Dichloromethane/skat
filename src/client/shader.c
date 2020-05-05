@@ -121,11 +121,7 @@ shader_load_file(shader *const shdr, const char *const shader_name,
   size_t len = strlen(shader_name);
   char filename[len + 3 + 1];
   strcpy(filename, shader_name);
-  if (type == GL_VERTEX_SHADER) {
-	strcat(filename, ".vs");
-  } else {
-	strcat(filename, ".fs");
-  }
+  strcat(filename, type == GL_VERTEX_SHADER ? ".vs" : ".fs");
 
   FILE *f = fopen(filename, "r");
   if (f == NULL) {
