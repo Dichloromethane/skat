@@ -36,6 +36,8 @@ shader *
 shader_create_empty() {
   shader *shdr = malloc(sizeof(shader));
   shdr->program = glCreateProgram();
+  shdr->vertex_shader = 0;
+  shdr->fragment_shader = 0;
   return shdr;
 }
 
