@@ -3,7 +3,7 @@ CC=gcc
 WARNINGS=-Wall -Wextra -Wfatal-errors -Wno-unused-parameter -Wno-unused-function -Wno-unused-but-set-variable \
          -Wno-unknown-pragmas -Wno-char-subscripts
 
-CPPFLAGS=-MMD -pthread -I $(INCLUDEDIR) -I /usr/include/freetype2 # -I /usr/include/libpng16
+CPPFLAGS=-MMD -pthread $(INCLUDEDIR_FLAGS)  # -I /usr/include/libpng16
 #CFLAGS=-Wall -O3 -mcpu=native -pthread -flto
 CFLAGS=-O0 -ggdb3 
 
@@ -15,7 +15,10 @@ LDLIBS_CLIENT=$(LDLIBS) -lglfw -lGL -ldl -lfreetype -lGLU -lm # -lX11 -lXrandr -
 
 TOOLSDIR=tools/
 
-INCLUDEDIR=include/
+INCLUDEDIR=include/ conf/
+SYSTEM_INCLUDES=/usr/include/freetype2
+INCLUDEDIR_FLAGS=$(addprefix -I,$(INCLUDEDIR) $(SYSTEM_INCLUDES))
+
 
 SOURCEDIR=src/
 SKAT_SOURCEDIR=$(SOURCEDIR)skat/

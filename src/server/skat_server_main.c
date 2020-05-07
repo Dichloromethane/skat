@@ -1,4 +1,4 @@
-#include "skat/conf.h"
+#include "conf.h"
 #include "skat/server.h"
 #include <errno.h>
 #include <limits.h>

@@ -1,5 +1,5 @@
 #include "skat/client.h"
-#include "skat/conf.h"
+#include "conf.h"
 #include <errno.h>
 #include <limits.h>
 #include <stdint.h>
