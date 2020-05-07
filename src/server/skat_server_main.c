@@ -37,7 +37,7 @@ main(int argc, char **argv) {
   printf("port=%ld; optind=%d\n", port, optind);
 
   server *s = malloc(sizeof(server));
-  server_init(s, port);
+  server_init(s, (int) port);
   server_run(s);
   __builtin_unreachable();
 }
