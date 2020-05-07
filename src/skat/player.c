@@ -16,3 +16,9 @@ copy_player_id(player_id *dest, const player_id *src) {
   strncpy(dest->str, src->str, PLAYER_ID_LENGTH);
   dest->str[PLAYER_ID_LENGTH - 1] = '\0';
 }
+
+void
+init_player_id(player_id *dest, const char *str) {
+  strncpy(dest->str, str, PLAYER_ID_LENGTH);
+  dest->str[PLAYER_ID_LENGTH - 1] = '\0';
+}

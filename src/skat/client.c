@@ -105,10 +105,18 @@ start_client_conn(client *c, const char *host, int p) {
 }
 
 void
-client_init(client *c, char *host, int port) {
-  DEBUG_PRINTF("Initializing client with host %s on port %d", host, port);
+client_disconnect_connection(client *c, connection_c2s *conn) {
+  DERROR_PRINTF("Lost connection to server");
+  exit(EXIT_FAILURE);
+}
+
+void
+client_init(client *c, char *host, int port, char *name) {
+  DEBUG_PRINTF("Initializing client with host %s on port %d with name %s", host,
+			   port, name);
   c->host = host;
   c->port = port;
+  c->name = name;
 }
 
 _Noreturn void

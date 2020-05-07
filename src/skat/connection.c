@@ -1,4 +1,5 @@
 #include "skat/connection.h"
+#include "skat/client.h"
 #include "skat/server.h"
 #include "skat/util.h"
 #include <stddef.h>
@@ -142,10 +143,10 @@ establish_connection_client(client *c, int socket_fd, pthread_t handler) {
 
   package p;
   player_id pid;
-  strcpy(pid.str, "TestName");
+  init_player_id(&pid, c->name);
 
   p.type = REQ_RSP_JOIN;
-  p.req.seq = conn.cseq;// TODO: set seq no correctly
+  p.req.seq = SEQ_NUM_START;
   p.req.pid = pid;
 
   send_package(&conn_c2s->c, &p);
@@ -210,9 +211,22 @@ conn_handle_events_server(connection_s2c *c) {
 }
 
 int
-conn_handle_incoming_packages_client(client *s, connection_c2s *conn) {
-  // TODO: this
-  return 0;
+conn_handle_incoming_packages_client(client *c, connection_c2s *conn) {
+  package p;
+  int still_connected;
+  still_connected = retrieve_package(&conn->c, &p);
+  if (!still_connected) {
+	client_acquire_state_lock(c);
+	client_disconnect_connection(c, conn);
+	client_release_state_lock(c);
+	return 0;
+  }
+  switch (p.type) {
+	// TODO: this
+	default:
+	  CH_ASSERT_0(0, &conn->c, CONN_ERROR_INVALID_PACKAGE_TYPE);
+  }
+  return 1;
 }
 
 void
