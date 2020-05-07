@@ -185,6 +185,9 @@ conn_handle_incoming_packages_server(server *s, connection_s2c *c) {
 	  conn_resync_player(s, c, &p);
 	  server_release_state_lock(s);
 	  break;
+	case REQ_RSP_ERROR:
+	  DERROR_PRINTF("Received error from client, killing him");
+	  __attribute__((fallthrough));
 	case REQ_RSP_DISCONNECT:
 	  server_acquire_state_lock(s);
 	  server_disconnect_connection(s, c);
