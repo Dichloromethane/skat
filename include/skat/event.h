@@ -5,17 +5,37 @@
 #include "skat/card_collection.h"
 #include "skat/player.h"
 
-typedef enum {
-  EVENT_INVALID = 0,
-  EVENT_ILLEGAL_ACTION,
-  EVENT_SUSPEND_GAME,
-  EVENT_START_GAME,
-  EVENT_START_ROUND,
-  EVENT_PLAYER_READY,
-  EVENT_DISTRIBUTE_CARDS,
-  EVENT_PLAY_CARD,
-  EVENT_STICH_DONE
-} event_type;
+#ifndef STRINGIFY
+#define STRINGIFY_ #x
+#define STRINGIFY(x) STRINGIFY_(x)
+#endif
+
+#ifdef EVENT_HDR_TO_STRING
+  #define EVENT_HDR_TABLE_BEGIN char *event_name_table[] = {
+  #define FIRST_EVENT(x) EVENT(x)
+  #define EVENT(x) [EVENT_ ## x] = "EVENT_" #x 
+  #define EVENT_HDR_TABLE_END , NULL}
+#else
+  #define EVENT_HDR_TABLE_BEGIN typedef enum {
+  #define FIRST_EVENT(x) EVENT_ ## x = 0
+  #define EVENT(x) EVENT_ ## x
+  #define EVENT_HDR_TABLE_END } event_type
+#endif
+
+EVENT_HDR_TABLE_BEGIN
+  FIRST_EVENT(INVALID),
+  EVENT(ILLEGAL_ACTION),
+  EVENT(SUSPEND_GAME),
+  EVENT(START_GAME),
+  EVENT(START_ROUND),
+  EVENT(PLAYER_READY),
+  EVENT(DISTRIBUTE_CARDS),
+  EVENT(PLAY_CARD),
+  EVENT(STICH_DONE),
+  EVENT(ROUND_DONE)
+EVENT_HDR_TABLE_END
+
+#ifndef EVENT_HDR_TO_STRING
 
 typedef struct {
   event_type type;
@@ -30,3 +50,7 @@ typedef struct {
 	int score_round[3];
   };
 } event;
+
+extern char **event_name_table;
+
+#endif

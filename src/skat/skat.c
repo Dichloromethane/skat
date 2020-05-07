@@ -164,6 +164,7 @@ apply_action_reizen_begin(skat_state *ss, action *a, player *pl, server *s) {
   e.answer_to = a->id;
   e.player = pl->id;
   switch (a->type) {
+	//TODO: FIXME: XXX: Make work
 	default:
 	  return GAME_PHASE_INVALID;
   }
@@ -219,6 +220,8 @@ apply_action_stich(skat_state *ss, action *a, player *pl, server *s, int card) {
 
 	  for (int i = 0; i < 3; i++)
 		ss->sgs.total_score[(ss->sgs.last_active_player_index + i)%s->ncons] += e.score_round[i];
+
+	  e.type = EVENT_ROUND_DONE;
 
 	  return GAME_PHASE_BETWEEN_ROUNDS;
 	default:
