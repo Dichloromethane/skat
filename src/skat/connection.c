@@ -129,8 +129,9 @@ establish_connection_server(server *s, int fd, pthread_t handler) {
   CH_ASSERT_NULL(0, &c, CONN_ERROR_INVALID_CONN_STATE);
 }
 
-void int
-conn_handle_incoming_package_client_single(client *c, connection_c2s *conn, package *p) {
+static int
+conn_handle_incoming_package_client_single(client *c, connection_c2s *conn,
+										   package *p) {
   switch (p->type) {
 	// TODO: this
 	default:
@@ -154,7 +155,8 @@ conn_handle_incoming_packages_client(client *c, connection_c2s *conn) {
 }
 
 connection_c2s *
-establish_connection_client(client *c, int socket_fd, pthread_t handler, int resume) {
+establish_connection_client(client *c, int socket_fd, pthread_t handler,
+							int resume) {
   connection conn;
   package_queue pq;
 
@@ -171,8 +173,8 @@ establish_connection_client(client *c, int socket_fd, pthread_t handler, int res
   player_id pid;
   init_player_id(&pid, c->name);
 
-  p.req.seq = SEQ_NUM_START; 
-  p.req.pid = pid; 
+  p.req.seq = SEQ_NUM_START;
+  p.req.pid = pid;
   p.type = resume ? REQ_RSP_CONN_RESUME : REQ_RSP_JOIN;
 
   send_package(&conn_c2s->c, &p);
@@ -183,20 +185,20 @@ establish_connection_client(client *c, int socket_fd, pthread_t handler, int res
   send_package(&conn_c2s->c, &p);
 
   package_queue_init(&pq);
-  
+
   retrieve_package(&conn_c2s->c, &p);
   while (p.type != REQ_RSP_RESYNC) {
 	package_queue_enq(&pq, &p);
-    retrieve_package(&conn_c2s->c, &p);
+	retrieve_package(&conn_c2s->c, &p);
   }
-  
+
   client_handle_resync(&p);
 
   while (!package_queue_empty(&pq)) {
 	package_queue_deq(&pq, &p);
-    conn_handle_incoming_package_client_single(c, conn_c2s, &p);
+	conn_handle_incoming_package_client_single(c, conn_c2s, &p);
   }
-  
+
   return conn_c2s;
 }
 
