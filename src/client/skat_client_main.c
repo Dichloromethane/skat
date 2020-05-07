@@ -1,5 +1,5 @@
-#include "skat/client.h"
 #include "conf.h"
+#include "skat/client.h"
 #include <errno.h>
 #include <limits.h>
 #include <stdint.h>
@@ -36,5 +36,8 @@ main(int argc, char **argv) {
 
   printf("port=%ld; optind=%d\n", port, optind);
 
-  exit(EXIT_SUCCESS);
+  client *c = malloc(sizeof(client));
+  client_init(c, (int) port);
+  client_run(c);
+  __builtin_unreachable();
 }
