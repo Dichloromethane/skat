@@ -82,9 +82,9 @@ server_disconnect_connection(server *s, connection_s2c *c) {
 
 void
 server_acquire_state_lock(server *s) {
-  DEBUG_PRINTF("Aquiring server state lock from thread %ld", pthread_self());
+  DEBUG_PRINTF("Acquiring server state lock from thread %ld", pthread_self());
   pthread_mutex_lock(&s->lock);
-  DEBUG_PRINTF("Aquired server state lock from thread %ld", pthread_self());
+  DEBUG_PRINTF("Acquired server state lock from thread %ld", pthread_self());
 }
 
 void
@@ -129,6 +129,7 @@ server_tick(server *s) {
 
 void
 server_notify_join(server *s, player *pl) {
+  DEBUG_PRINTF("Player %s joined", pl->id.str);
   skat_state_notify_join(&s->skat_state, pl, s);
   for (int i = 0; i < s->ncons; i++)
 	if (!player_equals_by_id(pl, &s->ps[i]))

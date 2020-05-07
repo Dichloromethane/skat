@@ -2,9 +2,9 @@
 #include "skat/server.h"
 #include "skat/util.h"
 #include <stddef.h>
+#include <string.h>
 #include <sys/socket.h>
 #include <unistd.h>
-
 
 #define SEQ_NUM_START (1)
 
@@ -35,7 +35,7 @@ static int
 retrieve_package(connection *c, package *p) {
   size_t res;
   res = read(c->fd, p, sizeof(package));
-  DEBUG_PRINTF("Retrieved package of type %s of size %ld",
+  DEBUG_PRINTF("Retrieved package of type %s with size %ld",
 			   req_rsp_name_table[p->type], res);
   return res == sizeof(package);
 }
@@ -55,6 +55,13 @@ init_conn_s2c(connection_s2c *c) {
   init_action_queue(&c->aq);
   init_event_queue(&c->aq);
   c->active = 0;
+}
+
+static void
+init_conn_c2s(connection_c2s *s) {
+  // init_action_queue(&s->aq);
+  // init_event_queue(&s->aq);
+  // s->active = 0;
 }
 
 connection_s2c *
@@ -123,8 +130,27 @@ establish_connection_server(server *s, int fd, pthread_t handler) {
 
 connection_c2s *
 establish_connection_client(client *c, int socket_fd, pthread_t handler) {
-  // TODO: this
-  return NULL;
+  connection conn;
+  conn.fd = socket_fd;
+  conn.cseq = SEQ_NUM_START;
+  conn.handler = handler;
+
+  connection_c2s *conn_c2s = malloc(sizeof(connection_c2s));
+
+  init_conn_c2s(conn_c2s);
+  conn_c2s->c = conn;
+
+  package p;
+  player_id pid;
+  strcpy(pid.str, "TestName");
+
+  p.type = REQ_RSP_JOIN;
+  p.req.seq = conn.cseq;// TODO: set seq no correctly
+  p.req.pid = pid;
+
+  send_package(&conn_c2s->c, &p);
+
+  return conn_c2s;
 }
 
 static void

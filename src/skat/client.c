@@ -1,5 +1,6 @@
 #include "skat/client.h"
 #include "skat/connection.h"
+#include "skat/util.h"
 #include <netdb.h>
 #include <netinet/in.h>
 #include <stdio.h>
@@ -11,12 +12,16 @@
 
 void
 client_acquire_state_lock(client *c) {
+  DEBUG_PRINTF("Acquiring client state lock from thread %ld", pthread_self());
   pthread_mutex_lock(&c->lock);
+  DEBUG_PRINTF("Acquired client state lock from thread %ld", pthread_self());
 }
 
 void
 client_release_state_lock(client *c) {
+  DEBUG_PRINTF("Releasing client state lock from thread %ld", pthread_self());
   pthread_mutex_unlock(&c->lock);
+  DEBUG_PRINTF("Released client state lock from thread %ld", pthread_self());
 }
 
 typedef struct {
@@ -90,6 +95,8 @@ start_client_conn(client *c, const char *host, int p) {
 
   freeaddrinfo(result); /* No longer needed */
 
+  DEBUG_PRINTF("Established connection on socket %d", socket_fd);
+
   client_conn_args *args = malloc(sizeof(client_conn_args));
   args->c = c;
   args->socket_fd = socket_fd;
@@ -99,6 +106,7 @@ start_client_conn(client *c, const char *host, int p) {
 
 void
 client_init(client *c, char *host, int port) {
+  DEBUG_PRINTF("Initializing client with host %s on port %d", host, port);
   c->host = host;
   c->port = port;
 }
@@ -109,7 +117,6 @@ client_run(client *c) {
   start_client_conn(c, c->host, c->port);
   client_release_state_lock(c);
 
-  printf("did the thing\n");
   for (;;) {
   }
 }
