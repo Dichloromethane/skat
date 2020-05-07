@@ -35,7 +35,8 @@ static int
 retrieve_package(connection *c, package *p) {
   size_t res;
   res = read(c->fd, p, sizeof(package));
-  DEBUG_PRINTF("Retrieved package of type %s", req_rsp_name_table[p->type]);
+  DEBUG_PRINTF("Retrieved package of type %s of size %ld",
+			   req_rsp_name_table[p->type], res);
   return res == sizeof(package);
 }
 
@@ -120,6 +121,12 @@ establish_connection_server(server *s, int fd, pthread_t handler) {
   CH_ASSERT_NULL(0, &c, CONN_ERROR_INVALID_CONN_STATE);
 }
 
+connection_c2s *
+establish_connection_client(client *c, int socket_fd, pthread_t handler) {
+  // TODO: this
+  return NULL;
+}
+
 static void
 conn_resync_player(server *s, connection_s2c *c, package *req_p) {
   package p;
@@ -171,6 +178,17 @@ conn_handle_events_server(connection_s2c *c) {
 	p.req.seq = ++c->c.cseq;
 	send_package(&c->c, &p);
   }
+}
+
+int
+conn_handle_incoming_packages_client(client *s, connection_c2s *conn) {
+  // TODO: this
+  return 0;
+}
+
+void
+conn_handle_events_client(connection_c2s *conn) {
+  // TODO: this
 }
 
 void

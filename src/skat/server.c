@@ -27,7 +27,8 @@ void
 server_distribute_event(server *s, event *ev,
 						void (*mask_event)(event *, player *)) {
   event e;
-  DEBUG_PRINTF("Distributing event of type %s", event_name_table[ev->type]);;
+  DEBUG_PRINTF("Distributing event of type %s", event_name_table[ev->type]);
+  ;
   for (int i = 0; i < s->ncons; i++) {
 	if (mask_event) {
 	  e = *ev;
@@ -100,6 +101,8 @@ server_resync_player(server *s, player *pl, skat_client_state *cs) {
 
 void
 server_tick(server *s) {
+  DEBUG_PRINTF("Server tick");
+
   action a;
   event err_ev;
   server_acquire_state_lock(s);
@@ -109,7 +112,9 @@ server_tick(server *s) {
 
 	while (conn_dequeue_action(&s->conns[i], &a)) {
 	  if (!skat_state_apply(&s->skat_state, &a, &s->ps[i], s)) {
-		DEBUG_PRINTF("Received illigeal action of type %s from player %s with id %ld, rejecting", action_name_table[a.type], s->ps[i].id.str, a.id);
+		DEBUG_PRINTF("Received illegal action of type %s from player %s with "
+					 "id %ld, rejecting",
+					 action_name_table[a.type], s->ps[i].id.str, a.id);
 		err_ev.type = EVENT_ILLEGAL_ACTION;
 		err_ev.answer_to = a.id;
 		copy_player_id(&err_ev.player, &s->ps[i].id);
@@ -132,13 +137,14 @@ server_notify_join(server *s, player *pl) {
 typedef struct {
   server *s;
   int conn_fd;
-} handler_args;
+} server_handler_args;
 
 static void *
-handler(void *args) {
+server_handler(void *args) {
   connection_s2c *conn;
-  handler_args *hargs = args;
-  DEBUG_PRINTF("Handler started, establishing connection with %d", hargs->conn_fd);
+  server_handler_args *hargs = args;
+  DEBUG_PRINTF("Handler started, establishing connection with %d",
+			   hargs->conn_fd);
   conn = establish_connection_server(hargs->s, hargs->conn_fd, pthread_self());
   if (!conn) {
 	DEBUG_PRINTF("Establishing connection with %d failed", hargs->conn_fd);
@@ -150,7 +156,8 @@ handler(void *args) {
 	  DEBUG_PRINTF("Connection with %d closed", hargs->conn_fd);
 	  return NULL;
 	}
-	DEBUG_PRINTF("Connection with %d established, commencing normal operations", hargs->conn_fd);
+	DEBUG_PRINTF("Connection with %d established, commencing normal operations",
+				 hargs->conn_fd);
 	conn_handle_events_server(conn);
   }
 }
@@ -159,12 +166,12 @@ typedef struct {
   server *s;
   int socket_fd;
   struct sockaddr_in addr;
-} listener_args;
+} server_listener_args;
 
 _Noreturn static void *
-listener(void *args) {
-  listener_args *largs = args;
-  handler_args *hargs;
+server_listener(void *args) {
+  server_listener_args *largs = args;
+  server_handler_args *hargs;
   pthread_t h;
   size_t addrlen = sizeof(struct sockaddr_in);
   int conn_fd;
@@ -175,20 +182,20 @@ listener(void *args) {
 	conn_fd = accept(largs->socket_fd, (struct sockaddr *) &largs->addr,
 					 (socklen_t *) &addrlen);
 	ioctl(conn_fd, FIONBIO, &iMode);
-	hargs = malloc(sizeof(handler_args));
+	hargs = malloc(sizeof(server_handler_args));
 	hargs->s = largs->s;
 	hargs->conn_fd = conn_fd;
-    DEBUG_PRINTF("Received connection %d", conn_fd);
-	pthread_create(&h, NULL, handler, hargs);
+	DEBUG_PRINTF("Received connection %d", conn_fd);
+	pthread_create(&h, NULL, server_handler, hargs);
   }
 }
 
 static void
-start_conn_listener(server *s, int p) {
-  listener_args *args;
+server_start_conn_listener(server *s, int p) {
+  server_listener_args *args;
   int opt = 1;
   DEBUG_PRINTF("Starting connection listener");
-  args = malloc(sizeof(listener_args));
+  args = malloc(sizeof(server_listener_args));
   args->s = s;
   args->socket_fd = socket(AF_INET, SOCK_STREAM, 0);
   setsockopt(args->socket_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt,
@@ -197,16 +204,15 @@ start_conn_listener(server *s, int p) {
   args->addr.sin_addr.s_addr = INADDR_ANY;
   args->addr.sin_port = htons(p);
   bind(args->socket_fd, (struct sockaddr *) &args->addr, sizeof(args->addr));
-  pthread_create(&s->conn_listener, NULL, listener, args);
+  pthread_create(&s->conn_listener, NULL, server_listener, args);
 }
 
 void
 server_init(server *s, int port) {
   pthread_mutex_init(&s->lock, NULL);
-  s->port = port;
-  skat_state_init(&s->skat_state);
   s->ncons = 0;
   s->port = port;
+  skat_state_init(&s->skat_state);
 }
 
 static void
@@ -221,7 +227,7 @@ server_run(server *s) {
   ctimer_create(&t, s, server_tick_wrap, (1000 * 1000 * 1000) / 60);// 60Hz
 
   server_acquire_state_lock(s);
-  start_conn_listener(s, s->port);
+  server_start_conn_listener(s, s->port);
   server_release_state_lock(s);
 
   DEBUG_PRINTF("Running server");
