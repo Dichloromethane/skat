@@ -1,8 +1,10 @@
 #include "skat/connection.h"
 #include "skat/server.h"
+#include "skat/util.h"
 #include <stddef.h>
 #include <sys/socket.h>
 #include <unistd.h>
+
 
 #define SEQ_NUM_START (1)
 
@@ -18,8 +20,14 @@
 #define CH_ASSERT_0(stmt, c, err)    CH_ASSERT(stmt, c, err, 0)
 #define CH_ASSERT_NULL(stmt, c, err) CH_ASSERT(stmt, c, err, NULL)
 
+#undef CONNECTION_C_HDR
+#define CONNECTION_HDR_TO_STRING
+
+#include "skat/connection.h"
+
 static void
 send_package(connection *c, package *p) {
+  DEBUG_PRINTF("Sending package of type %s", req_rsp_name_table[p->type]);
   send(c->fd, p, sizeof(package), 0);
 }
 
@@ -27,6 +35,7 @@ static int
 retrieve_package(connection *c, package *p) {
   size_t res;
   res = read(c->fd, p, sizeof(package));
+  DEBUG_PRINTF("Retrieved package of type %s", req_rsp_name_table[p->type]);
   return res == sizeof(package);
 }
 
@@ -36,6 +45,7 @@ conn_error(connection *c, conn_error_type cet) {
   p.type = REQ_RSP_ERROR;
   p.rsp.cet = cet;
   p.rsp.seq = ++c->cseq;
+  DEBUG_PRINTF("Connection error: %s", conn_error_name_table[cet]);
   send_package(c, &p);
 }
 

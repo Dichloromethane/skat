@@ -1,5 +1,6 @@
 #include "skat/server.h"
 #include "skat/ctimer.h"
+#include "skat/util.h"
 #include <netinet/in.h>
 #include <stdlib.h>
 #include <string.h>
@@ -26,6 +27,7 @@ void
 server_distribute_event(server *s, event *ev,
 						void (*mask_event)(event *, player *)) {
   event e;
+  DEBUG_PRINTF("Distributing event of type %s", event_name_table[ev->type]);;
   for (int i = 0; i < s->ncons; i++) {
 	if (mask_event) {
 	  e = *ev;
@@ -78,16 +80,21 @@ server_disconnect_connection(server *s, connection_s2c *c) {
 
 void
 server_acquire_state_lock(server *s) {
+  DEBUG_PRINTF("Aquiring server state lock from thread %ld", pthread_self());
   pthread_mutex_lock(&s->lock);
+  DEBUG_PRINTF("Aquired server state lock from thread %ld", pthread_self());
 }
 
 void
 server_release_state_lock(server *s) {
+  DEBUG_PRINTF("Releasing server state lock from thread %ld", pthread_self());
   pthread_mutex_unlock(&s->lock);
+  DEBUG_PRINTF("Released server state lock from thread %ld", pthread_self());
 }
 
 void
 server_resync_player(server *s, player *pl, skat_client_state *cs) {
+  DEBUG_PRINTF("Resync requested by %s", pl->id.str);
   skat_resync_player(cs, pl);
 }
 
@@ -102,6 +109,7 @@ server_tick(server *s) {
 
 	while (conn_dequeue_action(&s->conns[i], &a)) {
 	  if (!skat_state_apply(&s->skat_state, &a, &s->ps[i], s)) {
+		DEBUG_PRINTF("Received illigeal action of type %s from player %s with id %ld, rejecting", action_name_table[a.type], s->ps[i].id.str, a.id);
 		err_ev.type = EVENT_ILLEGAL_ACTION;
 		err_ev.answer_to = a.id;
 		copy_player_id(&err_ev.player, &s->ps[i].id);
@@ -130,15 +138,19 @@ static void *
 handler(void *args) {
   connection_s2c *conn;
   handler_args *hargs = args;
+  DEBUG_PRINTF("Handler started, establishing connection with %d", hargs->conn_fd);
   conn = establish_connection_server(hargs->s, hargs->conn_fd, pthread_self());
   if (!conn) {
+	DEBUG_PRINTF("Establishing connection with %d failed", hargs->conn_fd);
 	close(hargs->conn_fd);
 	return NULL;
   }
   for (;;) {
 	if (!conn_handle_incoming_packages_server(hargs->s, conn)) {
+	  DEBUG_PRINTF("Connection with %d closed", hargs->conn_fd);
 	  return NULL;
 	}
+	DEBUG_PRINTF("Connection with %d established, commencing normal operations", hargs->conn_fd);
 	conn_handle_events_server(conn);
   }
 }
@@ -159,13 +171,14 @@ listener(void *args) {
   long iMode = 0;
   for (;;) {
 	listen(largs->socket_fd, 3);
+	DEBUG_PRINTF("Listening for connections");
 	conn_fd = accept(largs->socket_fd, (struct sockaddr *) &largs->addr,
 					 (socklen_t *) &addrlen);
 	ioctl(conn_fd, FIONBIO, &iMode);
 	hargs = malloc(sizeof(handler_args));
 	hargs->s = largs->s;
 	hargs->conn_fd = conn_fd;
-
+    DEBUG_PRINTF("Received connection %d", conn_fd);
 	pthread_create(&h, NULL, handler, hargs);
   }
 }
@@ -174,6 +187,7 @@ static void
 start_conn_listener(server *s, int p) {
   listener_args *args;
   int opt = 1;
+  DEBUG_PRINTF("Starting connection listener");
   args = malloc(sizeof(listener_args));
   args->s = s;
   args->socket_fd = socket(AF_INET, SOCK_STREAM, 0);
@@ -209,6 +223,8 @@ server_run(server *s) {
   server_acquire_state_lock(s);
   start_conn_listener(s, s->port);
   server_release_state_lock(s);
+
+  DEBUG_PRINTF("Running server");
 
   ctimer_run(&t);
 }
