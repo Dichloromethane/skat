@@ -21,7 +21,7 @@ const GLuint WIDTH = 640, HEIGHT = 480;
 
 // The MAIN function, from here we start the application and run the game loop
 int
-main(int argc, char **argv) {
+start_OLD(void) {
   printf("Starting GLFW context\n");
 
   // Init GLFW
@@ -30,7 +30,7 @@ main(int argc, char **argv) {
   // Set all the required options for GLFW
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-  //glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+  // glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
   glfwWindowHint(GLFW_RESIZABLE, GL_TRUE);
 
   // Create a GLFWwindow object that we can use for GLFW's functions
@@ -63,7 +63,7 @@ main(int argc, char **argv) {
   // Define the viewport dimensions
   // glViewport(0, 0, WIDTH, HEIGHT);
   // glOrtho(0, WIDTH, 0, HEIGHT, -1, 1);
-  //const float ar = WIDTH / (float) HEIGHT;
+  // const float ar = WIDTH / (float) HEIGHT;
 
   /*glViewport(0, 0, WIDTH, HEIGHT);
   glMatrixMode(GL_PROJECTION);
@@ -72,8 +72,8 @@ main(int argc, char **argv) {
   glMatrixMode(GL_MODELVIEW);
   glLoadIdentity();*/
 
-  //glMatrixMode(GL_PROJECTION);
-  //glLoadIdentity();
+  // glMatrixMode(GL_PROJECTION);
+  // glLoadIdentity();
 
   glEnable(GL_DEPTH_TEST);
 

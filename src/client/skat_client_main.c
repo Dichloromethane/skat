@@ -22,7 +22,7 @@ main(int argc, char **argv) {
   while ((opt = getopt(argc, argv, "h:p:r")) != -1) {
 	switch (opt) {
 	  case 'r':
-	    resume = 1;
+		resume = 1;
 		break;
 	  case 'h':
 		host = argv[optind - 1];
@@ -52,7 +52,8 @@ main(int argc, char **argv) {
 	exit(EXIT_FAILURE);
   }
 
-  printf("Options: port=%ld; host=%s; name=%s; resume=%d;\n", port, host, argv[optind], resume);
+  printf("Options: port=%ld; host=%s; name=%s; resume=%d;\n", port, host,
+		 argv[optind], resume);
 
   client *c = malloc(sizeof(client));
   client_init(c, host, (int) port, argv[optind]);

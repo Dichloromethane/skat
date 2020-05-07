@@ -34,8 +34,8 @@ static void *
 client_conn_thread(void *args) {
   connection_c2s *conn;
   client_conn_args *cargs = args;
-  conn = establish_connection_client(cargs->c, cargs->socket_fd,
-									 pthread_self(), cargs->resume);
+  conn = establish_connection_client(cargs->c, cargs->socket_fd, pthread_self(),
+									 cargs->resume);
   if (!conn) {
 	close(cargs->socket_fd);
 	return NULL;

@@ -1,4 +1,4 @@
-#version 110
+#version 140
 
 varying vec3 color;
 

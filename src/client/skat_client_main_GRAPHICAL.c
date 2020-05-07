@@ -31,7 +31,7 @@ key_callback(GLFWwindow *window, int key, int scancode, int action, int mods) {
 }
 
 int
-main(void) {
+start_GRAPHICAL(void) {
   GLFWwindow *window;
   GLuint vertex_buffer;
   shader *program;

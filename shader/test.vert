@@ -1,4 +1,4 @@
-#version 110
+#version 140
 
 uniform mat4 MVP;
 attribute vec3 vCol;
