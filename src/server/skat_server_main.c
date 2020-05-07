@@ -1,16 +1,43 @@
+#include "skat/conf.h"
 #include "skat/server.h"
+#include <errno.h>
+#include <limits.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 int
 main(int argc, char **argv) {
-  server *s;
-  if (argc != 2) {
-	dprintf(2, "usage: %s port\n", argv[0]);
-	exit(1);
+  int opt;
+  char *remaining;
+  long port = DEFAULT_PORT;
+
+  while ((opt = getopt(argc, argv, "p:")) != -1) {
+	switch (opt) {
+	  case 'p':
+		errno = 0;
+		port = strtol(optarg, &remaining, 0);
+		if (errno == 0 && *remaining == '\0' && port >= 0 && port > USHRT_MAX) {
+		  break;
+		}
+		if (errno != 0) {
+		  perror("strtol");
+		} else {
+		  fprintf(stderr, "Invalid port: %s\n", optarg);
+		}
+
+		__attribute__((fallthrough));
+	  default:
+		fprintf(stderr, "Usage: %s [-p port]\n", argv[0]);
+		exit(EXIT_FAILURE);
+	}
   }
-  s = malloc(sizeof(server));
-  server_init(s, atoi(argv[1]));
+
+  printf("port=%ld; optind=%d\n", port, optind);
+
+  server *s = malloc(sizeof(server));
+  server_init(s, port);
   server_run(s);
   __builtin_unreachable();
 }
