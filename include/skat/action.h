@@ -1,7 +1,9 @@
-#pragma once
 
 #include "skat/card.h"
 #include <stdint.h>
+
+#ifndef ACTION_HDR
+#define ACTION_HDR
 
 #ifndef STRINGIFY
 #define STRINGIFY_ #x
@@ -9,10 +11,14 @@
 #endif
 
 #ifdef ACTION_HDR_TO_STRING
+  #undef ACTION_HDR_TABLE_BEGIN
+  #undef FIRST_ACTION
+  #undef ACTION
+  #undef ACTION_HDR_TABLE_END
   #define ACTION_HDR_TABLE_BEGIN char *action_name_table[] = {
   #define FIRST_ACTION(x) ACTION(x)
   #define ACTION(x) [ACTION_ ## x] = "ACTION_" #x 
-  #define ACTION_HDR_TABLE_END , NULL};
+  #define ACTION_HDR_TABLE_END , (void *)0};
 #else
   #define ACTION_HDR_TABLE_BEGIN typedef enum {
   #define FIRST_ACTION(x) ACTION_ ## x = 0
@@ -41,6 +47,7 @@ typedef struct {
   };
 } action;
 
-extern char **action_name_table;
+extern char *action_name_table[];
 
+#endif
 #endif

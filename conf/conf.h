@@ -1,4 +1,4 @@
 #pragma once
 
 #define DEFAULT_PORT (6666)
-#define DEBUG_PRINTF
+#define HAS_DEBUG_PRINTF 

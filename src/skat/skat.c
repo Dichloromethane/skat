@@ -1,5 +1,11 @@
 #include "skat/skat.h"
 #include "skat/server.h"
+#include "skat/util.h"
+
+#undef SKAT_HDR
+#define GAME_PHASE_HDR_TO_STRING
+
+#include "skat/skat.h"
 
 int
 game_setup_server(skat_state *ss) {
@@ -116,13 +122,11 @@ apply_action_between_rounds(skat_state *ss, action *a, player *pl, server *s) {
 	  ss->sgs.active_players[0] = e.current_active_players[0];
 
 	  e.current_active_players[1] =
-			  s->ps[(ss->sgs.last_active_player_index + 1) % s->ncons]
-					  .id;
+			  s->ps[(ss->sgs.last_active_player_index + 1) % s->ncons].id;
 	  ss->sgs.active_players[1] = e.current_active_players[1];
 
 	  e.current_active_players[2] =
-			  s->ps[(ss->sgs.last_active_player_index + 2) % s->ncons]
-					  .id;
+			  s->ps[(ss->sgs.last_active_player_index + 2) % s->ncons].id;
 	  ss->sgs.active_players[2] = e.current_active_players[2];
 
 	  ss->sgs.last_active_player_index =
@@ -164,7 +168,7 @@ apply_action_reizen_begin(skat_state *ss, action *a, player *pl, server *s) {
   e.answer_to = a->id;
   e.player = pl->id;
   switch (a->type) {
-	//TODO: FIXME: XXX: Make work
+	// TODO: FIXME: XXX: Make work
 	default:
 	  return GAME_PHASE_INVALID;
   }
@@ -219,7 +223,8 @@ apply_action_stich(skat_state *ss, action *a, player *pl, server *s, int card) {
 	  skat_calculate_game_result(ss, e.score_round);
 
 	  for (int i = 0; i < 3; i++)
-		ss->sgs.total_score[(ss->sgs.last_active_player_index + i)%s->ncons] += e.score_round[i];
+		ss->sgs.total_score[(ss->sgs.last_active_player_index + i)
+							% s->ncons] += e.score_round[i];
 
 	  e.type = EVENT_ROUND_DONE;
 	  server_distribute_event(s, &e, NULL);
@@ -232,6 +237,9 @@ apply_action_stich(skat_state *ss, action *a, player *pl, server *s, int card) {
 
 static game_phase
 apply_action(skat_state *ss, action *a, player *pl, server *s) {
+  DEBUG_PRINTF("Applying action %s in skat state %s",
+			   action_name_table[a->type],
+			   game_phase_name_table[ss->sgs.cgphase]);
   switch (ss->sgs.cgphase) {
 	case GAME_PHASE_SETUP:
 	  return apply_action_setup(ss, a, pl, s);

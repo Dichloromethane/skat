@@ -69,9 +69,9 @@ establish_connection_server(server *s, int fd, pthread_t handler) {
 	CH_ASSERT_NULL(!server_has_player_id(s, &pl.id), &c,
 				   CONN_ERROR_PLAYER_ID_IN_USE);
 
-	CH_ASSERT_NULL(s2c = server_get_free_connection(s), &c, 
+	CH_ASSERT_NULL(s2c = server_get_free_connection(s), &c,
 				   CONN_ERROR_TOO_MANY_PLAYERS);
-	
+
 	init_conn_s2c(s2c);
 	s2c->c = c;
 	s2c->active = 1;

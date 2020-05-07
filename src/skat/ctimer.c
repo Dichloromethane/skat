@@ -1,4 +1,5 @@
 #include "skat/ctimer.h"
+#include "skat/util.h"
 #include <signal.h>
 #include <time.h>
 
@@ -38,8 +39,10 @@ ctimer_run(ctimer *t) {
 
   timer_settime(t->timer_id, 0, &itspec, &dummy);
 
+  DEBUG_PRINTF("Started Server Timer");
   for (;;) {
 	sem_wait(&t->activations);
+	DEBUG_PRINTF("Server tick");
 	t->timerf(t->arg);
   }
 }

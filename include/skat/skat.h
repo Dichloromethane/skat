@@ -1,4 +1,6 @@
-#pragma once
+
+#ifndef SKAT_HDR
+#define SKAT_HDR
 
 #include "skat/action.h"
 #include "skat/card.h"
@@ -8,19 +10,45 @@
 #include "skat/player.h"
 #include "skat/stich.h"
 
-typedef struct server server;
+#ifndef STRINGIFY
+#define STRINGIFY_ #x
+#define STRINGIFY(x) STRINGIFY_(x)
+#endif
 
-typedef enum {
-  GAME_PHASE_INVALID = 0,
-  GAME_PHASE_SETUP,
-  GAME_PHASE_BETWEEN_ROUNDS,
-  GAME_PHASE_REIZEN_BEGIN,
-  GAME_PHASE_PLAY_START,
-  GAME_PHASE_PLAY_STICH_C1,
-  GAME_PHASE_PLAY_STICH_C2,
-  GAME_PHASE_PLAY_STICH_C3,
-  GAME_PHASE_END
-} game_phase;
+#ifdef GAME_PHASE_HDR_TO_STRING 
+  #undef GAME_PHASE_HDR_TABLE_BEGIN
+  #undef FIRST_GAME_PHASE
+  #undef GAME_PHASE
+  #undef GAME_PHASE_HDR_TABLE_END
+  #define GAME_PHASE_HDR_TABLE_BEGIN char *game_phase_name_table[] = {
+  #define FIRST_GAME_PHASE(x) GAME_PHASE(x)
+  #define GAME_PHASE(x) [GAME_PHASE_ ## x] = "GAME_PHASE_" #x 
+  #define GAME_PHASE_HDR_TABLE_END , NULL};
+#else
+  #define GAME_PHASE_HDR_TABLE_BEGIN typedef enum {
+  #define FIRST_GAME_PHASE(x) GAME_PHASE_ ## x = 0
+  #define GAME_PHASE(x) GAME_PHASE_ ## x
+  #define GAME_PHASE_HDR_TABLE_END } game_phase;
+#endif
+
+
+GAME_PHASE_HDR_TABLE_BEGIN
+  FIRST_GAME_PHASE(INVALID),
+  GAME_PHASE(SETUP),
+  GAME_PHASE(BETWEEN_ROUNDS),
+  GAME_PHASE(REIZEN_BEGIN),
+  GAME_PHASE(PLAY_START),
+  GAME_PHASE(PLAY_STICH_C1),
+  GAME_PHASE(PLAY_STICH_C2),
+  GAME_PHASE(PLAY_STICH_C3),
+  GAME_PHASE(END)
+GAME_PHASE_HDR_TABLE_END
+
+#ifndef GAME_PHASE_HDR_TO_STRING
+
+extern char *game_phase_name_table[];
+
+typedef struct server server;
 
 typedef struct {
   int reizwert;
@@ -79,3 +107,6 @@ void skat_state_tick(skat_state *, server *);
 void skat_resync_player(skat_client_state *, player *);
 
 void skat_state_init(skat_state *);
+
+#endif
+#endif
