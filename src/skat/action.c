@@ -1,6 +1,6 @@
 
-#include "action.h"
+#include "skat/action.h"
 
 #define ACTION_HDR_TO_STRING
 
-#include "action.h"
+#include "skat/action.h"

@@ -14,12 +14,12 @@
   #define EVENT_HDR_TABLE_BEGIN char *event_name_table[] = {
   #define FIRST_EVENT(x) EVENT(x)
   #define EVENT(x) [EVENT_ ## x] = "EVENT_" #x 
-  #define EVENT_HDR_TABLE_END , NULL}
+  #define EVENT_HDR_TABLE_END , NULL};
 #else
   #define EVENT_HDR_TABLE_BEGIN typedef enum {
   #define FIRST_EVENT(x) EVENT_ ## x = 0
   #define EVENT(x) EVENT_ ## x
-  #define EVENT_HDR_TABLE_END } event_type
+  #define EVENT_HDR_TABLE_END } event_type;
 #endif
 
 EVENT_HDR_TABLE_BEGIN

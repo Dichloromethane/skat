@@ -222,6 +222,7 @@ apply_action_stich(skat_state *ss, action *a, player *pl, server *s, int card) {
 		ss->sgs.total_score[(ss->sgs.last_active_player_index + i)%s->ncons] += e.score_round[i];
 
 	  e.type = EVENT_ROUND_DONE;
+	  server_distribute_event(s, &e, NULL);
 
 	  return GAME_PHASE_BETWEEN_ROUNDS;
 	default:
