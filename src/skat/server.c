@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/ioctl.h>
+#include <sys/types.h>
 #include <unistd.h>
 
 int
@@ -82,16 +83,16 @@ server_disconnect_connection(server *s, connection_s2c *c) {
 
 void
 server_acquire_state_lock(server *s) {
-  DEBUG_PRINTF("Acquiring server state lock from thread %ld", pthread_self());
+  DEBUG_PRINTF("Acquiring server state lock from thread %d", gettid());
   pthread_mutex_lock(&s->lock);
-  DEBUG_PRINTF("Acquired server state lock from thread %ld", pthread_self());
+  DEBUG_PRINTF("Acquired server state lock from thread %d", gettid());
 }
 
 void
 server_release_state_lock(server *s) {
-  DEBUG_PRINTF("Releasing server state lock from thread %ld", pthread_self());
+  DEBUG_PRINTF("Releasing server state lock from thread %d", gettid());
   pthread_mutex_unlock(&s->lock);
-  DEBUG_PRINTF("Released server state lock from thread %ld", pthread_self());
+  DEBUG_PRINTF("Released server state lock from thread %d", gettid());
 }
 
 void

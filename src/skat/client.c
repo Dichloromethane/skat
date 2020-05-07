@@ -27,6 +27,7 @@ client_release_state_lock(client *c) {
 typedef struct {
   client *c;
   int socket_fd;
+  int resume;
 } client_conn_args;
 
 static void *
@@ -34,7 +35,7 @@ client_conn_thread(void *args) {
   connection_c2s *conn;
   client_conn_args *cargs = args;
   conn = establish_connection_client(cargs->c, cargs->socket_fd,
-									 pthread_self());
+									 pthread_self(), cargs->resume);
   if (!conn) {
 	close(cargs->socket_fd);
 	return NULL;
@@ -48,7 +49,7 @@ client_conn_thread(void *args) {
 }
 
 static void
-start_client_conn(client *c, const char *host, int p) {
+start_client_conn(client *c, const char *host, int p, int resume) {
   /* Obtain address(es) matching host/port */
 
   struct addrinfo hints;
@@ -100,6 +101,7 @@ start_client_conn(client *c, const char *host, int p) {
   client_conn_args *args = malloc(sizeof(client_conn_args));
   args->c = c;
   args->socket_fd = socket_fd;
+  args->resume = resume;
 
   pthread_create(&c->conn_thread, NULL, client_conn_thread, args);
 }
@@ -120,9 +122,9 @@ client_init(client *c, char *host, int port, char *name) {
 }
 
 _Noreturn void
-client_run(client *c) {
+client_run(client *c, int resume) {
   client_acquire_state_lock(c);
-  start_client_conn(c, c->host, c->port);
+  start_client_conn(c, c->host, c->port, resume);
   client_release_state_lock(c);
 
   for (;;) {

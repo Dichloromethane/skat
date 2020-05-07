@@ -123,7 +123,7 @@ typedef struct {
 } connection_c2s;
 
 connection_s2c *establish_connection_server(server *, int, pthread_t);
-connection_c2s *establish_connection_client(client *, int, pthread_t);
+connection_c2s *establish_connection_client(client *, int, pthread_t, int);
 
 int conn_handle_incoming_packages_server(server *, connection_s2c *);
 void conn_handle_events_server(connection_s2c *);

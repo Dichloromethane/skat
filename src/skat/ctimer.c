@@ -7,7 +7,6 @@ static void
 ctimer_tick(sigval_t sv) {
   ctimer *t = sv.sival_ptr;
   int noverruns = timer_getoverrun(t->timer_id);
-  DEBUG_PRINTF("timer ticked");
   for (int i = 0; i < noverruns + 1; i++)
 	sem_post(&t->activations);
 }
@@ -46,7 +45,6 @@ ctimer_run(ctimer *t) {
   DEBUG_PRINTF("Started Server Timer");
   for (;;) {
 	sem_wait(&t->activations);
-	DEBUG_PRINTF("Server tick");
 	t->timerf(t->arg);
   }
 }

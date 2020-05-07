@@ -8,7 +8,7 @@
 
 static void
 print_usage(const char *const name) {
-  fprintf(stderr, "Usage: %s [-h host] [-p port] name\n", name);
+  fprintf(stderr, "Usage: %s [-r] [-h host] [-p port] name\n", name);
 }
 
 int
@@ -17,9 +17,13 @@ main(int argc, char **argv) {
   char *remaining;
   char *host = "localhost";
   long port = DEFAULT_PORT;
+  int resume = 0;
 
-  while ((opt = getopt(argc, argv, "h:p:")) != -1) {
+  while ((opt = getopt(argc, argv, "h:p:r")) != -1) {
 	switch (opt) {
+	  case 'r':
+	    resume = 1;
+		break;
 	  case 'h':
 		host = argv[optind - 1];
 		break;
@@ -48,10 +52,10 @@ main(int argc, char **argv) {
 	exit(EXIT_FAILURE);
   }
 
-  printf("port=%ld; host=%s; name=%s\n", port, host, argv[optind]);
+  printf("Options: port=%ld; host=%s; name=%s; resume=%d;\n", port, host, argv[optind], resume);
 
   client *c = malloc(sizeof(client));
   client_init(c, host, (int) port, argv[optind]);
-  client_run(c);
+  client_run(c, resume);
   __builtin_unreachable();
 }

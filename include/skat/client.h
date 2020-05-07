@@ -17,4 +17,4 @@ void client_release_state_lock(client *c);
 void client_disconnect_connection(client *c, connection_c2s *conn);
 
 void client_init(client *c, char *host, int port, char *name);
-_Noreturn void client_run(client *c);
+_Noreturn void client_run(client *c, int resume);

@@ -129,9 +129,35 @@ establish_connection_server(server *s, int fd, pthread_t handler) {
   CH_ASSERT_NULL(0, &c, CONN_ERROR_INVALID_CONN_STATE);
 }
 
+void int
+conn_handle_incoming_package_client_single(client *c, connection_c2s *conn, package *p) {
+  switch (p->type) {
+	// TODO: this
+	default:
+	  CH_ASSERT_0(0, &conn->c, CONN_ERROR_INVALID_PACKAGE_TYPE);
+  }
+  return 1;
+}
+
+int
+conn_handle_incoming_packages_client(client *c, connection_c2s *conn) {
+  package p;
+  int still_connected;
+  still_connected = retrieve_package(&conn->c, &p);
+  if (!still_connected) {
+	client_acquire_state_lock(c);
+	client_disconnect_connection(c, conn);
+	client_release_state_lock(c);
+	return 0;
+  }
+  return conn_handle_incoming_package_client_single(c, conn, &p);
+}
+
 connection_c2s *
-establish_connection_client(client *c, int socket_fd, pthread_t handler) {
+establish_connection_client(client *c, int socket_fd, pthread_t handler, int resume) {
   connection conn;
+  package_queue pq;
+
   conn.fd = socket_fd;
   conn.cseq = SEQ_NUM_START;
   conn.handler = handler;
@@ -145,12 +171,32 @@ establish_connection_client(client *c, int socket_fd, pthread_t handler) {
   player_id pid;
   init_player_id(&pid, c->name);
 
-  p.type = REQ_RSP_JOIN;
-  p.req.seq = SEQ_NUM_START;
-  p.req.pid = pid;
+  p.req.seq = SEQ_NUM_START; 
+  p.req.pid = pid; 
+  p.type = resume ? REQ_RSP_CONN_RESUME : REQ_RSP_JOIN;
 
   send_package(&conn_c2s->c, &p);
 
+  p.req.seq = ++conn.cseq;
+  p.type = REQ_RSP_RESYNC;
+
+  send_package(&conn_c2s->c, &p);
+
+  package_queue_init(&pq);
+  
+  retrieve_package(&conn_c2s->c, &p);
+  while (p.type != REQ_RSP_RESYNC) {
+	package_queue_enq(&pq, &p);
+    retrieve_package(&conn_c2s->c, &p);
+  }
+  
+  client_handle_resync(&p);
+
+  while (!package_queue_empty(&pq)) {
+	package_queue_deq(&pq, &p);
+    conn_handle_incoming_package_client_single(c, conn_c2s, &p);
+  }
+  
   return conn_c2s;
 }
 
@@ -210,24 +256,6 @@ conn_handle_events_server(connection_s2c *c) {
   }
 }
 
-int
-conn_handle_incoming_packages_client(client *c, connection_c2s *conn) {
-  package p;
-  int still_connected;
-  still_connected = retrieve_package(&conn->c, &p);
-  if (!still_connected) {
-	client_acquire_state_lock(c);
-	client_disconnect_connection(c, conn);
-	client_release_state_lock(c);
-	return 0;
-  }
-  switch (p.type) {
-	// TODO: this
-	default:
-	  CH_ASSERT_0(0, &conn->c, CONN_ERROR_INVALID_PACKAGE_TYPE);
-  }
-  return 1;
-}
 
 void
 conn_handle_events_client(connection_c2s *conn) {
