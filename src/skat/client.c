@@ -113,9 +113,13 @@ client_disconnect_connection(client *c, connection_c2s *conn) {
 }
 
 void
+client_handle_resync(package *p) {
+  // TODO: implement
+}
+
+void
 client_init(client *c, char *host, int port, char *name) {
-  DEBUG_PRINTF("Initializing client with host %s on port %d with name %s", host,
-			   port, name);
+  DEBUG_PRINTF("Initializing client '%s' for server '%s:%d'", name, host, port);
   c->host = host;
   c->port = port;
   c->name = name;
@@ -123,6 +127,8 @@ client_init(client *c, char *host, int port, char *name) {
 
 _Noreturn void
 client_run(client *c, int resume) {
+  DEBUG_PRINTF("Running client with with connection mode '%s'",
+			   resume ? "resume" : "new");
   client_acquire_state_lock(c);
   start_client_conn(c, c->host, c->port, resume);
   client_release_state_lock(c);

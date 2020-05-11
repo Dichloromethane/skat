@@ -211,6 +211,7 @@ server_start_conn_listener(server *s, int p) {
 
 void
 server_init(server *s, int port) {
+  DEBUG_PRINTF("Initializing server on port '%d'", port);
   pthread_mutex_init(&s->lock, NULL);
   s->ncons = 0;
   s->port = port;

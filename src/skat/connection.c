@@ -1,9 +1,9 @@
 #include "skat/connection.h"
 #include "skat/client.h"
+#include "skat/package_queue.h"
 #include "skat/server.h"
 #include "skat/util.h"
 #include <stddef.h>
-#include <string.h>
 #include <sys/socket.h>
 #include <unistd.h>
 
@@ -157,6 +157,8 @@ conn_handle_incoming_packages_client(client *c, connection_c2s *conn) {
 connection_c2s *
 establish_connection_client(client *c, int socket_fd, pthread_t handler,
 							int resume) {
+  DEBUG_PRINTF("%s connection to server",
+			   resume ? "Resuming" : "Establishing new");
   connection conn;
   package_queue pq;
 
@@ -194,8 +196,7 @@ establish_connection_client(client *c, int socket_fd, pthread_t handler,
 
   client_handle_resync(&p);
 
-  while (!package_queue_empty(&pq)) {
-	package_queue_deq(&pq, &p);
+  while (package_queue_deq(&pq, &p)) {
 	conn_handle_incoming_package_client_single(c, conn_c2s, &p);
   }
 

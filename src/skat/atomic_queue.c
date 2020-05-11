@@ -48,16 +48,14 @@ enqueue_event(action_event_queue *q, event *e) {
 
 static aeque_node *
 dequeue(action_event_queue *q) {
-  aeque_node *ret;
   if (!q->head)
 	return NULL;
-  ret = q->head;
-  if (q->head == q->tail) {
-	q->head = q->tail = 0;
-	return ret;
-  }
-  q->head = q->head->next;
-  return ret;
+  aeque_node *n = q->head;
+  if (q->head == q->tail)
+	q->head = q->tail = NULL;
+  else
+	q->head = q->head->next;
+  return n;
 }
 
 int
@@ -68,7 +66,8 @@ dequeue_action(action_event_queue *q, action *a) {
   pthread_mutex_unlock(&q->lock);
   if (!res)
 	return 0;
-  *a = res->a;
+  if (a)
+	*a = res->a;
   free(res);
   return 1;
 }
@@ -81,7 +80,8 @@ dequeue_event(action_event_queue *q, event *e) {
   pthread_mutex_unlock(&q->lock);
   if (!res)
 	return 0;
-  *e = res->e;
+  if (e)
+	*e = res->e;
   free(res);
   return 1;
 }

@@ -32,7 +32,7 @@ main(int argc, char **argv) {
 	}
   }
 
-  printf("port=%ld; optind=%d\n", port, optind);
+  printf("port=%ld\n", port);
 
   server *s = malloc(sizeof(server));
   server_init(s, (int) port);
