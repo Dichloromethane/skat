@@ -33,10 +33,9 @@ main(int argc, char **argv) {
 		if (errno == 0 && *remaining == '\0' && port >= 0 && port < USHRT_MAX) {
 		  break;
 		}
+		fprintf(stderr, "Invalid port: %s\n", optarg);
 		if (errno != 0) {
 		  perror("strtol");
-		} else {
-		  fprintf(stderr, "Invalid port: %s\n", optarg);
 		}
 
 		__attribute__((fallthrough));
