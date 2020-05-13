@@ -1,11 +1,16 @@
 #include "client/text_render.h"
+#include "client/linmath.h"
+#include <stdarg.h>
+#include <stdio.h>
+#include <string.h>
 
 #include <glad/glad.h>
-//#include <GL/gl.h>
 
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
-#include <string.h>
+
+#define WIDTH  (640)
+#define HEIGHT (480)
 
 static const char *
 get_ft_error_message(FT_Error err) {
@@ -19,130 +24,169 @@ get_ft_error_message(FT_Error err) {
   return "(Unknown error)";
 }
 
-// This Function Gets The First Power Of 2 >= The
-// Int That We Pass It.
-static unsigned int
-next_p2(unsigned int a) {
-  unsigned int rval = 1;
-  // rval<<=1 Is A Prettier Way Of Writing rval*=2;
-  while (rval < a)
-	rval <<= 1u;
-  return rval;
-}
+void
+text_render_init(text_state *ts) {
+  ts->shd = shader_create_load_file("./shader/text");
+  shader_use(ts->shd);
 
-static void
-make_dlist(FT_Face face, char ch, GLuint list_base, GLuint *tex_base) {
-  // The First Thing We Do Is Get FreeType To Render Our Character
-  // Into A Bitmap.  This Actually Requires A Couple Of FreeType Commands:
+  ts->attribute_coord = shader_get_attrib_location(ts->shd, "coord");
+  ts->uniform_tex = shader_get_uniform_location(ts->shd, "tex");
+  ts->uniform_color = shader_get_uniform_location(ts->shd, "color");
+  ts->uniform_projection = shader_get_uniform_location(ts->shd, "projection");
 
-  // Load The Glyph For Our Character.
-  if (FT_Load_Glyph(face, FT_Get_Char_Index(face, ch), FT_LOAD_DEFAULT))
-	// throw std::runtime_error("FT_Load_Glyph failed");
-	printf("Error: FT_Load_Glyph failed\n");
+  mat4x4 projection;
+  mat4x4_identity(projection);
+  mat4x4_ortho(projection, 0.0f, (float) WIDTH, (float) HEIGHT, 0.0f, -1.0f,
+			   1.0f);
+  glUniformMatrix4fv(ts->uniform_projection, 1, GL_FALSE,
+					 (const GLfloat *) projection);
 
-  // Move The Face's Glyph Into A Glyph Object.
-  FT_Glyph glyph;
-  if (FT_Get_Glyph(face->glyph, &glyph))
-	// throw std::runtime_error("FT_Get_Glyph failed");
-	printf("Error: FT_Get_Glyph failed\n");
+  glGenBuffers(1, &ts->vbo);
 
-  // Convert The Glyph To A Bitmap.
-  FT_Glyph_To_Bitmap(&glyph, ft_render_mode_normal, 0, 1);
-  FT_BitmapGlyph bitmap_glyph = (FT_BitmapGlyph) glyph;
-
-  // This Reference Will Make Accessing The Bitmap Easier.
-  FT_Bitmap bitmap = bitmap_glyph->bitmap;
-  // Use Our Helper Function To Get The Widths Of
-  // The Bitmap Data That We Will Need In Order To Create
-  // Our Texture.
-  unsigned int width = next_p2(bitmap.width);
-  unsigned int height = next_p2(bitmap.rows);
-
-  // Allocate Memory For The Texture Data.
-  GLubyte *expanded_data = malloc(sizeof(GLubyte) * 2 * width * height);
-
-  // Here We Fill In The Data For The Expanded Bitmap.
-  // Notice That We Are Using A Two Channel Bitmap (One For
-  // Channel Luminosity And One For Alpha), But We Assign
-  // Both Luminosity And Alpha To The Value That We
-  // Find In The FreeType Bitmap.
-  // We Use The ?: Operator To Say That Value Which We Use
-  // Will Be 0 If We Are In The Padding Zone, And Whatever
-  // Is The FreeType Bitmap Otherwise.
-  for (unsigned int j = 0; j < height; j++) {
-	for (unsigned int i = 0; i < width; i++) {
-	  expanded_data[2 * (i + j * width)] = 255;
-	  expanded_data[2 * (i + j * width) + 1] =
-			  (i >= bitmap.width || j >= bitmap.rows)
-					  ? 0
-					  : bitmap.buffer[i + bitmap.width * j];
-	}
+  FT_Library ft_library;
+  FT_Error err = FT_Init_FreeType(&ft_library);
+  if (err != FT_Err_Ok) {
+	const char *message = get_ft_error_message(err);
+	printf("Error: Could not init FreeType: %s (0x%02x)\n", message, err);
+	FT_Done_FreeType(ft_library);
+	exit(EXIT_FAILURE);
   }
 
-  // Now We Just Setup Some Texture Parameters.
-  glBindTexture(GL_TEXTURE_2D, tex_base[ch]);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  FT_Face font_face;
+  // FIXME: calculate path
+  err = FT_New_Face(ft_library, "./font/LiberationSerif-Regular.ttf", 0,
+					&font_face);
+  if (err != FT_Err_Ok) {
+	const char *message = get_ft_error_message(err);
+	printf("Error: Could not load font file: %s (0x%02x)\n", message, err);
+	FT_Done_FreeType(ft_library);
+	exit(EXIT_FAILURE);
+  }
+
+  err = FT_Set_Pixel_Sizes(font_face, 0, 64);
+  if (err != FT_Err_Ok) {
+	const char *message = get_ft_error_message(err);
+	printf("Error: Could not set pixel sizes: %s (0x%02x)\n", message, err);
+	FT_Done_FreeType(ft_library);
+	exit(EXIT_FAILURE);
+  }
+
+  FT_GlyphSlot g = font_face->glyph;
+
+  ts->width = 1024;
+  ts->height = 1024;
+
+  // generate texture
+  glActiveTexture(GL_TEXTURE0);
+  glGenTextures(1, &ts->texture_id);
+  glBindTexture(GL_TEXTURE_2D, ts->texture_id);
+  glUniform1i(ts->uniform_tex, 0);
+
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, ts->width, ts->height, 0, GL_RED,
+			   GL_UNSIGNED_BYTE, NULL);
+
+  /* We require 1 byte alignment when uploading texture data */
+  glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+
+  /* Clamping to edges is important to prevent artifacts when scaling */
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+  /* Linear filtering usually looks best for text */
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-  // Here We Actually Create The Texture Itself, Notice
-  // That We Are Using GL_LUMINANCE_ALPHA To Indicate That
-  // We Are Using 2 Channel Data.
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_LUMINANCE_ALPHA,
-			   GL_UNSIGNED_BYTE, expanded_data);
 
-  // With The Texture Created, We Don't Need The Expanded Data Anymore.
-  free(expanded_data);
-  // Now We Create The Display List
-  glNewList(list_base + ch, GL_COMPILE);
+  unsigned int height = 0;
+  unsigned int row_width = 0;
+  unsigned int row_height = 0;
+  unsigned char row_start = 0;
+  for (unsigned char c = 0; c < 128; c++) {
+	err = FT_Load_Char(font_face, c, FT_LOAD_RENDER);
+	if (err != FT_Err_Ok) {
+	  const char *message = get_ft_error_message(err);
+	  printf("ERROR: Failed to load glyph: %s (0x%02x)\n", message, err);
+	  continue;
+	}
 
-  glBindTexture(GL_TEXTURE_2D, tex_base[ch]);
+	character_data *cd = &ts->char_data[c];
+	cd->adv_x = (float) g->advance.x / 64.0f;
+	cd->adv_y = (float) g->advance.y / 64.0f;
+	cd->bm_w = g->bitmap.width;
+	cd->bm_h = g->bitmap.rows;
+	cd->bm_l = g->bitmap_left;
+	cd->bm_t = g->bitmap_top;
+	cd->row_width = 0;
+	cd->row_height = 0;
+	cd->tex_x = 0;
+	cd->tex_y = 0;
+	cd->tex_w = (float) g->bitmap.width / (float) ts->width;
+	cd->tex_h = (float) g->bitmap.rows / (float) ts->height;
+	cd->off_x = 0;
+	cd->off_y = 0;
 
-  glPushMatrix();
+	unsigned int w = cd->bm_w + 1;
+	unsigned int h = cd->bm_h + 1;
 
-  // First We Need To Move Over A Little So That
-  // The Character Has The Right Amount Of Space
-  // Between It And The One Before It.
-  glTranslatef(bitmap_glyph->left, 0, 0);
+	if (w >= ts->width || height >= ts->height) {
+	  printf("ERROR: font atlas too small\n");
+	  FT_Done_FreeType(ft_library);
+	  exit(EXIT_FAILURE);
+	}
 
-  // Now We Move Down A Little In The Case That The
-  // Bitmap Extends Past The Bottom Of The Line
-  // This Is Only True For Characters Like 'g' Or 'y'.
-  glTranslatef(0, bitmap_glyph->top - bitmap.rows, 0);
+	if (row_width + w >= ts->width) {
+	  printf("Row full for %d: row_width=%d; row_height=%d; height=%d\n", c,
+			 row_width, row_height, height);
+	  printf("Retroactively setting width/height/y/y of %d-%d\n", row_start, c);
+	  for (unsigned rc = row_start; rc < c; rc++) {
+		character_data *rcd = &ts->char_data[rc];
+		rcd->row_width = row_width;
+		rcd->row_height = row_height;
+		rcd->tex_y = height;
+		rcd->off_y = (float) height / (float) ts->height;
+	  }
+	  height += row_height;
+	  row_width = 0;
+	  row_height = 0;
+	  row_start = c;
+	}
 
-  // Now We Need To Account For The Fact That Many Of
-  // Our Textures Are Filled With Empty Padding Space.
-  // We Figure What Portion Of The Texture Is Used By
-  // The Actual Character And Store That Information In
-  // The x And y Variables, Then When We Draw The
-  // Quad, We Will Only Reference The Parts Of The Texture
-  // That Contains The Character Itself.
-  float x = (float) bitmap.width / (float) width,
-		y = (float) bitmap.rows / (float) height;
+	cd->tex_x = row_width;
+	cd->off_x = (float) row_width / (float) ts->width;
 
-  // Here We Draw The Texturemapped Quads.
-  // The Bitmap That We Got From FreeType Was Not
-  // Oriented Quite Like We Would Like It To Be,
-  // But We Link The Texture To The Quad
-  // In Such A Way That The Result Will Be Properly Aligned.
-  glBegin(GL_QUADS);
-  glTexCoord2d(0, 0);
-  glVertex2f(0, bitmap.rows);
-  glTexCoord2d(0, y);
-  glVertex2f(0, 0);
-  glTexCoord2d(x, y);
-  glVertex2f(bitmap.width, 0);
-  glTexCoord2d(x, 0);
-  glVertex2f(bitmap.width, bitmap.rows);
-  glEnd();
-  glPopMatrix();
-  glTranslatef(face->glyph->advance.x >> 6, 0, 0);
+	row_width += w;
+	if (h > row_height) {
+	  row_height = h;
+	}
+  }
+  printf("Retroactively setting width/height/y/y of %d-%d\n", row_start, 128);
+  for (unsigned rc = row_start; rc < 128; rc++) {
+	character_data *rcd = &ts->char_data[rc];
+	rcd->row_width = row_width;
+	rcd->row_height = row_height;
+	rcd->tex_y = height;
+	rcd->off_y = (float) height / (float) ts->height;
+  }
 
-  // Increment The Raster Position As If We Were A Bitmap Font.
-  // (Only Needed If You Want To Calculate Text Length)
-  // glBitmap(0,0,0,0,face->glyph->advance.x >> 6,0,NULL);
+  for (unsigned char c = 0; c < 128; c++) {
+	character_data *cd = &ts->char_data[c];
+	printf("%3d: %dx%d\n", c, cd->tex_x, cd->tex_y);
+  }
 
-  // Finish The Display List
-  glEndList();
+  for (unsigned char c = 0; c < 128; c++) {
+	err = FT_Load_Char(font_face, c, FT_LOAD_RENDER);
+	if (err != FT_Err_Ok) {
+	  const char *message = get_ft_error_message(err);
+	  printf("ERROR: Failed to load glyph: %s (0x%02x)\n", message, err);
+	  continue;
+	}
+
+	character_data *cd = &ts->char_data[c];
+	glTexSubImage2D(GL_TEXTURE_2D, 0, cd->tex_x, cd->tex_y, cd->bm_w, cd->bm_h,
+					GL_RED, GL_UNSIGNED_BYTE, g->bitmap.buffer);
+  }
+
+  FT_Done_FreeType(ft_library);
 }
 
 // A Fairly Straightforward Function That Pushes
@@ -170,98 +214,95 @@ pop_projection_matrix() {
   glPopAttrib();
 }
 
+typedef struct {
+  GLfloat x;
+  GLfloat y;
+  GLfloat s;
+  GLfloat t;
+} point;
+
 void
-text_render_init(text_state *ts) {
-  FT_Error err = FT_Init_FreeType(&ts->ft_library);
-  if (err != FT_Err_Ok) {
-	const char *message = get_ft_error_message(err);
-	printf("Error: Could not init FreeType Library: %s (%d)\n", message, err);
+text_render_print(text_state *ts, float x, float y, float sx, float sy,
+				  const char *fmt, ...) {
+  va_list ap;
+  va_start(ap, fmt);
+  int size = vsnprintf(NULL, 0, fmt, ap);
+  char *text = malloc(size + 1);
+  vsprintf(text, fmt, ap);
+  va_end(ap);
+
+  // printf("%s\n", text);
+
+  /*pushScreenCoordinateMatrix();
+  glPushAttrib(GL_LIST_BIT | GL_CURRENT_BIT | GL_ENABLE_BIT |
+			   GL_TRANSFORM_BIT); glMatrixMode(GL_MODELVIEW);
+  glDisable(GL_LIGHTING); glEnable(GL_TEXTURE_2D); glDisable(GL_DEPTH_TEST);
+  glEnable(GL_BLEND);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+  float modelview_matrix[16];
+  glGetFloatv(GL_MODELVIEW_MATRIX, modelview_matrix);
+
+  shader_use(ts->shd);
+
+  GLfloat transparent_green[] = {0, 1, 0, 0.5};
+  glUniform4fv(ts->uniform_color, 1, transparent_green);*/
+
+  shader_use(ts->shd);
+  /* Use the texture containing the atlas */
+  glBindTexture(GL_TEXTURE_2D, ts->texture_id);
+  glUniform1i(ts->uniform_tex, 0);
+
+  /* Set up the VBO for our vertex data */
+  glEnableVertexAttribArray(ts->attribute_coord);
+  glBindBuffer(GL_ARRAY_BUFFER, ts->vbo);
+  glVertexAttribPointer(ts->attribute_coord, 4, GL_FLOAT, GL_FALSE, 0, 0);
+
+  point coords[6 * strlen(text)];
+  unsigned int idx = 0;
+
+  /* Loop through all characters */
+  for (char *p = text; *p; p++) {
+	/* Calculate the vertex and texture coordinates */
+	character_data *c = &ts->char_data[*p];
+	float x2 = x + (float) c->bm_l * sx;
+	float y2 = -y - (float) c->bm_t * sy;
+	float w = (float) c->bm_w * sx;
+	float h = (float) c->bm_h * sy;
+
+	/* Advance the cursor to the start of the next character */
+	x += c->adv_x * sx;
+	y += c->adv_y * sy;
+
+	/* Skip glyphs that have no pixels */
+	if (!w || !h)
+	  continue;
+
+	coords[idx++] = (point){x2, -y2, c->off_x, c->off_y};
+	coords[idx++] = (point){x2 + w, -y2, c->off_x + c->tex_w, c->off_y};
+	coords[idx++] = (point){x2, -y2 - h, c->off_x, c->off_y + c->tex_h};
+	coords[idx++] = (point){x2 + w, -y2, c->off_x + c->tex_w, c->off_y};
+	coords[idx++] = (point){x2, -y2 - h, c->off_x, c->off_y + c->tex_h};
+	coords[idx++] =
+			(point){x2 + w, -y2 - h, c->off_x + c->tex_w, c->off_y + c->tex_h};
   }
 
-  // FIXME: calculate path
-  err = FT_New_Face(ts->ft_library, "./font/LiberationSerif-Regular.ttf", 0,
-					&ts->font_face);
-  if (err != FT_Err_Ok) {
-	const char *message = get_ft_error_message(err);
-	printf("Error: Could not load font file: %s (%d)\n", message, err);
-  }
+  /* Draw all the character on the screen in one go */
+  glBufferData(GL_ARRAY_BUFFER, sizeof(coords), coords, GL_DYNAMIC_DRAW);
+  glDrawArrays(GL_TRIANGLES, 0, idx);
 
-  ts->h = 16;
+  glDisableVertexAttribArray(ts->attribute_coord);
 
-  // For Some Twisted Reason, FreeType Measures Font Size
-  // In Terms Of 1/64ths Of Pixels.  Thus, To Make A Font
-  // h Pixels High, We Need To Request A Size Of h*64.
-  // (h << 6 Is Just A Prettier Way Of Writing h*64)
-  FT_Set_Char_Size(ts->font_face, ts->h << 6, ts->h << 6, 96, 96);
+  /*glPopAttrib();
+  pop_projection_matrix();*/
 
-  // Here We Ask OpenGL To Allocate Resources For
-  // All The Textures And Display Lists Which We
-  // Are About To Create.
-  GLuint textures[128];
-  ts->list_base = glGenLists(128);
-  glGenTextures(128, textures);
+  free(text);
 
-  // This Is Where We Actually Create Each Of The Fonts Display Lists.
-  for (unsigned char i = 0; i < 128; i++)
-	make_dlist(ts->font_face, i, ts->list_base, textures);
+  /*pushScreenCoordinateMatrix();
 
-  // We Don't Need The Face Information Now That The Display
-  // Lists Have Been Created, So We Free The Associated Resources.
-  // FT_Done_Face(ts->font_face);
-
-  // Ditto For The Font Library.
-  // FT_Done_FreeType(ts->ft_library);
-}
-
-// Much Like NeHe's glPrint Function, But Modified To Work
-// With FreeType Fonts.
-void
-text_render_print(text_state *ts, float x, float y, const char *fmt, ...) {
-  // We Want A Coordinate System Where Distance Is Measured In Window Pixels.
-  pushScreenCoordinateMatrix();
-
-  GLuint font = ts->list_base;
-  // We Make The Height A Little Bigger.  There Will Be Some Space Between
-  // Lines.
-  float h = ts->h / .63f;
-  char text[256];// Holds Our String
-  va_list ap;    // Pointer To List Of Arguments
-
-  if (fmt == NULL)// If There's No Text
-	*text = 0;    // Do Nothing
-  else {
-	va_start(ap, fmt);      // Parses The String For Variables
-	vsprintf(text, fmt, ap);// And Converts Symbols To Actual Numbers
-	va_end(ap);             // Results Are Stored In Text
-  }
-
-  // Here Is Some Code To Split The Text That We Have Been
-  // Given Into A Set Of Lines.
-  // This Could Be Made Much Neater By Using
-  // A Regular Expression Library Such As The One Available From
-  // boost.org (I've Only Done It Out By Hand To Avoid Complicating
-  // This Tutorial With Unnecessary Library Dependencies).
-  /*const char *start_line = text;
-  vector<string> lines;
-  for (const char *c = text; *c; c++) {
-	if (*c == '\n') {
-	  string line;
-	  for (const char *n = start_line; n < c; n++)
-		line.append(1, *n);
-	  lines.push_back(line);
-	  start_line = c + 1;
-	}
-  }
-  if (start_line) {
-	string line;
-	for (const char *n = start_line; n < c; n++)
-	  line.append(1, *n);
-	lines.push_back(line);
-  }*/
-
-  glPushAttrib(GL_LIST_BIT | GL_CURRENT_BIT | GL_ENABLE_BIT | GL_TRANSFORM_BIT);
-  glMatrixMode(GL_MODELVIEW);
-  glDisable(GL_LIGHTING);
+  GLuint font = 0;// ts->list_base;
+  glPushAttrib(GL_LIST_BIT | GL_CURRENT_BIT | GL_ENABLE_BIT |
+  GL_TRANSFORM_BIT); glMatrixMode(GL_MODELVIEW); glDisable(GL_LIGHTING);
   glEnable(GL_TEXTURE_2D);
   glDisable(GL_DEPTH_TEST);
   glEnable(GL_BLEND);
@@ -271,35 +312,48 @@ text_render_print(text_state *ts, float x, float y, const char *fmt, ...) {
   float modelview_matrix[16];
   glGetFloatv(GL_MODELVIEW_MATRIX, modelview_matrix);
 
-  // This Is Where The Text Display Actually Happens.
-  // For Each Line Of Text We Reset The Modelview Matrix
-  // So That The Line's Text Will Start In The Correct Position.
-  // Notice That We Need To Reset The Matrix, Rather Than Just Translating
-  // Down By h. This Is Because When Each Character Is
-  // Drawn It Modifies The Current Matrix So That The Next Character
-  // Will Be Drawn Immediately After It.
-  for (int i = 0; i < 1 /*lines.size()*/; i++) {
-	glPushMatrix();
-	glLoadIdentity();
-	glTranslatef(x, y - h * i, 0);
-	glMultMatrixf(modelview_matrix);
+  glPushMatrix();
+  glLoadIdentity();
+  glTranslatef(x, y, 0);
+  glMultMatrixf(modelview_matrix);
 
-	// The Commented Out Raster Position Stuff Can Be Useful If You Need To
-	// Know The Length Of The Text That You Are Creating.
-	// If You Decide To Use It Make Sure To Also Uncomment The glBitmap Command
-	// In make_dlist().
-	// glRasterPos2f(0,0);
-	size_t len = strlen(text);
-	glCallLists(len /*lines[i].length()*/, GL_UNSIGNED_BYTE,
-				text /*lines[i].c_str()*/);
-	// float rpos[4];
-	// glGetFloatv(GL_CURRENT_RASTER_POSITION ,rpos);
-	// float len=x-rpos[0]; (Assuming No Rotations Have Happened)
+  size_t len = strlen(text);
+  glCallLists(len, GL_UNSIGNED_BYTE, text);
 
-	glPopMatrix();
-  }
+  glPopMatrix();
 
   glPopAttrib();
+  pop_projection_matrix();*/
+}
 
-  pop_projection_matrix();
+void
+text_render_debug(text_state *ts, float x, float y, float sx, float sy) {
+  float w = (float) ts->width * sx;
+  float h = (float) ts->height * sy;
+
+  // pushScreenCoordinateMatrix();
+  shader_use(ts->shd);
+  glBindTexture(GL_TEXTURE_2D, ts->texture_id);
+  glUniform1i(ts->uniform_tex, 0);
+
+  /* Set up the VBO for our vertex data */
+  glEnableVertexAttribArray(ts->attribute_coord);
+  glBindBuffer(GL_ARRAY_BUFFER, ts->vbo);
+  glVertexAttribPointer(ts->attribute_coord, 4, GL_FLOAT, GL_FALSE, 0, 0);
+
+  point coords[6];
+  unsigned int idx = 0;
+  coords[idx++] = (point){x, -y, 0, 0};
+  coords[idx++] = (point){x + w, -y, 1, 0};
+  coords[idx++] = (point){x, -y - h, 0, 1};
+  coords[idx++] = (point){x + w, -y, 1, 0};
+  coords[idx++] = (point){x, -y - h, 0, 1};
+  coords[idx++] = (point){x + w, -y - h, 1, 1};
+
+  /* Draw all the character on the screen in one go */
+  glBufferData(GL_ARRAY_BUFFER, sizeof(coords), coords, GL_DYNAMIC_DRAW);
+  glDrawArrays(GL_TRIANGLES, 0, idx);
+
+  glDisableVertexAttribArray(ts->attribute_coord);
+  // pop_projection_matrix();
 }

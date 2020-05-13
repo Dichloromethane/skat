@@ -22,3 +22,11 @@ util_rand_int(const int min, const int max) {
 
   return (random % (max - min)) + min;
 }
+
+unsigned int
+round_to_next_pow2(unsigned int n) {
+  unsigned int p2 = 1;
+  while (p2 < n)
+	p2 <<= 1u;
+  return p2;
+}

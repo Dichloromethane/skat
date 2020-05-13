@@ -125,7 +125,9 @@ shader_load_file(shader *const shdr, const char *const shader_name,
 
   FILE *f = fopen(filename, "r");
   if (f == NULL) {
-	perror("Shader File could not be opened");
+	printf("Shader File '%s' could not be opened\n", filename);
+	perror("Error");
+	exit(EXIT_FAILURE);
   }
 
   size_t shader_source_size = BUFSIZ;
