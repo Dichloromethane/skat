@@ -20,13 +20,14 @@ static const struct {
 
 #define WIDTH  (640)
 #define HEIGHT (480)
-static float screen_width = WIDTH;
-static float screen_height = HEIGHT;
+float screen_width = WIDTH;
+float screen_height = HEIGHT;
 
 static void
 error_callback(int error, const char *description) {
   fprintf(stderr, "Error: %s (%d)\n", description, error);
 }
+
 static void
 resize_callback(GLFWwindow *window, int width, int height) {
   /*int side = width < height ? width : height;
@@ -51,36 +52,43 @@ resize_callback(GLFWwindow *window, int width, int height) {
   GLfloat aspect = (GLfloat) width / (GLfloat) height;
   // Set the viewport to cover the new window
   glViewport(0, 0, width, height);
+  // glViewport(0, 0, 400, 400);
 
   // Set the aspect ratio of the clipping area to match the viewport
-  glMatrixMode(GL_PROJECTION);// To operate on the Projection matrix
+  /*glMatrixMode(GL_PROJECTION);// To operate on the Projection matrix
   glLoadIdentity();           // Reset the projection matrix
 
   GLdouble clipAreaXLeft, clipAreaXRight, clipAreaYBottom, clipAreaYTop;
+   GLfloat minX = -1, maxX = 1, minY = -1, maxY = 1;
+  //GLfloat minX = 0, maxX = 1, minY = 0, maxY = 1;
+
   if (width >= height) {
-	clipAreaXLeft = -1.0 * aspect;
-	clipAreaXRight = 1.0 * aspect;
-	clipAreaYBottom = -1.0;
-	clipAreaYTop = 1.0;
+	clipAreaXLeft = minX * aspect;
+	clipAreaXRight = maxX * aspect;
+	clipAreaYBottom = minY;
+	clipAreaYTop = maxY;
   } else {
-	clipAreaXLeft = -1.0;
-	clipAreaXRight = 1.0;
-	clipAreaYBottom = -1.0 / aspect;
-	clipAreaYTop = 1.0 / aspect;
+	clipAreaXLeft = minX;
+	clipAreaXRight = maxX;
+	clipAreaYBottom = minY / aspect;
+	clipAreaYTop = maxY / aspect;
   }
   glOrtho(clipAreaXLeft, clipAreaXRight, clipAreaYBottom, clipAreaYTop, -1.0,
-		  1.0);
+		  1.0);*/
 
   screen_width = (float) width;
   screen_height = (float) height;
+  text_render_rescale(screen_width, screen_height);
 }
-
+static GLfloat xrunner = 0;
 static void
 key_callback(GLFWwindow *window, int key, int scancode, int action, int mods) {
   printf("key_callback: key=%d scancode=%d action=%d mods=%d\n", key, scancode,
 		 action, mods);
   if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
 	glfwSetWindowShouldClose(window, GLFW_TRUE);
+  if (key == GLFW_KEY_Y && action == GLFW_PRESS)
+	xrunner -= 25.0f;
 }
 
 int
@@ -127,13 +135,7 @@ start_GRAPHICAL(void) {
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-  text_state *ts = malloc(sizeof(text_state));
-  text_render_init(ts);
-
-  mat4x4 projection;
-  mat4x4_identity(projection);
-  mat4x4_ortho(projection, 0.0f, (float) WIDTH, (float) HEIGHT, 0.0f, -1.0f,
-			   1.0f);
+  text_render_init();
 
   /*glViewport(0, 0, WIDTH, HEIGHT);
   glOrtho(0.0, WIDTH, HEIGHT, 0.0, -1.0, 1.0);*/
@@ -156,8 +158,8 @@ start_GRAPHICAL(void) {
   glVertexAttribPointer(vcol_location, 3, GL_FLOAT, GL_FALSE,
 						sizeof(vertices[0]), (void *) (sizeof(float) * 2));*/
 
-  float sx = 2.0f / 640.0f;
-  float sy = 2.0f / 480.0f;
+  // float sx = 2.0f / 640.0f;
+  // float sy = 2.0f / 480.0f;
 
   while (!glfwWindowShouldClose(window)) {
 	/*float ratio;
@@ -188,27 +190,24 @@ start_GRAPHICAL(void) {
 	glLoadIdentity();
 	// glOrtho(0.0f, WIDTH, HEIGHT, 0.0f, -1.0f, 0.0f);
 
-	glUseProgram(ts->shd->program);
-
 	/* Enable blending, necessary for our alpha texture */
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-	GLfloat black[4] = {0, 0, 0, 1};
+	/*GLfloat black[4] = {0, 0, 0, 1};
 	GLfloat red[4] = {1, 0, 0, 1};
-	GLfloat transparent_green[4] = {0, 1, 0, 0.5};
+	GLfloat transparent_green[4] = {0, 1, 0, 0.5};*/
 
 	/* Set color to black */
-	glUniform4fv(ts->uniform_color, 1, black);
+	// glUniform4fv(ts.uniform_color, 1, black);
 
-	/*text_render_print(ts, -1 + 8 * sx, 1 - 50 * sy, sx, sy,
+	text_render_print(-0.5f, -0.5f, 1.0f,
 					  "The Quick Brown Fox Jumps Over The Lazy Dog!");
-	text_render_print(ts, -1 + 8 * sx, 1 - 150 * sy, sx, sy,
+	/*text_render_print( -1 , 1 - 150 * sy, sx, sy,
 					  ".ABCDEFGHIJKLMNOPQRSTUVWYZ.");
-	text_render_print(ts, -1 + 8 * sx, 1 - 250 * sy, sx, sy,
+	text_render_print(-1 , 1 - 250 * sy, sx, sy,
 					  ".abcdefghijklmnopqrstuvwyz.");*/
-	text_render_debug(ts, -1, -0.75f, 1.0f / screen_width,
-					  1.0f / screen_height);
+	//text_render_debug(-0.5f, -0.5f, 1.0f);
 
 	glPopMatrix();
 

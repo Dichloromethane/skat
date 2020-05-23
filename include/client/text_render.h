@@ -33,11 +33,12 @@ typedef struct {
   GLint uniform_tex;
   GLint uniform_color;
   GLint uniform_projection;
+  GLint uniform_model;
   GLuint vbo;
   character_data char_data[128];
 } text_state;
 
-void text_render_init(text_state *ts);
-void text_render_print(text_state *ts, float x, float y, float sx, float sy,
-					   const char *fmt, ...);
-void text_render_debug(text_state *ts, float x, float y, float sx, float sy);
+void text_render_init(void);
+void text_render_rescale(float width, float height);
+void text_render_print(float x, float y, float s, const char *fmt, ...);
+void text_render_debug(float x, float y, float s);

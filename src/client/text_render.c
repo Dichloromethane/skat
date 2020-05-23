@@ -1,7 +1,9 @@
-#include "client/text_render.h"
-#include "client/linmath.h"
-#include <stdarg.h>
+#define _GNU_SOURCE
 #include <stdio.h>
+
+#include "client/linmath.h"
+#include "client/text_render.h"
+#include <stdarg.h>
 #include <string.h>
 
 #include <glad/glad.h>
@@ -9,8 +11,8 @@
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 
-#define WIDTH  (640)
-#define HEIGHT (480)
+extern float screen_width;
+extern float screen_height;
 
 static const char *
 get_ft_error_message(FT_Error err) {
@@ -24,24 +26,22 @@ get_ft_error_message(FT_Error err) {
   return "(Unknown error)";
 }
 
+static text_state ts;
+
 void
-text_render_init(text_state *ts) {
-  ts->shd = shader_create_load_file("./shader/text");
-  shader_use(ts->shd);
+text_render_init() {
+  ts.shd = shader_create_load_file("./shader/text");
+  shader_use(ts.shd);
 
-  ts->attribute_coord = shader_get_attrib_location(ts->shd, "coord");
-  ts->uniform_tex = shader_get_uniform_location(ts->shd, "tex");
-  ts->uniform_color = shader_get_uniform_location(ts->shd, "color");
-  ts->uniform_projection = shader_get_uniform_location(ts->shd, "projection");
+  ts.attribute_coord = shader_get_attrib_location(ts.shd, "coord");
+  ts.uniform_tex = shader_get_uniform_location(ts.shd, "tex");
+  ts.uniform_color = shader_get_uniform_location(ts.shd, "color");
+  ts.uniform_projection = shader_get_uniform_location(ts.shd, "projection");
+  ts.uniform_model = shader_get_uniform_location(ts.shd, "model");
 
-  mat4x4 projection;
-  mat4x4_identity(projection);
-  mat4x4_ortho(projection, 0.0f, (float) WIDTH, (float) HEIGHT, 0.0f, -1.0f,
-			   1.0f);
-  glUniformMatrix4fv(ts->uniform_projection, 1, GL_FALSE,
-					 (const GLfloat *) projection);
+  text_render_rescale(screen_width, screen_height);
 
-  glGenBuffers(1, &ts->vbo);
+  glGenBuffers(1, &ts.vbo);
 
   FT_Library ft_library;
   FT_Error err = FT_Init_FreeType(&ft_library);
@@ -73,16 +73,16 @@ text_render_init(text_state *ts) {
 
   FT_GlyphSlot g = font_face->glyph;
 
-  ts->width = 1024;
-  ts->height = 1024;
+  ts.width = 1024;
+  ts.height = 1024;
 
   // generate texture
   glActiveTexture(GL_TEXTURE0);
-  glGenTextures(1, &ts->texture_id);
-  glBindTexture(GL_TEXTURE_2D, ts->texture_id);
-  glUniform1i(ts->uniform_tex, 0);
+  glGenTextures(1, &ts.texture_id);
+  glBindTexture(GL_TEXTURE_2D, ts.texture_id);
+  glUniform1i(ts.uniform_tex, 0);
 
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, ts->width, ts->height, 0, GL_RED,
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, ts.width, ts.height, 0, GL_RED,
 			   GL_UNSIGNED_BYTE, NULL);
 
   /* We require 1 byte alignment when uploading texture data */
@@ -109,7 +109,7 @@ text_render_init(text_state *ts) {
 	  continue;
 	}
 
-	character_data *cd = &ts->char_data[c];
+	character_data *cd = &ts.char_data[c];
 	cd->adv_x = (float) g->advance.x / 64.0f;
 	cd->adv_y = (float) g->advance.y / 64.0f;
 	cd->bm_w = g->bitmap.width;
@@ -120,30 +120,30 @@ text_render_init(text_state *ts) {
 	cd->row_height = 0;
 	cd->tex_x = 0;
 	cd->tex_y = 0;
-	cd->tex_w = (float) g->bitmap.width / (float) ts->width;
-	cd->tex_h = (float) g->bitmap.rows / (float) ts->height;
+	cd->tex_w = (float) g->bitmap.width / (float) ts.width;
+	cd->tex_h = (float) g->bitmap.rows / (float) ts.height;
 	cd->off_x = 0;
 	cd->off_y = 0;
 
 	unsigned int w = cd->bm_w + 1;
 	unsigned int h = cd->bm_h + 1;
 
-	if (w >= ts->width || height >= ts->height) {
+	if (w >= ts.width || height >= ts.height) {
 	  printf("ERROR: font atlas too small\n");
 	  FT_Done_FreeType(ft_library);
 	  exit(EXIT_FAILURE);
 	}
 
-	if (row_width + w >= ts->width) {
+	if (row_width + w >= ts.width) {
 	  printf("Row full for %d: row_width=%d; row_height=%d; height=%d\n", c,
 			 row_width, row_height, height);
 	  printf("Retroactively setting width/height/y/y of %d-%d\n", row_start, c);
 	  for (unsigned rc = row_start; rc < c; rc++) {
-		character_data *rcd = &ts->char_data[rc];
+		character_data *rcd = &ts.char_data[rc];
 		rcd->row_width = row_width;
 		rcd->row_height = row_height;
 		rcd->tex_y = height;
-		rcd->off_y = (float) height / (float) ts->height;
+		rcd->off_y = (float) height / (float) ts.height;
 	  }
 	  height += row_height;
 	  row_width = 0;
@@ -152,7 +152,7 @@ text_render_init(text_state *ts) {
 	}
 
 	cd->tex_x = row_width;
-	cd->off_x = (float) row_width / (float) ts->width;
+	cd->off_x = (float) row_width / (float) ts.width;
 
 	row_width += w;
 	if (h > row_height) {
@@ -161,15 +161,15 @@ text_render_init(text_state *ts) {
   }
   printf("Retroactively setting width/height/y/y of %d-%d\n", row_start, 128);
   for (unsigned rc = row_start; rc < 128; rc++) {
-	character_data *rcd = &ts->char_data[rc];
+	character_data *rcd = &ts.char_data[rc];
 	rcd->row_width = row_width;
 	rcd->row_height = row_height;
 	rcd->tex_y = height;
-	rcd->off_y = (float) height / (float) ts->height;
+	rcd->off_y = (float) height / (float) ts.height;
   }
 
   for (unsigned char c = 0; c < 128; c++) {
-	character_data *cd = &ts->char_data[c];
+	character_data *cd = &ts.char_data[c];
 	printf("%3d: %dx%d\n", c, cd->tex_x, cd->tex_y);
   }
 
@@ -181,7 +181,7 @@ text_render_init(text_state *ts) {
 	  continue;
 	}
 
-	character_data *cd = &ts->char_data[c];
+	character_data *cd = &ts.char_data[c];
 	glTexSubImage2D(GL_TEXTURE_2D, 0, cd->tex_x, cd->tex_y, cd->bm_w, cd->bm_h,
 					GL_RED, GL_UNSIGNED_BYTE, g->bitmap.buffer);
   }
@@ -189,29 +189,14 @@ text_render_init(text_state *ts) {
   FT_Done_FreeType(ft_library);
 }
 
-// A Fairly Straightforward Function That Pushes
-// A Projection Matrix That Will Make Object World
-// Coordinates Identical To Window Coordinates.
-static void
-pushScreenCoordinateMatrix() {
-  glPushAttrib(GL_TRANSFORM_BIT);
-  GLint viewport[4];
-  glGetIntegerv(GL_VIEWPORT, viewport);
-  glMatrixMode(GL_PROJECTION);
-  glPushMatrix();
-  glLoadIdentity();
-  glOrtho(viewport[0], viewport[2], viewport[1], viewport[3], -1, 1);
-  glPopAttrib();
-}
-
-// Pops The Projection Matrix Without Changing The Current
-// MatrixMode.
-static void
-pop_projection_matrix() {
-  glPushAttrib(GL_TRANSFORM_BIT);
-  glMatrixMode(GL_PROJECTION);
-  glPopMatrix();
-  glPopAttrib();
+void
+text_render_rescale(float width, float height) {
+  shader_use(ts.shd);
+  mat4x4 projection;
+  mat4x4_identity(projection);
+  mat4x4_ortho(projection, -1.0f, 1.0f, -1.0f, 1.0f, -1.0f, 1.0f);
+  glUniformMatrix4fv(ts.uniform_projection, 1, GL_FALSE,
+					 (const GLfloat *) projection);
 }
 
 typedef struct {
@@ -221,62 +206,83 @@ typedef struct {
   GLfloat t;
 } point;
 
+#define tex_norm_x(texX) \
+  _Generic((texX), float \
+		   : _tex_normf_x, int \
+		   : _tex_normi_x, unsigned int \
+		   : _tex_normui_x)(texX)
+#define tex_norm_y(texY) \
+  _Generic((texY), float \
+		   : _tex_normf_y, int \
+		   : _tex_normi_y, unsigned int \
+		   : _tex_normui_y)(texY)
+
+#define TEX_NORM_X_FUNC(type, shorttype) \
+  static inline float _tex_norm##shorttype##_x(type texX) { \
+	return texX / screen_width; \
+  }
+#define TEX_NORM_Y_FUNC(type, shorttype) \
+  static inline float _tex_norm##shorttype##_y(type texY) { \
+	return texY / screen_height; \
+  }
+
+TEX_NORM_X_FUNC(float, f)
+TEX_NORM_Y_FUNC(float, f)
+
+TEX_NORM_X_FUNC(int, i)
+TEX_NORM_Y_FUNC(int, i)
+
+TEX_NORM_X_FUNC(unsigned int, ui)
+TEX_NORM_Y_FUNC(unsigned int, ui)
+
 void
-text_render_print(text_state *ts, float x, float y, float sx, float sy,
-				  const char *fmt, ...) {
+text_render_print(float x, float y, float s, const char *fmt, ...) {
   va_list ap;
   va_start(ap, fmt);
-  int size = vsnprintf(NULL, 0, fmt, ap);
-  char *text = malloc(size + 1);
-  vsprintf(text, fmt, ap);
+  char *text;
+  vasprintf(&text, fmt, ap);
   va_end(ap);
 
-  // printf("%s\n", text);
-
-  /*pushScreenCoordinateMatrix();
-  glPushAttrib(GL_LIST_BIT | GL_CURRENT_BIT | GL_ENABLE_BIT |
-			   GL_TRANSFORM_BIT); glMatrixMode(GL_MODELVIEW);
-  glDisable(GL_LIGHTING); glEnable(GL_TEXTURE_2D); glDisable(GL_DEPTH_TEST);
-  glEnable(GL_BLEND);
-  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-  float modelview_matrix[16];
-  glGetFloatv(GL_MODELVIEW_MATRIX, modelview_matrix);
-
-  shader_use(ts->shd);
-
-  GLfloat transparent_green[] = {0, 1, 0, 0.5};
-  glUniform4fv(ts->uniform_color, 1, transparent_green);*/
-
-  shader_use(ts->shd);
+  shader_use(ts.shd);
   /* Use the texture containing the atlas */
-  glBindTexture(GL_TEXTURE_2D, ts->texture_id);
-  glUniform1i(ts->uniform_tex, 0);
+  glBindTexture(GL_TEXTURE_2D, ts.texture_id);
+  glUniform1i(ts.uniform_tex, 0);
+
+  mat4x4 model;
+  mat4x4_identity(model);
+  mat4x4_scale_aniso(model, model, s, s, 1);
+  glUniformMatrix4fv(ts.uniform_model, 1, GL_FALSE, (const GLfloat *) model);
 
   /* Set up the VBO for our vertex data */
-  glEnableVertexAttribArray(ts->attribute_coord);
-  glBindBuffer(GL_ARRAY_BUFFER, ts->vbo);
-  glVertexAttribPointer(ts->attribute_coord, 4, GL_FLOAT, GL_FALSE, 0, 0);
+  glEnableVertexAttribArray(ts.attribute_coord);
+  glBindBuffer(GL_ARRAY_BUFFER, ts.vbo);
+  glVertexAttribPointer(ts.attribute_coord, 4, GL_FLOAT, GL_FALSE, 0, 0);
 
-  point coords[6 * strlen(text)];
+  GLfloat green[] = {0, 1, 0, 1};
+  glUniform4fv(ts.uniform_color, 1, green);
+
+  size_t coords_len = 6 * strlen(text);
+  point *coords = malloc(coords_len * sizeof(point));
   unsigned int idx = 0;
 
   /* Loop through all characters */
   for (char *p = text; *p; p++) {
 	/* Calculate the vertex and texture coordinates */
-	character_data *c = &ts->char_data[*p];
-	float x2 = x + (float) c->bm_l * sx;
-	float y2 = -y - (float) c->bm_t * sy;
-	float w = (float) c->bm_w * sx;
-	float h = (float) c->bm_h * sy;
+	character_data *c = &ts.char_data[*p];
+	float x2 = x + tex_norm_x(c->bm_l);
+	float y2 = y - tex_norm_y(c->bm_t);
+	float w = tex_norm_x(c->bm_w);
+	float h = tex_norm_y(c->bm_h);
 
 	/* Advance the cursor to the start of the next character */
-	x += c->adv_x * sx;
-	y += c->adv_y * sy;
+	x += tex_norm_x(c->adv_x);
+	y += tex_norm_y(c->adv_y);
 
 	/* Skip glyphs that have no pixels */
-	if (!w || !h)
+	if (!w || !h) {
+	  // printf("Skipping char '%c'\n", *p);
 	  continue;
+	}
 
 	coords[idx++] = (point){x2, -y2, c->off_x, c->off_y};
 	coords[idx++] = (point){x2 + w, -y2, c->off_x + c->tex_w, c->off_y};
@@ -288,58 +294,36 @@ text_render_print(text_state *ts, float x, float y, float sx, float sy,
   }
 
   /* Draw all the character on the screen in one go */
-  glBufferData(GL_ARRAY_BUFFER, sizeof(coords), coords, GL_DYNAMIC_DRAW);
+  glBufferData(GL_ARRAY_BUFFER, coords_len * sizeof(point), coords,
+			   GL_DYNAMIC_DRAW);
   glDrawArrays(GL_TRIANGLES, 0, idx);
 
-  glDisableVertexAttribArray(ts->attribute_coord);
+  glDisableVertexAttribArray(ts.attribute_coord);
 
-  /*glPopAttrib();
-  pop_projection_matrix();*/
-
+  free(coords);
   free(text);
-
-  /*pushScreenCoordinateMatrix();
-
-  GLuint font = 0;// ts->list_base;
-  glPushAttrib(GL_LIST_BIT | GL_CURRENT_BIT | GL_ENABLE_BIT |
-  GL_TRANSFORM_BIT); glMatrixMode(GL_MODELVIEW); glDisable(GL_LIGHTING);
-  glEnable(GL_TEXTURE_2D);
-  glDisable(GL_DEPTH_TEST);
-  glEnable(GL_BLEND);
-  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-  glListBase(font);
-  float modelview_matrix[16];
-  glGetFloatv(GL_MODELVIEW_MATRIX, modelview_matrix);
-
-  glPushMatrix();
-  glLoadIdentity();
-  glTranslatef(x, y, 0);
-  glMultMatrixf(modelview_matrix);
-
-  size_t len = strlen(text);
-  glCallLists(len, GL_UNSIGNED_BYTE, text);
-
-  glPopMatrix();
-
-  glPopAttrib();
-  pop_projection_matrix();*/
 }
 
 void
-text_render_debug(text_state *ts, float x, float y, float sx, float sy) {
-  float w = (float) ts->width * sx;
-  float h = (float) ts->height * sy;
+text_render_debug(float x, float y, float s) {
+  float w = tex_norm_x(ts.width);
+  float h = tex_norm_y(ts.height);
 
-  // pushScreenCoordinateMatrix();
-  shader_use(ts->shd);
-  glBindTexture(GL_TEXTURE_2D, ts->texture_id);
-  glUniform1i(ts->uniform_tex, 0);
+  shader_use(ts.shd);
+  glBindTexture(GL_TEXTURE_2D, ts.texture_id);
+  glUniform1i(ts.uniform_tex, 0);
 
-  /* Set up the VBO for our vertex data */
-  glEnableVertexAttribArray(ts->attribute_coord);
-  glBindBuffer(GL_ARRAY_BUFFER, ts->vbo);
-  glVertexAttribPointer(ts->attribute_coord, 4, GL_FLOAT, GL_FALSE, 0, 0);
+  GLfloat black[4] = {0, 0, 0, 1};
+  glUniform4fv(ts.uniform_color, 1, black);
+
+  mat4x4 model;
+  mat4x4_identity(model);
+  mat4x4_scale_aniso(model, model, s, s, 1);
+  glUniformMatrix4fv(ts.uniform_model, 1, GL_FALSE, (const GLfloat *) model);
+
+  glEnableVertexAttribArray(ts.attribute_coord);
+  glBindBuffer(GL_ARRAY_BUFFER, ts.vbo);
+  glVertexAttribPointer(ts.attribute_coord, 4, GL_FLOAT, GL_FALSE, 0, 0);
 
   point coords[6];
   unsigned int idx = 0;
@@ -350,10 +334,8 @@ text_render_debug(text_state *ts, float x, float y, float sx, float sy) {
   coords[idx++] = (point){x, -y - h, 0, 1};
   coords[idx++] = (point){x + w, -y - h, 1, 1};
 
-  /* Draw all the character on the screen in one go */
   glBufferData(GL_ARRAY_BUFFER, sizeof(coords), coords, GL_DYNAMIC_DRAW);
   glDrawArrays(GL_TRIANGLES, 0, idx);
 
-  glDisableVertexAttribArray(ts->attribute_coord);
-  // pop_projection_matrix();
+  glDisableVertexAttribArray(ts.attribute_coord);
 }

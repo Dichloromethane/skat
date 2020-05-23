@@ -197,7 +197,7 @@ shader_get_attrib_location(const shader *const shdr, const char *const name) {
 void
 shader_use(const shader *const shdr) {
   if (!shdr->program) {
-	printf("Cannot user invalid Shader Program\n");
+	printf("Cannot use invalid Shader Program\n");
 	exit(EXIT_FAILURE);
   }
   glUseProgram(shdr->program);
