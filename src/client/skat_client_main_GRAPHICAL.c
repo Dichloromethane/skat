@@ -3,6 +3,7 @@
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 
+#include "client/client_constants.h"
 #include "client/linmath.h"
 #include "client/shader.h"
 #include "client/text_render.h"
@@ -11,15 +12,6 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-static const struct {
-  float x, y;
-  float r, g, b;
-} vertices[3] = {{-0.6f, -0.4f, 1.f, 0.f, 0.f},
-				 {0.6f, -0.4f, 0.f, 1.f, 0.f},
-				 {0.f, 0.6f, 0.f, 1.f, 0.f}};
-
-#define WIDTH  (640)
-#define HEIGHT (480)
 float screen_width = WIDTH;
 float screen_height = HEIGHT;
 
@@ -30,65 +22,44 @@ error_callback(int error, const char *description) {
 
 static void
 resize_callback(GLFWwindow *window, int width, int height) {
-  /*int side = width < height ? width : height;
-  glViewport((width - side) / 2, (height - side) / 2, side, side);
-  glMatrixMode(GL_PROJECTION);
-  glLoadIdentity();
-  glOrtho(-0.05, +1.45, -0.05, +2.75, -1, 1);
-  glMatrixMode(GL_MODELVIEW);
-  glLoadIdentity();*/
-
-  // glViewport(0, 0, width, height);
-
-  /*float aspect = (float) width / (float) height;
-  glViewport(0, 0, width, height);
-  glMatrixMode(GL_PROJECTION);
-  glLoadIdentity();
-  glOrtho(0.0f, -aspect, aspect, 0.0f, -1.0f, 1.0f);*/
-
-  // Compute aspect ratio of the new window
   if (height == 0)
 	height = 1;// To prevent divide by 0
-  GLfloat aspect = (GLfloat) width / (GLfloat) height;
-  // Set the viewport to cover the new window
-  glViewport(0, 0, width, height);
-  // glViewport(0, 0, 400, 400);
 
-  // Set the aspect ratio of the clipping area to match the viewport
-  /*glMatrixMode(GL_PROJECTION);// To operate on the Projection matrix
-  glLoadIdentity();           // Reset the projection matrix
+  GLfloat desiredAspect = (GLfloat) HEIGHT / WIDTH;
+  GLfloat aspect = (GLfloat) height / (GLfloat) width;
 
-  GLdouble clipAreaXLeft, clipAreaXRight, clipAreaYBottom, clipAreaYTop;
-   GLfloat minX = -1, maxX = 1, minY = -1, maxY = 1;
-  //GLfloat minX = 0, maxX = 1, minY = 0, maxY = 1;
+  GLfloat actualWidth, actualHeight, x, y;
 
-  if (width >= height) {
-	clipAreaXLeft = minX * aspect;
-	clipAreaXRight = maxX * aspect;
-	clipAreaYBottom = minY;
-	clipAreaYTop = maxY;
-  } else {
-	clipAreaXLeft = minX;
-	clipAreaXRight = maxX;
-	clipAreaYBottom = minY / aspect;
-	clipAreaYTop = maxY / aspect;
+  if (aspect == desiredAspect) {// perfect ratio
+	actualWidth = width;
+	actualHeight = height;
+	x = 0;
+	y = 0;
+  } else if (aspect < desiredAspect) {// window too high
+	actualWidth = (float) height / desiredAspect;
+	actualHeight = height;
+	x = ((float) width - actualWidth) / 2.0f;
+	y = 0;
+  } else {// window too broad
+	actualWidth = width;
+	actualHeight = (float) width * desiredAspect;
+	x = 0;
+	y = ((float) height - actualHeight) / 2.0f;
   }
-  glOrtho(clipAreaXLeft, clipAreaXRight, clipAreaYBottom, clipAreaYTop, -1.0,
-		  1.0);*/
+
+  glViewport(x, y, actualWidth, actualHeight);
 
   screen_width = (float) width;
   screen_height = (float) height;
   text_render_rescale(screen_width, screen_height);
 }
-static GLfloat xrunner = 0;
+
 static void
 key_callback(GLFWwindow *window, int key, int scancode, int action, int mods) {
   printf("key_callback: key=%d scancode=%d action=%d mods=%d\n", key, scancode,
 		 action, mods);
   if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
 	glfwSetWindowShouldClose(window, GLFW_TRUE);
-  if (key == GLFW_KEY_Y && action == GLFW_PRESS)
-	xrunner -= 25.0f;
 }
 
 int
@@ -96,7 +67,7 @@ start_GRAPHICAL(void) {
   GLFWwindow *window;
   GLuint vertex_buffer;
   shader *program;
-  GLint mvp_location, vpos_location, vcol_location;
+  GLint proj_location, model_location, vpos_location, vcol_location;
 
   glfwSetErrorCallback(error_callback);
 
@@ -110,7 +81,7 @@ start_GRAPHICAL(void) {
   glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
   // glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
 
-  window = glfwCreateWindow(640, 480, "Simple example", NULL, NULL);
+  window = glfwCreateWindow(WIDTH, HEIGHT, "Skat", NULL, NULL);
   if (!window) {
 	printf("Failed to create GLFW window\n");
 	glfwTerminate();
@@ -137,79 +108,57 @@ start_GRAPHICAL(void) {
 
   text_render_init();
 
-  /*glViewport(0, 0, WIDTH, HEIGHT);
-  glOrtho(0.0, WIDTH, HEIGHT, 0.0, -1.0, 1.0);*/
+  vertex2d triangle_vertices[3] = {{0.0f, -0.6f, 1.f, 0.f, 0.f},
+								   {-0.6f, 0.4f, 0.f, 1.f, 0.f},
+								   {0.6f, 0.4f, 0.f, 0.f, 1.f}};
+  // NOTE: OpenGL error checks have been omitted for brevity
+  program = shader_create_load_file("./shader/test");
+  shader_use(program);
 
-  /*// NOTE: OpenGL error checks have been omitted for brevity
-  glGenBuffers(1, &vertex_buffer);
-  glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-  program = shader_create_load_file("shader/test");
-
-  mvp_location = shader_get_uniform_location(program, "MVP");
+  proj_location = shader_get_uniform_location(program, "projection");
+  model_location = shader_get_uniform_location(program, "model");
   vpos_location = shader_get_attrib_location(program, "vPos");
   vcol_location = shader_get_attrib_location(program, "vCol");
 
-  glEnableVertexAttribArray(vpos_location);
-  glVertexAttribPointer(vpos_location, 2, GL_FLOAT, GL_FALSE,
-						sizeof(vertices[0]), (void *) 0);
-  glEnableVertexAttribArray(vcol_location);
-  glVertexAttribPointer(vcol_location, 3, GL_FLOAT, GL_FALSE,
-						sizeof(vertices[0]), (void *) (sizeof(float) * 2));*/
+  glGenBuffers(1, &vertex_buffer);
+  glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(triangle_vertices), triangle_vertices,
+			   GL_STATIC_DRAW);
 
-  // float sx = 2.0f / 640.0f;
-  // float sy = 2.0f / 480.0f;
+  mat4x4 projection;
+  mat4x4_identity(projection);
+  mat4x4_ortho(projection, 0, WIDTH, HEIGHT, 0, -1, 1);
+  glUniformMatrix4fv(proj_location, 1, GL_FALSE, (const GLfloat *) projection);
 
   while (!glfwWindowShouldClose(window)) {
-	/*float ratio;
-	int width, height;
-	mat4x4 m, p, mvp;
-
-	glfwGetFramebufferSize(window, &width, &height);
-	ratio = width / (float) height;
-
-	glViewport(0, 0, width, height);
-	glClear(GL_COLOR_BUFFER_BIT);
-
-	mat4x4_identity(m);
-	mat4x4_rotate_Z(m, m, (float) glfwGetTime());
-	mat4x4_ortho(p, -ratio, ratio, -1.f, 1.f, 1.f, -1.f);
-	mat4x4_mul(mvp, p, m);
-
-	shader_use(program);
-	glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
-	glUniformMatrix4fv(mvp_location, 1, GL_FALSE, (const GLfloat *) mvp);
-	glDrawArrays(GL_TRIANGLES, 0, 3);*/
-
-	/* White background */
 	glClearColor(1, 1, 1, 1);
 	glClear(GL_COLOR_BUFFER_BIT);
 
-	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();
-	// glOrtho(0.0f, WIDTH, HEIGHT, 0.0f, -1.0f, 0.0f);
+	shader_use(program);
+	glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
 
-	/* Enable blending, necessary for our alpha texture */
-	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glEnableVertexAttribArray(vpos_location);
+	glVertexAttribPointer(vpos_location, 2, GL_FLOAT, GL_FALSE,
+						  sizeof(vertex2d), 0);
+	glEnableVertexAttribArray(vcol_location);
+	glVertexAttribPointer(vcol_location, 3, GL_FLOAT, GL_FALSE,
+						  sizeof(vertex2d),
+						  (const void *) (sizeof(GLfloat) * 2));
 
-	/*GLfloat black[4] = {0, 0, 0, 1};
-	GLfloat red[4] = {1, 0, 0, 1};
-	GLfloat transparent_green[4] = {0, 1, 0, 0.5};*/
+	mat4x4 model;
+	mat4x4_identity(model);
+	mat4x4_translate_in_place(model, WIDTH / 2.0f, HEIGHT / 2.0f, 0);
+	mat4x4_rotate_Z(model, model, (float) glfwGetTime());
+	mat4x4_scale_aniso(model, model, HEIGHT / 2.0f, HEIGHT / 2.0f, 1);
+	glUniformMatrix4fv(model_location, 1, GL_FALSE, (const GLfloat *) model);
 
-	/* Set color to black */
-	// glUniform4fv(ts.uniform_color, 1, black);
+	glDrawArrays(GL_TRIANGLES, 0, 3);
 
-	text_render_print(-0.5f, -0.5f, 1.0f,
-					  "The Quick Brown Fox Jumps Over The Lazy Dog!");
-	/*text_render_print( -1 , 1 - 150 * sy, sx, sy,
-					  ".ABCDEFGHIJKLMNOPQRSTUVWYZ.");
-	text_render_print(-1 , 1 - 250 * sy, sx, sy,
-					  ".abcdefghijklmnopqrstuvwyz.");*/
-	//text_render_debug(-0.5f, -0.5f, 1.0f);
-
-	glPopMatrix();
+	text_render_print(TRL_TOP_LEFT, GREEN, 10.0f, 0.0f, 1.0f,
+					  "TeQuBrFoJuOvThLaDo!");
+	text_render_print(TRL_TOP_LEFT, BLUE, 10.0f, 36.0f, 1.0f,
+					  "TeQuBrFoJuOvThLaDo");
+	text_render_debug(1.0f, 175.0f, 1.0f);
 
 	glfwSwapBuffers(window);
 	glfwPollEvents();
