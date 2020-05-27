@@ -9,6 +9,6 @@ attribute vec2 texpos;
 varying vec2 f_texpos;
 
 void main() {
-    gl_Position = projection * model * vec4(pos, 0.0, 1.0);
+    gl_Position = projection * model * vec4(pos, 0, 1);
     f_texpos = texpos;
 }

@@ -1,16 +1,15 @@
 #define _GNU_SOURCE
 #include <stdio.h>
 
-#include "client/client_constants.h"
+#include "client/constants.h"
 #include "client/linmath.h"
 #include "client/text_render.h"
+#include <client/vertex.h>
 #include <stdarg.h>
 #include <string.h>
 
-#include <glad/glad.h>
-
-#define GLFW_INCLUDE_NONE
-#include <GLFW/glfw3.h>
+#define FONT_TEXTURE_ATLAS_WIDTH  (2048)
+#define FONT_TEXTURE_ATLAS_HEIGHT (2048)
 
 static const char *
 get_ft_error_message(FT_Error err) {
@@ -82,8 +81,8 @@ text_render_init() {
 
   FT_GlyphSlot g = font_face->glyph;
 
-  ts.width = 2048;
-  ts.height = 2048;
+  ts.width = FONT_TEXTURE_ATLAS_WIDTH;
+  ts.height = FONT_TEXTURE_ATLAS_HEIGHT;
 
   // generate texture
   glActiveTexture(GL_TEXTURE0);
@@ -145,9 +144,11 @@ text_render_init() {
 	}
 
 	if (row_width + w >= ts.width) {
+	  /*
 	  printf("Row full for %d: row_width=%d; row_height=%d; height=%d\n", c,
 			 row_width, row_height, height);
 	  printf("Retroactively setting width/height/y/y of %d-%d\n", row_start, c);
+	   */
 	  for (unsigned rc = row_start; rc < c; rc++) {
 		character_data *rcd = &ts.char_data[rc];
 		rcd->row_width = row_width;
@@ -172,7 +173,9 @@ text_render_init() {
 	  row_height = h;
 	}
   }
+  /*
   printf("Retroactively setting width/height/y/y of %d-%d\n", row_start, 128);
+   */
   for (unsigned rc = row_start; rc < 128; rc++) {
 	character_data *rcd = &ts.char_data[rc];
 	rcd->row_width = row_width;
@@ -184,10 +187,10 @@ text_render_init() {
 	ts.max_row_height = row_height;
   }
 
-  for (unsigned char c = 0; c < 128; c++) {
+  /*for (unsigned char c = 0; c < 128; c++) {
 	character_data *cd = &ts.char_data[c];
 	printf("%3d: %d,%d\n", c, cd->tex_x, cd->tex_y);
-  }
+  }*/
 
   for (unsigned char c = 0; c < 128; c++) {
 	err = FT_Load_Char(font_face, c, FT_LOAD_RENDER);
@@ -267,7 +270,7 @@ text_render_print(text_render_loc trl, color col, float x, float y, float size,
 #endif
 
   size_t coords_len = 6 * strlen(text);
-  point *coords = malloc(coords_len * sizeof(point));
+  vertex2f_st *coords = malloc(coords_len * sizeof(vertex2f_st));
   unsigned int idx = 0;
 
   float curX = 0, curY = 0;
@@ -309,17 +312,17 @@ text_render_print(text_render_loc trl, color col, float x, float y, float size,
 	  continue;
 	}
 
-	coords[idx++] = (point){x2, y2, c->off_x, c->off_y};
-	coords[idx++] = (point){x2, y2 + h, c->off_x, c->off_y + c->tex_h};
-	coords[idx++] =
-			(point){x2 + w, y2 + h, c->off_x + c->tex_w, c->off_y + c->tex_h};
-	coords[idx++] =
-			(point){x2 + w, y2 + h, c->off_x + c->tex_w, c->off_y + c->tex_h};
-	coords[idx++] = (point){x2 + w, y2, c->off_x + c->tex_w, c->off_y};
-	coords[idx++] = (point){x2, y2, c->off_x, c->off_y};
+	coords[idx++] = (vertex2f_st){x2, y2, c->off_x, c->off_y};
+	coords[idx++] = (vertex2f_st){x2, y2 + h, c->off_x, c->off_y + c->tex_h};
+	coords[idx++] = (vertex2f_st){x2 + w, y2 + h, c->off_x + c->tex_w,
+								  c->off_y + c->tex_h};
+	coords[idx++] = (vertex2f_st){x2 + w, y2 + h, c->off_x + c->tex_w,
+								  c->off_y + c->tex_h};
+	coords[idx++] = (vertex2f_st){x2 + w, y2, c->off_x + c->tex_w, c->off_y};
+	coords[idx++] = (vertex2f_st){x2, y2, c->off_x, c->off_y};
   }
 
-  glBufferData(GL_ARRAY_BUFFER, coords_len * sizeof(point), coords,
+  glBufferData(GL_ARRAY_BUFFER, coords_len * sizeof(vertex2f_st), coords,
 			   GL_DYNAMIC_DRAW);
   glDrawArrays(GL_TRIANGLES, 0, idx);
 
@@ -351,14 +354,14 @@ text_render_debug(float x, float y, float s) {
   glBindBuffer(GL_ARRAY_BUFFER, ts.vbo);
   glVertexAttribPointer(ts.attribute_coord, 4, GL_FLOAT, GL_FALSE, 0, 0);
 
-  point coords[6];
+  vertex2f_st coords[6];
   unsigned int idx = 0;
-  coords[idx++] = (point){0, 0, 0, 0};
-  coords[idx++] = (point){0, h, 0, 1};
-  coords[idx++] = (point){w, h, 1, 1};
-  coords[idx++] = (point){w, h, 1, 1};
-  coords[idx++] = (point){w, 0, 1, 0};
-  coords[idx++] = (point){0, 0, 0, 0};
+  coords[idx++] = (vertex2f_st){0, 0, 0, 0};
+  coords[idx++] = (vertex2f_st){0, h, 0, 1};
+  coords[idx++] = (vertex2f_st){w, h, 1, 1};
+  coords[idx++] = (vertex2f_st){w, h, 1, 1};
+  coords[idx++] = (vertex2f_st){w, 0, 1, 0};
+  coords[idx++] = (vertex2f_st){0, 0, 0, 0};
 
   glBufferData(GL_ARRAY_BUFFER, sizeof(coords), coords, GL_DYNAMIC_DRAW);
   glDrawArrays(GL_TRIANGLES, 0, idx);

@@ -3,10 +3,11 @@
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 
-#include "client/client_constants.h"
+#include "client/constants.h"
 #include "client/linmath.h"
 #include "client/shader.h"
 #include "client/text_render.h"
+#include "client/vertex.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -62,13 +63,69 @@ key_callback(GLFWwindow *window, int key, int scancode, int action, int mods) {
 	glfwSetWindowShouldClose(window, GLFW_TRUE);
 }
 
-int
-start_GRAPHICAL(void) {
-  GLFWwindow *window;
+static struct {
   GLuint vertex_buffer;
   shader *program;
   GLint proj_location, model_location, vpos_location, vcol_location;
+} triangle_data;
 
+static void
+preprare_triangle(void) {
+  vertex2f_rgb triangle_vertices[3] = {{0.0f, -0.6f, 1.f, 0.f, 0.f},
+									   {-0.6f, 0.4f, 0.f, 1.f, 0.f},
+									   {0.6f, 0.4f, 0.f, 0.f, 1.f}};
+
+  // NOTE: OpenGL error checks have been omitted for brevity
+  triangle_data.program = shader_create_load_file("./shader/test");
+  shader_use(triangle_data.program);
+
+  triangle_data.proj_location =
+		  shader_get_uniform_location(triangle_data.program, "projection");
+  triangle_data.model_location =
+		  shader_get_uniform_location(triangle_data.program, "model");
+  triangle_data.vpos_location =
+		  shader_get_attrib_location(triangle_data.program, "vPos");
+  triangle_data.vcol_location =
+		  shader_get_attrib_location(triangle_data.program, "vCol");
+
+  glGenBuffers(1, &triangle_data.vertex_buffer);
+  glBindBuffer(GL_ARRAY_BUFFER, triangle_data.vertex_buffer);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(triangle_vertices), triangle_vertices,
+			   GL_STATIC_DRAW);
+
+  mat4x4 projection;
+  mat4x4_identity(projection);
+  mat4x4_ortho(projection, 0, WIDTH, HEIGHT, 0, -1, 1);
+  glUniformMatrix4fv(triangle_data.proj_location, 1, GL_FALSE,
+					 (const GLfloat *) projection);
+}
+
+static void
+draw_triangle(void) {
+  shader_use(triangle_data.program);
+  glBindBuffer(GL_ARRAY_BUFFER, triangle_data.vertex_buffer);
+
+  glEnableVertexAttribArray(triangle_data.vpos_location);
+  glVertexAttribPointer(triangle_data.vpos_location, 2, GL_FLOAT, GL_FALSE,
+						sizeof(vertex2f_rgb), 0);
+  glEnableVertexAttribArray(triangle_data.vcol_location);
+  glVertexAttribPointer(triangle_data.vcol_location, 3, GL_FLOAT, GL_FALSE,
+						sizeof(vertex2f_rgb),
+						(const void *) (sizeof(GLfloat) * 2));
+
+  mat4x4 model;
+  mat4x4_identity(model);
+  mat4x4_translate_in_place(model, WIDTH / 2.0f, HEIGHT / 2.0f, 0);
+  mat4x4_rotate_Z(model, model, (float) glfwGetTime());
+  mat4x4_scale_aniso(model, model, HEIGHT / 2.0f, HEIGHT / 2.0f, 1);
+  glUniformMatrix4fv(triangle_data.model_location, 1, GL_FALSE,
+					 (const GLfloat *) model);
+
+  glDrawArrays(GL_TRIANGLES, 0, 3);
+}
+
+int
+start_GRAPHICAL(void) {
   glfwSetErrorCallback(error_callback);
 
   if (!glfwInit())
@@ -81,7 +138,7 @@ start_GRAPHICAL(void) {
   glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
   // glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
 
-  window = glfwCreateWindow(WIDTH, HEIGHT, "Skat", NULL, NULL);
+  GLFWwindow *window = glfwCreateWindow(WIDTH, HEIGHT, "Skat", NULL, NULL);
   if (!window) {
 	printf("Failed to create GLFW window\n");
 	glfwTerminate();
@@ -107,57 +164,18 @@ start_GRAPHICAL(void) {
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
   text_render_init();
-
-  vertex2d triangle_vertices[3] = {{0.0f, -0.6f, 1.f, 0.f, 0.f},
-								   {-0.6f, 0.4f, 0.f, 1.f, 0.f},
-								   {0.6f, 0.4f, 0.f, 0.f, 1.f}};
-  // NOTE: OpenGL error checks have been omitted for brevity
-  program = shader_create_load_file("./shader/test");
-  shader_use(program);
-
-  proj_location = shader_get_uniform_location(program, "projection");
-  model_location = shader_get_uniform_location(program, "model");
-  vpos_location = shader_get_attrib_location(program, "vPos");
-  vcol_location = shader_get_attrib_location(program, "vCol");
-
-  glGenBuffers(1, &vertex_buffer);
-  glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(triangle_vertices), triangle_vertices,
-			   GL_STATIC_DRAW);
-
-  mat4x4 projection;
-  mat4x4_identity(projection);
-  mat4x4_ortho(projection, 0, WIDTH, HEIGHT, 0, -1, 1);
-  glUniformMatrix4fv(proj_location, 1, GL_FALSE, (const GLfloat *) projection);
+  preprare_triangle();
 
   while (!glfwWindowShouldClose(window)) {
 	glClearColor(1, 1, 1, 1);
 	glClear(GL_COLOR_BUFFER_BIT);
 
-	shader_use(program);
-	glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
-
-	glEnableVertexAttribArray(vpos_location);
-	glVertexAttribPointer(vpos_location, 2, GL_FLOAT, GL_FALSE,
-						  sizeof(vertex2d), 0);
-	glEnableVertexAttribArray(vcol_location);
-	glVertexAttribPointer(vcol_location, 3, GL_FLOAT, GL_FALSE,
-						  sizeof(vertex2d),
-						  (const void *) (sizeof(GLfloat) * 2));
-
-	mat4x4 model;
-	mat4x4_identity(model);
-	mat4x4_translate_in_place(model, WIDTH / 2.0f, HEIGHT / 2.0f, 0);
-	mat4x4_rotate_Z(model, model, (float) glfwGetTime());
-	mat4x4_scale_aniso(model, model, HEIGHT / 2.0f, HEIGHT / 2.0f, 1);
-	glUniformMatrix4fv(model_location, 1, GL_FALSE, (const GLfloat *) model);
-
-	glDrawArrays(GL_TRIANGLES, 0, 3);
+	draw_triangle();
 
 	text_render_print(TRL_TOP_LEFT, GREEN, 10.0f, 0.0f, 1.0f,
 					  "TeQuBrFoJuOvThLaDo!");
 	text_render_print(TRL_TOP_LEFT, BLUE, 10.0f, 36.0f, 1.0f,
-					  "TeQuBrFoJuOvThLaDo");
+					  "TeQuBrFoJuOvThLaDo?");
 	text_render_debug(1.0f, 175.0f, 1.0f);
 
 	glfwSwapBuffers(window);
