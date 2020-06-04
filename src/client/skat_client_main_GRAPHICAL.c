@@ -52,7 +52,6 @@ resize_callback(GLFWwindow *window, int width, int height) {
 
   screen_width = (float) width;
   screen_height = (float) height;
-  text_render_rescale(screen_width, screen_height);
 }
 
 static void

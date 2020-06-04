@@ -14,6 +14,7 @@ typedef union {
 
 static const color BLACK = {.argb = 0xFF000000};
 static const color WHITE = {.argb = 0xFFFFFFFF};
+static const color GRAY = {.argb = 0xFF404040};
 static const color RED = {.argb = 0xFFFF0000};
 static const color GREEN = {.argb = 0xFF00FF00};
 static const color BLUE = {.argb = 0xFF0000FF};

@@ -52,7 +52,6 @@ typedef enum {
 } text_render_loc;
 
 void text_render_init(void);
-void text_render_rescale(float width, float height);
 void text_render_print(text_render_loc trl, color col, float x, float y,
 					   float size, const char *fmt, ...);
 void text_render_debug(float x, float y, float s);

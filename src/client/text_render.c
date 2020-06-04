@@ -208,9 +208,6 @@ text_render_init() {
   FT_Done_FreeType(ft_library);
 }
 
-void
-text_render_rescale(float width, float height) {}
-
 #define tex_norm_x(texX) \
   _Generic((texX), float \
 		   : _tex_normf_x, int \
