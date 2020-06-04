@@ -261,8 +261,8 @@ text_render_print(text_render_loc trl, color col, float x, float y, float size,
   glVertexAttribPointer(ts.attribute_coord, 4, GL_FLOAT, GL_FALSE, 0, 0);
 
 #ifndef RAINBOW_TEXT
-  GLfloat rgba[] = {(float) col.r / 255.0f, (float) col.g / 255.0f,
-					(float) col.b / 255.0f, (float) col.a / 255.0f};
+  GLfloat rgba[4];
+  color_to_rgba_f(col, rgba);
   glUniform4fv(ts.uniform_color, 1, rgba);
 #endif
 
@@ -337,8 +337,9 @@ text_render_debug(float x, float y, float s) {
   glUniform1i(ts.uniform_tex, 0);
 
 #ifndef RAINBOW_TEXT
-  GLfloat black[4] = {0, 0, 0, 1};
-  glUniform4fv(ts.uniform_color, 1, black);
+  GLfloat rgba[4];
+  color_to_rgba_f(BLACK, rgba);
+  glUniform4fv(ts.uniform_color, 1, rgba);
 #endif
 
   mat4x4 model;
