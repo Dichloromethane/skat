@@ -14,7 +14,7 @@ init_action_queue(action_event_queue *q) {
 }
 
 void
-init_event_queue(action_event_queue *q) {
+init_event_queue(event_queue *q) {
   q->type = AEQUE_EVENT;
   init_queue(q);
 }
@@ -101,6 +101,6 @@ clear_action_queue(action_queue *q) {
 }
 
 void
-clear_event_queue(action_queue *q) {
+clear_event_queue(event_queue *q) {
   clear_queue(q);
 }

@@ -52,17 +52,24 @@ conn_error(connection *c, conn_error_type cet) {
 }
 
 static void
-init_conn_s2c(connection_s2c *c) {
-  init_action_queue(&c->c.aq);
-  init_event_queue(&c->c.aq);
-  c->c.active = 0;
+init_conn(connection *c, int fd, pthread_t handler) {
+  c->fd = fd;
+  c->cseq = SEQ_NUM_START;
+  c->handler = handler;
+  init_action_queue(&c->aq);
+  init_event_queue(&c->eq);
+  c->active = 0;
 }
 
 static void
-init_conn_c2s(connection_c2s *s) {
-  init_action_queue(&s->c.aq);
-  init_event_queue(&s->c.aq);
-  s->c.active = 0;
+init_conn_s2c(connection_s2c *s2c, connection *base_conn) {
+  s2c->c = *base_conn;
+  init_player_id(&s2c->pid, "");
+}
+
+static void
+init_conn_c2s(connection_c2s *c2s, connection *base_conn) {
+  c2s->c = *base_conn;
 }
 
 connection_s2c *
@@ -73,18 +80,16 @@ establish_connection_server(server *s, int fd, pthread_t handler) {
   player pl;
   int n;
 
-  c.fd = fd;
-  c.cseq = SEQ_NUM_START;
-  c.handler = handler;
+  init_conn(&c, fd, handler);
 
   retrieve_package(&c, &p);
   CH_ASSERT_NULL(p.req.seq == SEQ_NUM_START, &c,
 				 CONN_ERROR_INCONSISTENT_SEQ_NUM);
 
+  copy_player_id(&pl.id, &p.req.pid);
+
   if (p.type == REQ_RSP_JOIN) {
 	server_acquire_state_lock(s);
-
-	copy_player_id(&pl.id, &p.req.pid);
 
 	CH_ASSERT_NULL(!server_has_player_id(s, &pl.id), &c,
 				   CONN_ERROR_PLAYER_ID_IN_USE);
@@ -92,8 +97,7 @@ establish_connection_server(server *s, int fd, pthread_t handler) {
 	CH_ASSERT_NULL(s2c = server_get_free_connection(s, &n), &c,
 				   CONN_ERROR_TOO_MANY_PLAYERS);
 
-	init_conn_s2c(s2c);
-	s2c->c = c;
+	init_conn_s2c(s2c, &c);
 	s2c->c.active = 1;
 	s2c->pid = pl.id;
 
@@ -102,7 +106,7 @@ establish_connection_server(server *s, int fd, pthread_t handler) {
 	server_notify_join(s, &pl);
 
 	server_release_state_lock(s);
-    
+
 	re.type = REQ_RSP_CONFIRM_JOIN;
 	re.rsp.player_index = n;
 	re.rsp.seq = p.req.seq;
@@ -111,13 +115,14 @@ establish_connection_server(server *s, int fd, pthread_t handler) {
   }
   if (p.type == REQ_RSP_CONN_RESUME) {
 	server_acquire_state_lock(s);
+
 	CH_ASSERT_NULL(s2c = server_get_connection_by_pid(s, p.req.pid, &n), &c,
 				   CONN_ERROR_NO_SUCH_PLAYER_ID);
-	CH_ASSERT_NULL(!s2c->c.active, &c, CONN_ERROR_PLAYER_ID_IN_USE);
+	CH_ASSERT_NULL(!s2c->c.active, &s2c->c, CONN_ERROR_PLAYER_ID_IN_USE);
 
-	init_conn_s2c(s2c);
-	s2c->c = c;
+	init_conn_s2c(s2c, &c);
 	s2c->c.active = 1;
+	s2c->pid = pl.id;
 
 	server_notify_join(s, &pl);
 
@@ -177,17 +182,13 @@ establish_connection_client(client *c, int socket_fd, pthread_t handler,
 							int resume) {
   DEBUG_PRINTF("%s connection to server",
 			   resume ? "Resuming" : "Establishing new");
-  connection conn;
   package_queue pq;
 
-  conn.fd = socket_fd;
-  conn.cseq = SEQ_NUM_START;
-  conn.handler = handler;
+  connection base_conn;
+  init_conn(&base_conn, socket_fd, handler);
 
-  connection_c2s *conn_c2s = malloc(sizeof(connection_c2s));
-
-  init_conn_c2s(conn_c2s);
-  conn_c2s->c = conn;
+  connection_c2s *c2s = &c->c2s;
+  init_conn_c2s(c2s, &base_conn);
 
   package p;
   player_id pid;
@@ -197,28 +198,28 @@ establish_connection_client(client *c, int socket_fd, pthread_t handler,
   p.req.pid = pid;
   p.type = resume ? REQ_RSP_CONN_RESUME : REQ_RSP_JOIN;
 
-  send_package(&conn_c2s->c, &p);
+  send_package(&c2s->c, &p);
 
-  p.req.seq = ++conn.cseq;
+  p.req.seq = ++c2s->c.cseq;
   p.type = REQ_RSP_RESYNC;
 
-  send_package(&conn_c2s->c, &p);
+  send_package(&c2s->c, &p);
 
   package_queue_init(&pq);
 
-  retrieve_package(&conn_c2s->c, &p);
+  retrieve_package(&c2s->c, &p);
   while (p.type != REQ_RSP_RESYNC) {
 	package_queue_enq(&pq, &p);
-	retrieve_package(&conn_c2s->c, &p);
+	retrieve_package(&c2s->c, &p);
   }
 
   client_handle_resync(&p);
 
   while (package_queue_deq(&pq, &p)) {
-	conn_handle_incoming_package_client_single(c, conn_c2s, &p);
+	conn_handle_incoming_package_client_single(c, c2s, &p);
   }
 
-  return conn_c2s;
+  return c2s;
 }
 
 static void

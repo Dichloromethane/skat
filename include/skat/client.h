@@ -8,6 +8,7 @@
 typedef struct client {
   pthread_mutex_t lock;
   pthread_t conn_thread;
+  connection_c2s c2s;
   int port;
   char *host;
   char *name;
