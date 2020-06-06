@@ -15,22 +15,22 @@ game_setup_server(skat_state *ss) {
 
 int
 game_start_server(skat_state *ss) {
-  DERROR_PRINTF("TODO: implement"); // TODO: implement
+  DTODO_PRINTF("TODO: implement"); // TODO: implement
   return 0;
 }
 
 void
 skat_state_notify_disconnect(skat_state *ss, player *pl, server *s) {
-  DERROR_PRINTF("TODO: implement"); // TODO: implement
+  DTODO_PRINTF("TODO: implement"); // TODO: implement
 }
 void
 skat_state_notify_join(skat_state *ss, player *pl, server *s) {
-  DERROR_PRINTF("TODO: implement"); // TODO: implement
+  DTODO_PRINTF("TODO: implement"); // TODO: implement
 }
 
 void
 skat_calculate_game_result(skat_state *ss, int *score) {
-  DERROR_PRINTF("TODO: implement"); // TODO: implement
+  DTODO_PRINTF("TODO: implement"); // TODO: implement
 }
 
 // returns pos+1 on find, 0 otherwise
@@ -168,7 +168,7 @@ apply_action_reizen_begin(skat_state *ss, action *a, player *pl, server *s) {
   e.answer_to = a->id;
   e.player = pl->id;
   switch (a->type) {
-	DERROR_PRINTF("TODO: FIXME: XXX: Make work"); // TODO: FIXME: XXX: Make work
+	DTODO_PRINTF("TODO: FIXME: XXX: Make work"); // TODO: FIXME: XXX: Make work
 	default:
 	  return GAME_PHASE_INVALID;
   }
@@ -274,10 +274,10 @@ skat_state_tick(skat_state *ss, server *s) {}
 
 void
 skat_resync_player(skat_client_state *cs, player *pl) {
-  DERROR_PRINTF("TODO: this"); // TODO: this
+  DTODO_PRINTF("TODO: this"); // TODO: this
 }
 
 void
 skat_state_init(skat_state *ss) {
-  DERROR_PRINTF("TODO: "); // TODO
+  DTODO_PRINTF("TODO: "); // TODO
 }

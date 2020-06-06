@@ -2,6 +2,8 @@
 #ifndef CONNECTION_C_HDR
 #define CONNECTION_C_HDR
 
+#define _GNU_SOURCE
+
 #include "skat/action.h"
 #include "skat/atomic_queue.h"
 #include "skat/event.h"

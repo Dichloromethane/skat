@@ -1,5 +1,7 @@
 #pragma once
 
+#define _GNU_SOURCE
+
 #include "skat/skat.h"
 #include "skat/connection.h"
 #include "skat/player.h"

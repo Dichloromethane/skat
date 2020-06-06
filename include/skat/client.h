@@ -1,5 +1,7 @@
 #pragma once
 
+#define _GNU_SOURCE
+
 #include "skat/connection.h"
 #include <pthread.h>
 

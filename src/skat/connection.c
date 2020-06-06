@@ -133,7 +133,7 @@ static int
 conn_handle_incoming_package_client_single(client *c, connection_c2s *conn,
 										   package *p) {
   switch (p->type) {
-	DERROR_PRINTF("TODO: this"); // TODO: this
+	DTODO_PRINTF("TODO: this"); // TODO: this
 	default:
 	  CH_ASSERT_0(0, &conn->c, CONN_ERROR_INVALID_PACKAGE_TYPE);
   }
@@ -262,7 +262,7 @@ conn_handle_events_server(connection_s2c *c) {
 
 void
 conn_handle_events_client(connection_c2s *conn) {
-  DERROR_PRINTF("TODO: this"); // TODO: this
+  DTODO_PRINTF("TODO: this"); // TODO: this
 }
 
 void

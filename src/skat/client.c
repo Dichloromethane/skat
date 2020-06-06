@@ -114,7 +114,7 @@ client_disconnect_connection(client *c, connection_c2s *conn) {
 
 void
 client_handle_resync(package *p) {
-  DERROR_PRINTF("TODO: implement"); // TODO: implement
+  DTODO_PRINTF("TODO: implement"); // TODO: implement
 }
 
 void

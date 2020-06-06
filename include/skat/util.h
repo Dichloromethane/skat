@@ -1,9 +1,11 @@
 #pragma once
+#define _GNU_SOURCE
 
 #include "conf.h"
 #include <stdio.h>
 #include <sys/syscall.h>
 #include <unistd.h>
+#include <stdlib.h>
 
 int util_rand_int(int min, int max);
 unsigned int round_to_next_pow2(unsigned int n);
@@ -24,9 +26,6 @@ float maxf(float a, float b);
   DEBUG_PRINTF_LABEL(TODO_C("TODO "), fmt, ##__VA_ARGS__)
 #define DEBUG_PRINTF(fmt, ...) DEBUG_PRINTF_LABEL("DEBUG", fmt, ##__VA_ARGS__)
 
-#define DEBUG_PRINTF_LABEL(label, fmt, ...) \
-  DEBUG_PRINTF_RAW(label " (%s): " fmt "\n", __func__, ##__VA_ARGS__)
-
 #define DPRINTF_COND(cond, ...) do { \
 								  if(cond)\
 									DEBUG_PRINTF(__VA_ARGS__);\
@@ -34,8 +33,16 @@ float maxf(float a, float b);
 
 #ifdef HAS_DEBUG_PRINTF
 #define DEBUG_PRINTF_RAW(fmt, ...) dprintf(2, fmt, ##__VA_ARGS__)
+#define DEBUG_PRINTF_LABEL(label, fmt, ...) do {\
+  char *debug_pr_123456789; \
+  asprintf(&debug_pr_123456789, "(%s:%d)", __func__, __LINE__);\
+  DEBUG_PRINTF_RAW(label " %s\n     "  fmt  "\n", debug_pr_123456789, ##__VA_ARGS__);\
+  free(debug_pr_123456789);\
+  } while(0)
+
 #else
 #define DEBUG_PRINTF_RAW(...)
+#define DEBUG_PRINTF_LABEL(label, fmt, ...)
 #endif
 
 #ifdef HAS_DEBUG_LOCK_PRINTF

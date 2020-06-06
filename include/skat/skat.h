@@ -2,6 +2,8 @@
 #ifndef SKAT_HDR
 #define SKAT_HDR
 
+#define _GNU_SOURCE
+
 #include "skat/action.h"
 #include "skat/card.h"
 #include "skat/card_collection.h"
