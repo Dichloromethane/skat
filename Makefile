@@ -3,7 +3,7 @@ CC=gcc
 WARNINGS=-Wall -Wextra -Wfatal-errors -Wno-unused-parameter -Wno-unused-function -Wno-unused-but-set-variable \
          -Wno-unknown-pragmas -Wno-char-subscripts -Wno-switch-unreachable
 
-CPPFLAGS=-MMD -pthread $(INCLUDEDIR_FLAGS) # -I /usr/include/libpng16
+CPPFLAGS=-MMD -MP -pthread $(INCLUDEDIR_FLAGS) # -I /usr/include/libpng16
 #CFLAGS=-Wall -O3 -mcpu=native -pthread -flto
 CFLAGS=-O0 -ggdb3 
 
@@ -44,7 +44,7 @@ OBJ=$(SKAT_OBJ) $(SERVER_OBJ) $(CLIENT_OBJ)
 
 DEP=$(OBJ:.o=.d)
 
-.PHONY: default all png clean force_rebuild
+.PHONY: default all png clean distclean force_rebuild
 
 default: all
 
@@ -62,10 +62,8 @@ $(OBJ): $(BUILDDIR)%.o: $(SOURCEDIR)%.c | $(BUILDDIRS)
 $(BUILDDIRS):
 	mkdir -p $@
 
-force_rebuild: | distclean all
-
 distclean: clean
-	$(RM) skat_server skat_client 
+	$(RM) skat_server skat_client
 
 clean:
 	$(RM) $(DEP) $(OBJ) dep_graph.png
