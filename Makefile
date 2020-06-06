@@ -1,7 +1,7 @@
 CC=gcc
 
 WARNINGS=-Wall -Wextra -Wfatal-errors -Wno-unused-parameter -Wno-unused-function -Wno-unused-but-set-variable \
-         -Wno-unknown-pragmas -Wno-char-subscripts
+         -Wno-unknown-pragmas -Wno-char-subscripts -Wno-switch-unreachable
 
 CPPFLAGS=-MMD -pthread $(INCLUDEDIR_FLAGS) # -I /usr/include/libpng16
 #CFLAGS=-Wall -O3 -mcpu=native -pthread -flto

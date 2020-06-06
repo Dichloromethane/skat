@@ -12,16 +12,16 @@
 
 void
 client_acquire_state_lock(client *c) {
-  DEBUG_PRINTF("Acquiring client state lock from thread %ld", pthread_self());
+  DPRINTF_COND(DEBUG_LOCK, "Acquiring client state lock from thread %ld", pthread_self());
   pthread_mutex_lock(&c->lock);
-  DEBUG_PRINTF("Acquired client state lock from thread %ld", pthread_self());
+  DPRINTF_COND(DEBUG_LOCK, "Acquired client state lock from thread %ld", pthread_self());
 }
 
 void
 client_release_state_lock(client *c) {
-  DEBUG_PRINTF("Releasing client state lock from thread %ld", pthread_self());
+  DPRINTF_COND(DEBUG_LOCK, "Releasing client state lock from thread %ld", pthread_self());
   pthread_mutex_unlock(&c->lock);
-  DEBUG_PRINTF("Released client state lock from thread %ld", pthread_self());
+  DPRINTF_COND(DEBUG_LOCK, "Released client state lock from thread %ld", pthread_self());
 }
 
 typedef struct {
@@ -114,7 +114,7 @@ client_disconnect_connection(client *c, connection_c2s *conn) {
 
 void
 client_handle_resync(package *p) {
-  // TODO: implement
+  DERROR_PRINTF("TODO: implement"); // TODO: implement
 }
 
 void

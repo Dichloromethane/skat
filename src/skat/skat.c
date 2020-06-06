@@ -15,22 +15,22 @@ game_setup_server(skat_state *ss) {
 
 int
 game_start_server(skat_state *ss) {
-  // TODO: implement
+  DERROR_PRINTF("TODO: implement"); // TODO: implement
   return 0;
 }
 
 void
 skat_state_notify_disconnect(skat_state *ss, player *pl, server *s) {
-  // TODO: implement
+  DERROR_PRINTF("TODO: implement"); // TODO: implement
 }
 void
 skat_state_notify_join(skat_state *ss, player *pl, server *s) {
-  // TODO: implement
+  DERROR_PRINTF("TODO: implement"); // TODO: implement
 }
 
 void
 skat_calculate_game_result(skat_state *ss, int *score) {
-  // TODO: implement
+  DERROR_PRINTF("TODO: implement"); // TODO: implement
 }
 
 // returns pos+1 on find, 0 otherwise
@@ -132,14 +132,14 @@ apply_action_between_rounds(skat_state *ss, action *a, player *pl, server *s) {
 	  ss->sgs.last_active_player_index =
 			  (ss->sgs.last_active_player_index + 1) % s->ncons;
 
+	  server_distribute_event(s, &e, NULL);
+
 	  card_collection_empty(&ss->stiche_buf[0]);
 	  card_collection_empty(&ss->stiche_buf[1]);
 	  card_collection_empty(&ss->stiche_buf[2]);
 	  ss->sgs.curr_stich = (stich){.vorhand = 0, .winner = -1};
 	  ss->sgs.last_stich = (stich){.vorhand = -1, .winner = -1};
 	  ss->sgs.stich_num = 0;
-
-	  server_distribute_event(s, &e, NULL);
 
 	  distribute_cards(ss);
 
@@ -168,7 +168,7 @@ apply_action_reizen_begin(skat_state *ss, action *a, player *pl, server *s) {
   e.answer_to = a->id;
   e.player = pl->id;
   switch (a->type) {
-	// TODO: FIXME: XXX: Make work
+	DERROR_PRINTF("TODO: FIXME: XXX: Make work"); // TODO: FIXME: XXX: Make work
 	default:
 	  return GAME_PHASE_INVALID;
   }
@@ -210,22 +210,23 @@ apply_action_stich(skat_state *ss, action *a, player *pl, server *s, int card) {
 	  e.answer_to = -1;
 	  e.type = EVENT_STICH_DONE;
 	  e.stich_winner = ss->sgs.active_players[ss->sgs.curr_stich.winner];
-
+	  server_distribute_event(s, &e, NULL);
+	  
 	  ss->sgs.last_stich = ss->sgs.curr_stich;
 	  ss->sgs.curr_stich =
 			  (stich){.vorhand = ss->sgs.last_stich.winner, .winner = -1};
 
-	  server_distribute_event(s, &e, NULL);
-
 	  if (ss->sgs.stich_num++ < 9)
 		return GAME_PHASE_PLAY_STICH_C1;
 
+      // game finished
 	  skat_calculate_game_result(ss, e.score_round);
 
 	  for (int i = 0; i < 3; i++)
 		ss->sgs.total_score[(ss->sgs.last_active_player_index + i)
 							% s->ncons] += e.score_round[i];
 
+      e.answer_to = -1;
 	  e.type = EVENT_ROUND_DONE;
 	  server_distribute_event(s, &e, NULL);
 
@@ -273,10 +274,10 @@ skat_state_tick(skat_state *ss, server *s) {}
 
 void
 skat_resync_player(skat_client_state *cs, player *pl) {
-  // TODO: this
+  DERROR_PRINTF("TODO: this"); // TODO: this
 }
 
 void
 skat_state_init(skat_state *ss) {
-  // TODO
+  DERROR_PRINTF("TODO: "); // TODO
 }

@@ -82,16 +82,16 @@ server_disconnect_connection(server *s, connection_s2c *c) {
 
 void
 server_acquire_state_lock(server *s) {
-  DEBUG_PRINTF("Acquiring server state lock from thread %d", gettid());
+  DPRINTF_COND(DEBUG_LOCK, "Acquiring server state lock from thread %d", gettid());
   pthread_mutex_lock(&s->lock);
-  DEBUG_PRINTF("Acquired server state lock from thread %d", gettid());
+  DPRINTF_COND(DEBUG_LOCK, "Acquired server state lock from thread %d", gettid());
 }
 
 void
 server_release_state_lock(server *s) {
-  DEBUG_PRINTF("Releasing server state lock from thread %d", gettid());
+  DPRINTF_COND(DEBUG_LOCK, "Releasing server state lock from thread %d", gettid());
   pthread_mutex_unlock(&s->lock);
-  DEBUG_PRINTF("Released server state lock from thread %d", gettid());
+  DPRINTF_COND(DEBUG_LOCK, "Released server state lock from thread %d", gettid());
 }
 
 void
@@ -102,7 +102,7 @@ server_resync_player(server *s, player *pl, skat_client_state *cs) {
 
 void
 server_tick(server *s) {
-  DEBUG_PRINTF("Server tick");
+  DPRINTF_COND(DEBUG_TICK, "Server tick");
 
   action a;
   event err_ev;
@@ -228,7 +228,7 @@ server_run(server *s) {
   ctimer t;
 
   ctimer_create(&t, s, server_tick_wrap,
-				(1000 * 1000 * 1000) / SERVER_REFRESH_RATE);// 60Hz
+				(1000 * 1000 * 1000) / SERVER_REFRESH_RATE);// in Hz
 
   server_acquire_state_lock(s);
   server_start_conn_listener(s, s->port);
