@@ -8,6 +8,7 @@ typedef struct {
 
 typedef struct {
   player_id id;
+  int index;
 } player;
 
 int player_equals_by_id(const player *, const player *);

@@ -71,6 +71,7 @@ establish_connection_server(server *s, int fd, pthread_t handler) {
   connection c;
   connection_s2c *s2c;
   player pl;
+  int n;
 
   c.fd = fd;
   c.cseq = SEQ_NUM_START;
@@ -88,7 +89,7 @@ establish_connection_server(server *s, int fd, pthread_t handler) {
 	CH_ASSERT_NULL(!server_has_player_id(s, &pl.id), &c,
 				   CONN_ERROR_PLAYER_ID_IN_USE);
 
-	CH_ASSERT_NULL(s2c = server_get_free_connection(s), &c,
+	CH_ASSERT_NULL(s2c = server_get_free_connection(s, &n), &c,
 				   CONN_ERROR_TOO_MANY_PLAYERS);
 
 	init_conn_s2c(s2c);
@@ -96,20 +97,21 @@ establish_connection_server(server *s, int fd, pthread_t handler) {
 	s2c->c.active = 1;
 	s2c->pid = pl.id;
 
-	server_add_player(s, &pl);
+	server_add_player_for_connection(s, &pl, n);
 
 	server_notify_join(s, &pl);
 
 	server_release_state_lock(s);
-
+    
 	re.type = REQ_RSP_CONFIRM_JOIN;
+	re.rsp.player_index = n;
 	re.rsp.seq = p.req.seq;
 	send_package(&s2c->c, &re);
 	return s2c;
   }
   if (p.type == REQ_RSP_CONN_RESUME) {
 	server_acquire_state_lock(s);
-	CH_ASSERT_NULL(s2c = server_get_connection_by_pid(s, p.req.pid), &c,
+	CH_ASSERT_NULL(s2c = server_get_connection_by_pid(s, p.req.pid, &n), &c,
 				   CONN_ERROR_NO_SUCH_PLAYER_ID);
 	CH_ASSERT_NULL(!s2c->c.active, &c, CONN_ERROR_PLAYER_ID_IN_USE);
 
@@ -122,6 +124,7 @@ establish_connection_server(server *s, int fd, pthread_t handler) {
 	server_release_state_lock(s);
 
 	re.type = REQ_RSP_CONFIRM_RESUME;
+    re.rsp.player_index = n;
 	re.rsp.seq = p.req.seq;
 	send_package(&s2c->c, &re);
 	return s2c;

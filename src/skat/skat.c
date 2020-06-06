@@ -273,8 +273,10 @@ void
 skat_state_tick(skat_state *ss, server *s) {}
 
 void
-skat_resync_player(skat_client_state *cs, player *pl) {
-  DTODO_PRINTF("TODO: this"); // TODO: this
+skat_resync_player(skat_state *ss, skat_client_state *cs, player *pl) {
+  cs->sgs = ss->sgs;
+  //DTODO_PRINTF("TODO: this"); // TODO: this
+
 }
 
 void

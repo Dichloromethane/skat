@@ -97,6 +97,7 @@ typedef struct {
   union {
 	conn_error_type cet;
 	skat_client_state scs;
+	int player_index;
   };
 } response;
 

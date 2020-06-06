@@ -18,7 +18,7 @@ server_has_player_id(server *s, player_id *pid) {
 
 void
 server_send_event(server *s, event *e, player *pl) {
-  connection_s2c *c = server_get_connection_by_pid(s, pl->id);
+  connection_s2c *c = server_get_connection_by_pid(s, pl->id, NULL);
   if (c) {
 	conn_enqueue_event(&c->c, e);
   }
@@ -41,22 +41,31 @@ server_distribute_event(server *s, event *ev,
 }
 
 connection_s2c *
-server_get_free_connection(server *s) {
+server_get_free_connection(server *s, int *n) {
+  int pm, i;
   if (s->ncons > 4)
 	return NULL;
-  return &s->conns[s->ncons++];
+  pm = ~s->playermask;
+  i = __builtin_ctz(pm); 
+  s->playermask |= 1 << i;
+  *n = i;
+  return &s->conns[i];
 }
 
 void
-server_add_player(server *s, player *pl) {
-  memcpy(&s->ps[s->ncons - 1], pl, sizeof(player));
+server_add_player_for_connection(server *s, player *pl, int n) {
+  s->ps[n] = *pl;
+  pl->index = n;
 }
 
 connection_s2c *
-server_get_connection_by_pid(server *s, player_id pid) {
+server_get_connection_by_pid(server *s, player_id pid, int *n) {
   for (int i = 0; i < s->ncons; i++)
-	if (player_id_equals(&s->ps[i].id, &pid))
+	if (player_id_equals(&s->ps[i].id, &pid)) {
+	  if (n)
+		*n = i;
 	  return &s->conns[i];
+	}
   return NULL;
 }
 
@@ -97,7 +106,7 @@ server_release_state_lock(server *s) {
 void
 server_resync_player(server *s, player *pl, skat_client_state *cs) {
   DEBUG_PRINTF("Resync requested by %s", pl->id.str);
-  skat_resync_player(cs, pl);
+  skat_resync_player(&s->skat_state, cs, pl);
 }
 
 void
@@ -215,6 +224,7 @@ server_init(server *s, int port) {
   pthread_mutex_init(&s->lock, NULL);
   s->ncons = 0;
   s->port = port;
+  s->playermask = 0;
   skat_state_init(&s->skat_state);
 }
 
