@@ -20,7 +20,7 @@ void
 server_send_event(server *s, event *e, player *pl) {
   connection_s2c *c = server_get_connection_by_pid(s, pl->id);
   if (c) {
-	conn_enqueue_event(c, e);
+	conn_enqueue_event(&c->c, e);
   }
 }
 
@@ -77,7 +77,7 @@ server_disconnect_connection(server *s, connection_s2c *c) {
   for (int i = 0; i < s->ncons; i++)
 	if (!player_equals_by_id(pl, &s->ps[i]))
 	  conn_notify_disconnect(&s->conns[i], pl);
-  conn_disable_conn(c);
+  conn_disable_conn(&c->c);
 }
 
 void
@@ -108,10 +108,10 @@ server_tick(server *s) {
   event err_ev;
   server_acquire_state_lock(s);
   for (int i = 0; i < s->ncons; i++) {
-	if (!s->conns[i].active)
+	if (!s->conns[i].c.active)
 	  continue;
 
-	while (conn_dequeue_action(&s->conns[i], &a)) {
+	while (conn_dequeue_action(&s->conns[i].c, &a)) {
 	  if (!skat_state_apply(&s->skat_state, &a, &s->ps[i], s)) {
 		DEBUG_PRINTF("Received illegal action of type %s from player %s with "
 					 "id %ld, rejecting",
@@ -119,7 +119,7 @@ server_tick(server *s) {
 		err_ev.type = EVENT_ILLEGAL_ACTION;
 		err_ev.answer_to = a.id;
 		copy_player_id(&err_ev.player, &s->ps[i].id);
-		conn_enqueue_event(&s->conns[i], &err_ev);
+		conn_enqueue_event(&s->conns[i].c, &err_ev);
 	  }
 	}
 	skat_state_tick(&s->skat_state, s);

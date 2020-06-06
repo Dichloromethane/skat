@@ -2,7 +2,7 @@
 
 #include "client/color.h"
 
-void line_render_init();
+void line_render_init(void);
 
 void render_line(color col, float start_x, float start_y, float end_x,
 				 float end_y);

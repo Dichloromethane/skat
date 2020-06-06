@@ -53,16 +53,16 @@ conn_error(connection *c, conn_error_type cet) {
 
 static void
 init_conn_s2c(connection_s2c *c) {
-  init_action_queue(&c->aq);
-  init_event_queue(&c->aq);
-  c->active = 0;
+  init_action_queue(&c->c.aq);
+  init_event_queue(&c->c.aq);
+  c->c.active = 0;
 }
 
 static void
 init_conn_c2s(connection_c2s *s) {
-  // init_action_queue(&s->aq);
-  // init_event_queue(&s->aq);
-  s->active = 0;
+  init_action_queue(&s->c.aq);
+  init_event_queue(&s->c.aq);
+  s->c.active = 0;
 }
 
 connection_s2c *
@@ -93,7 +93,7 @@ establish_connection_server(server *s, int fd, pthread_t handler) {
 
 	init_conn_s2c(s2c);
 	s2c->c = c;
-	s2c->active = 1;
+	s2c->c.active = 1;
 	s2c->pid = pl.id;
 
 	server_add_player(s, &pl);
@@ -111,11 +111,11 @@ establish_connection_server(server *s, int fd, pthread_t handler) {
 	server_acquire_state_lock(s);
 	CH_ASSERT_NULL(s2c = server_get_connection_by_pid(s, p.req.pid), &c,
 				   CONN_ERROR_NO_SUCH_PLAYER_ID);
-	CH_ASSERT_NULL(!s2c->active, &c, CONN_ERROR_PLAYER_ID_IN_USE);
+	CH_ASSERT_NULL(!s2c->c.active, &c, CONN_ERROR_PLAYER_ID_IN_USE);
 
 	init_conn_s2c(s2c);
 	s2c->c = c;
-	s2c->active = 1;
+	s2c->c.active = 1;
 
 	server_notify_join(s, &pl);
 
@@ -133,13 +133,16 @@ static int
 conn_handle_incoming_package_client_single(client *c, connection_c2s *conn,
 										   package *p) {
   switch (p->type) {
+	case REQ_RSP_ACTION:
+	  conn_enqueue_action(&conn->c, &p->req.ac);
+	  break;
 	case REQ_RSP_CONFIRM_JOIN:
 	  __attribute__((fallthrough));
 	case REQ_RSP_CONFIRM_RESUME:
-	  conn->active = 1;
+	  conn->c.active = 1;
 	  break;
 	case REQ_RSP_ERROR:
-	  conn->active = 0;
+	  conn->c.active = 0;
 	  DERROR_PRINTF("Received error from server, disconnecting");
 	  client_acquire_state_lock(c);
 	  client_disconnect_connection(c, conn);
@@ -240,7 +243,7 @@ conn_handle_incoming_packages_server(server *s, connection_s2c *c) {
   }
   switch (p.type) {
 	case REQ_RSP_ACTION:
-	  conn_enqueue_action(c, &p.req.ac);
+	  conn_enqueue_action(&c->c, &p.req.ac);
 	  break;
 	case REQ_RSP_RESYNC:
 	  server_acquire_state_lock(s);
@@ -264,7 +267,7 @@ conn_handle_incoming_packages_server(server *s, connection_s2c *c) {
 void
 conn_handle_events_server(connection_s2c *c) {
   package p;
-  while (conn_dequeue_event(c, &p.req.ev)) {
+  while (conn_dequeue_event(&c->c, &p.req.ev)) {
 	p.type = REQ_RSP_EVENT;
 	p.req.seq = ++c->c.cseq;
 	send_package(&c->c, &p);
@@ -280,7 +283,7 @@ conn_handle_events_client(connection_c2s *conn) {
 void
 conn_notify_join(connection_s2c *c, player *pl) {
   package p;
-  if (!c->active)
+  if (!c->c.active)
 	return;
   p.type = REQ_RSP_NOTIFY_JOIN;
   p.req.seq = ++c->c.cseq;
@@ -291,7 +294,7 @@ conn_notify_join(connection_s2c *c, player *pl) {
 void
 conn_notify_disconnect(connection_s2c *c, player *pl) {
   package p;
-  if (!c->active)
+  if (!c->c.active)
 	return;
   p.type = REQ_RSP_NOTIFY_LEAVE;
   p.req.seq = ++c->c.cseq;
@@ -300,29 +303,29 @@ conn_notify_disconnect(connection_s2c *c, player *pl) {
 }
 
 void
-conn_disable_conn(connection_s2c *c) {
-  close(c->c.fd);
+conn_disable_conn(connection *c) {
+  close(c->fd);
   c->active = 0;
   clear_action_queue(&c->aq);
   clear_event_queue(&c->eq);
 }
 
 int
-conn_dequeue_action(connection_s2c *c, action *a) {
+conn_dequeue_action(connection *c, action *a) {
   return dequeue_action(&c->aq, a);
 }
 
 void
-conn_enqueue_event(connection_s2c *c, event *e) {
+conn_enqueue_event(connection *c, event *e) {
   enqueue_event(&c->eq, e);
 }
 
 void
-conn_enqueue_action(connection_s2c *c, action *a) {
+conn_enqueue_action(connection *c, action *a) {
   enqueue_action(&c->aq, a);
 }
 
 int
-conn_dequeue_event(connection_s2c *c, event *e) {
+conn_dequeue_event(connection *c, event *e) {
   return dequeue_event(&c->eq, e);
 }
