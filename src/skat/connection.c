@@ -62,7 +62,7 @@ static void
 init_conn_c2s(connection_c2s *s) {
   // init_action_queue(&s->aq);
   // init_event_queue(&s->aq);
-  // s->active = 0;
+  s->active = 0;
 }
 
 connection_s2c *
@@ -133,8 +133,20 @@ static int
 conn_handle_incoming_package_client_single(client *c, connection_c2s *conn,
 										   package *p) {
   switch (p->type) {
-	DTODO_PRINTF("TODO: this"); // TODO: this
+	case REQ_RSP_CONFIRM_JOIN:
+	  __attribute__((fallthrough));
+	case REQ_RSP_CONFIRM_RESUME:
+	  conn->active = 1;
+	  break;
+	case REQ_RSP_ERROR:
+	  conn->active = 0;
+	  DERROR_PRINTF("Received error from server, disconnecting");
+	  client_acquire_state_lock(c);
+	  client_disconnect_connection(c, conn);
+	  client_release_state_lock(c);
+	  return 0;
 	default:
+	  DTODO_PRINTF("TODO: rest of the client side protocol");// TODO: this
 	  CH_ASSERT_0(0, &conn->c, CONN_ERROR_INVALID_PACKAGE_TYPE);
   }
   return 1;
@@ -262,7 +274,7 @@ conn_handle_events_server(connection_s2c *c) {
 
 void
 conn_handle_events_client(connection_c2s *conn) {
-  DTODO_PRINTF("TODO: this"); // TODO: this
+  DTODO_PRINTF("TODO: this");// TODO: this
 }
 
 void

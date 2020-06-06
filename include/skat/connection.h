@@ -122,6 +122,7 @@ typedef struct {
 
 typedef struct {
   connection c;
+  int active;
 } connection_c2s;
 
 connection_s2c *establish_connection_server(server *, int, pthread_t);
