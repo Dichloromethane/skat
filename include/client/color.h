@@ -13,6 +13,7 @@ typedef union {
 } color;
 
 void color_to_rgba_f(color col, float *rgba);
+void color_to_rgb_f(color col, float *rgb);
 
 static const color BLACK = {.argb = 0xFF000000};
 static const color WHITE = {.argb = 0xFFFFFFFF};

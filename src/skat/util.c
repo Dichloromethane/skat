@@ -30,3 +30,13 @@ round_to_next_pow2(unsigned int n) {
 	p2 <<= 1u;
   return p2;
 }
+
+float
+minf(float a, float b) {
+  return a < b ? a : b;
+}
+
+float
+maxf(float a, float b) {
+  return a > b ? a : b;
+}

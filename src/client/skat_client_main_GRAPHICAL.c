@@ -4,6 +4,7 @@
 #include <GLFW/glfw3.h>
 
 #include "client/constants.h"
+#include "client/line_render.h"
 #include "client/linmath.h"
 #include "client/shader.h"
 #include "client/text_render.h"
@@ -52,6 +53,8 @@ resize_callback(GLFWwindow *window, int width, int height) {
 
   screen_width = (float) width;
   screen_height = (float) height;
+
+  printf("Resizing to %d x %d\n", width, height);
 }
 
 static void
@@ -60,6 +63,14 @@ key_callback(GLFWwindow *window, int key, int scancode, int action, int mods) {
 		 action, mods);
   if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
 	glfwSetWindowShouldClose(window, GLFW_TRUE);
+}
+
+static void
+draw_cross() {
+  render_line(GRAY, 0, 0, WIDTH, HEIGHT);
+  render_line(BLUE, 0, HEIGHT, WIDTH, 0);
+
+  render_box(RED, WIDTH - 1, HEIGHT - 1, -20, -20);
 }
 
 static struct {
@@ -162,12 +173,15 @@ start_GRAPHICAL(void) {
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
+  line_render_init();
   text_render_init();
   preprare_triangle();
 
   while (!glfwWindowShouldClose(window)) {
 	glClearColor(1, 1, 1, 1);
 	glClear(GL_COLOR_BUFFER_BIT);
+
+	draw_cross();
 
 	draw_triangle();
 

@@ -5,6 +5,11 @@
 typedef struct {
   GLfloat x;
   GLfloat y;
+} vertex2f;
+
+typedef struct {
+  GLfloat x;
+  GLfloat y;
   GLfloat s;
   GLfloat t;
 } vertex2f_st;
