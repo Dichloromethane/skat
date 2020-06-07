@@ -39,6 +39,7 @@ GAME_PHASE_HDR_TABLE_BEGIN
   GAME_PHASE(SETUP),
   GAME_PHASE(BETWEEN_ROUNDS),
   GAME_PHASE(REIZEN_BEGIN),
+  GAME_PHASE(SKAT_AUFNEHMEN),
   GAME_PHASE(PLAY_START),
   GAME_PHASE(PLAY_STICH_C1),
   GAME_PHASE(PLAY_STICH_C2),
@@ -66,32 +67,33 @@ typedef struct {
   game_phase cgphase;
   game_rules gr;
   reiz_resultat rr;
-  player_id active_players[3];
-  int num_players;
-  int last_active_player_index;
-  int total_score[4];
-  union {
-	struct {
-	  stich curr_stich;
-	  stich last_stich;
-	  int stich_num;
-	  int alleinspieler;
-	};
-  };
+
+  int active_players[3]; // map active player -> gupid
+  int spectator; // ib gupid
+
+  int score[4]; // indexed by gupid
+
+  stich curr_stich;
+  stich last_stich;
+  int stich_num; // 0-9
+  int alleinspieler; // indexed by active player
 } shared_game_state;
 
 typedef struct {
   shared_game_state sgs;
   card_collection my_hand;
-  card_id sc[2];
+  int my_index;
+  union {
+    card_id skat[2];
+  }
 } skat_client_state;
 
 typedef struct {
   shared_game_state sgs;
-  card_collection player_hands[3];
-  card_id skat[2];
-  card_collection *stiche[3];
-  card_collection stiche_buf[3];
+  card_collection player_hands[3]; // indexed by active player
+  card_id skat[2]; 
+  card_collection *stiche[3]; // indexed by active player
+  card_collection stiche_buf[3]; // indexed via *stiche (3 weil ramschen)
   int spielwert;
 } skat_state;
 

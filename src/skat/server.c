@@ -24,6 +24,11 @@ server_send_event(server *s, event *e, player *pl) {
   }
 }
 
+player *
+server_get_player_by_gupid(server *s, int gupid) {
+  return &s->ps[gupid];
+}
+
 void
 server_distribute_event(server *s, event *ev,
 						void (*mask_event)(event *, player *)) {

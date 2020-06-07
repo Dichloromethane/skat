@@ -112,25 +112,12 @@ apply_action_between_rounds(skat_state *ss, action *a, player *pl, server *s) {
 	  if (s->ncons < 3)
 		return GAME_PHASE_INVALID;
 
-	  e.type = EVENT_START_ROUND;
-	  server_distribute_event(s, &e, NULL);
-
 	  e.answer_to = -1;
 	  e.type = EVENT_START_ROUND;
 
-	  e.current_active_players[0] = s->ps[ss->sgs.last_active_player_index].id;
-	  ss->sgs.active_players[0] = e.current_active_players[0];
-
-	  e.current_active_players[1] =
-			  s->ps[(ss->sgs.last_active_player_index + 1) % s->ncons].id;
-	  ss->sgs.active_players[1] = e.current_active_players[1];
-
-	  e.current_active_players[2] =
-			  s->ps[(ss->sgs.last_active_player_index + 2) % s->ncons].id;
-	  ss->sgs.active_players[2] = e.current_active_players[2];
-
-	  ss->sgs.last_active_player_index =
-			  (ss->sgs.last_active_player_index + 1) % s->ncons;
+	  if (s->ncons == 3) { // we don't have a spectator
+			
+	  }
 
 	  server_distribute_event(s, &e, NULL);
 
@@ -174,6 +161,77 @@ apply_action_reizen_begin(skat_state *ss, action *a, player *pl, server *s) {
   }
 }
 
+static int
+next_active_player(int player, int off) {
+  return (player+off)%3;
+}
+
+static game_phase
+apply_action_stich(skat_state *ss, action *a, player *pl, server *s, int ind) {
+  event e;
+  int curr, result;
+  int winnerv; // indexed by vorhand + ap
+  int winner; // indexed by ap
+
+
+  switch (a->type) {
+	case ACTION_PLAY_CARD:
+	  curr = next_active_player(ss->sgs.curr_stich.vorhand, ind);	
+	  if (!player_equals(pl, server_get_player_by_gupid(ss->sgs.active_player[curr])))
+		return GAME_PHASE_INVALID;
+	  if (stich_card_legal(&ss->sgs.gr, ss->sgs.curr_stich.cs, ind, &a->card, 
+						   &ss->player_hands[curr], &result) || !result)
+		return GAME_PHASE_INVALID;
+	 
+	  e.type = EVENT_PLAY_CARD;
+      e.answer_to = a->id;
+      e.player = pl->id;
+	  e.card = a->card;
+	  server_distribute_event(s, &e, NULL);
+
+	  if (!ind) {
+		ss->sgs.curr_stich.cs[0] = a->card;
+		return GAME_PHASE_PLAY_STICH_C2;
+	  } else if (ind == 1) {
+		ss->sgs.curr_stich.cs[1] = a->card;
+		return GAME_PHASE_PLAY_STICH_C3;
+	  }
+
+	  stich_get_winner(&ss->sgs.gr, &ss->sgs.curr_stich, &winnerv); // Sue me
+
+	  winner = next_active_player(ss->sgs.curr_stich.vorhand, winnerv);
+	  ss->sgs.curr_stich.winner = winner;
+
+	  card_collection_add_card_array(ss->stiche[winner], 
+	  								 ss->sgs.curr_stiche.cs, 3);
+
+	  e.type = EVENT_STICH_DONE;
+      e.answer_to = -1;
+	  e.stich_winner = ss->sgs.active_players[winner];
+	  server_distribute_event(s, &e, NULL);
+
+  	  ss->sgs.last_stich = ss->sgs.curr_stich;
+	  ss->sgs.curr_stich =
+			  (stich){.vorhand = ss->sgs.last_stich.winner, .winner = -1};
+	  
+	  if (ss->sgs.stich_num++ < 9)
+		return GAME_PHASE_PLAY_STICH_C1;
+
+	  skat_calculate_game_result(ss, e.score_round);
+
+	  for (int i = 0; i < 3; i++)
+		ss->sgs.score[ss->sgs.active_players[i]] += e.score_round[i];
+
+	  e.answer_to = -1;
+	  e.type = EVENT_ROUND_DONE;
+	  server_distribute_event(s, &e, NULL);
+	
+	  return GAME_PHASE_BETWEEN_ROUNDS;
+	default:
+	  return GAME_PHASE_INVALID;
+  }
+}
+/*
 static game_phase
 apply_action_stich(skat_state *ss, action *a, player *pl, server *s, int card) {
   event e;
@@ -235,6 +293,7 @@ apply_action_stich(skat_state *ss, action *a, player *pl, server *s, int card) {
 	  return GAME_PHASE_INVALID;
   }
 }
+*/
 
 static game_phase
 apply_action(skat_state *ss, action *a, player *pl, server *s) {
@@ -272,11 +331,21 @@ skat_state_apply(skat_state *ss, action *a, player *pl, server *s) {
 void
 skat_state_tick(skat_state *ss, server *s) {}
 
+static inline void
+skat_get_player_hand(skat_state *ss, player *pl) {
+}
+
 void
 skat_resync_player(skat_state *ss, skat_client_state *cs, player *pl) {
   cs->sgs = ss->sgs;
+  cs->my_index = pl->index;
+  cs->my_hand = pl->player_hands
+  if (ss->scs.cgphase == GAME_PHASE_SKAT_AUFNEHMEN && pl->index == alleinspieler) {
+	cs->skat[0] = ss->skat[0];
+	cs->skat[1] = ss->skat[1];
+  }
   //DTODO_PRINTF("TODO: this"); // TODO: this
-
+  
 }
 
 void

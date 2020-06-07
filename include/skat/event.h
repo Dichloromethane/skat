@@ -51,11 +51,11 @@ typedef struct {
   player_id player;
   union {
 	player_id ready_player;
-	player_id current_active_players[3];
+	int current_active_players[3]; // indexed by ap, contains gupid
 	card_collection hand;
 	card_id card;
 	player_id stich_winner;
-	int score_round[3];
+	int score_round[3]; // indexed by ap
   };
 } event;
 
