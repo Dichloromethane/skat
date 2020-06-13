@@ -129,7 +129,7 @@ establish_connection_server(server *s, int fd, pthread_t handler) {
 	server_release_state_lock(s);
 
 	re.type = REQ_RSP_CONFIRM_RESUME;
-    re.rsp.player_index = n;
+	re.rsp.player_index = n;
 	re.rsp.seq = p.req.seq;
 	send_package(&s2c->c, &re);
 	return s2c;
@@ -143,6 +143,9 @@ conn_handle_incoming_package_client_single(client *c, connection_c2s *conn,
   switch (p->type) {
 	case REQ_RSP_ACTION:
 	  conn_enqueue_action(&conn->c, &p->req.ac);
+	  break;
+	case REQ_RSP_EVENT:
+	  conn_enqueue_event(&conn->c, &p->req.ev);
 	  break;
 	case REQ_RSP_CONFIRM_JOIN:
 	  __attribute__((fallthrough));
