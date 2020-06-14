@@ -4,8 +4,8 @@ WARNINGS=-Wall -Wextra -Wfatal-errors -Wno-unused-parameter -Wno-unused-function
          -Wno-unknown-pragmas -Wno-char-subscripts -Wno-switch-unreachable -Wno-dangling-else -Wno-unused-result
 
 CPPFLAGS=-MMD -MP -pthread $(INCLUDEDIR_FLAGS) # -I /usr/include/libpng16
-CFLAGS=-O3 -ftree-vectorize -mcpu=native -flto $(EXTRA_CFLAGS)
-#CFLAGS=-O0 -ggdb3 
+#CFLAGS=-O3 -ftree-vectorize -mcpu=native -flto $(EXTRA_CFLAGS)
+CFLAGS=-O0 -ggdb3
 
 LDFLAGS=
 

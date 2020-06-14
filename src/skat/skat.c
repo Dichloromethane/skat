@@ -1,7 +1,7 @@
 #include "skat/skat.h"
 #include "skat/server.h"
 #include "skat/util.h"
-#include<string.h>
+#include <string.h>
 
 #undef SKAT_HDR
 #define GAME_PHASE_HDR_TO_STRING
@@ -16,22 +16,22 @@ game_setup_server(skat_state *ss) {
 
 int
 game_start_server(skat_state *ss) {
-  DTODO_PRINTF("TODO: implement"); // TODO: implement
+  DTODO_PRINTF("TODO: implement");// TODO: implement
   return 0;
 }
 
 void
 skat_state_notify_disconnect(skat_state *ss, player *pl, server *s) {
-  DTODO_PRINTF("TODO: implement"); // TODO: implement
+  DTODO_PRINTF("TODO: implement");// TODO: implement
 }
 void
 skat_state_notify_join(skat_state *ss, player *pl, server *s) {
-  DTODO_PRINTF("TODO: implement"); // TODO: implement
+  DTODO_PRINTF("TODO: implement");// TODO: implement
 }
 
 void
 skat_calculate_game_result(skat_state *ss, int *score) {
-  DTODO_PRINTF("TODO: implement"); // TODO: implement
+  DTODO_PRINTF("TODO: implement");// TODO: implement
 }
 
 // returns pos+1 on find, 0 otherwise
@@ -115,22 +115,22 @@ apply_action_between_rounds(skat_state *ss, action *a, player *pl, server *s) {
 	  e.answer_to = -1;
 	  e.type = EVENT_START_ROUND;
 
-	  if (ss->sgs.active_players[0] == -1)
+	  if (ss->sgs.active_players[0] == -1) {
 		for (int i = 0, j = 0; i < 4; i++)
-		  if ((s->playermask >> i) & 1) 
-		    ss->sgs.active_players[j++] = s->ps[i].index;
-	  else if (s->ncons == 3) // we don't have a spectator
-  		perm(ss->sgs.active_players, 3, 0x12);
-	  else {
+		  if ((s->playermask >> i) & 1)
+			ss->sgs.active_players[j++] = s->ps[i].index;
+	  } else if (s->ncons == 3) {// we don't have a spectator
+		perm(ss->sgs.active_players, 3, 0x12);
+	  } else {
 		pm = 0;
 		for (int i = 0; i < 3; i++)
 		  pm |= 1 << ss->sgs.active_players[i];
 		ix = __builtin_ctz(~pm);
-  		perm(ss->sgs.active_players, 3, 0x12);
+		perm(ss->sgs.active_players, 3, 0x12);
 		ss->sgs.active_players[2] = s->ps[ix].index;
 	  }
-	  
-	  memcpy(e.current_active_players, ss->sgs.active_players, 3*sizeof(int));
+
+	  memcpy(e.current_active_players, ss->sgs.active_players, 3 * sizeof(int));
 
 	  server_distribute_event(s, &e, NULL);
 
@@ -139,7 +139,7 @@ apply_action_between_rounds(skat_state *ss, action *a, player *pl, server *s) {
 	  ss->sgs.stich_num = 0;
 	  ss->sgs.alleinspieler = -1;
 	  ss->spielwert = -1;
-	  memset(ss->stiche, '\0', 3*sizeof(ss->stiche[0]));
+	  memset(ss->stiche, '\0', 3 * sizeof(ss->stiche[0]));
 	  card_collection_empty(&ss->stiche_buf[0]);
 	  card_collection_empty(&ss->stiche_buf[1]);
 	  card_collection_empty(&ss->stiche_buf[2]);
@@ -148,7 +148,7 @@ apply_action_between_rounds(skat_state *ss, action *a, player *pl, server *s) {
 
 	  e.type = EVENT_DISTRIBUTE_CARDS;
 
-	  void mask_hands(event* ev, player* pl) {
+	  void mask_hands(event * ev, player * pl) {
 		if (!is_active_player(&ss->sgs, pl)) {
 		  card_collection_empty(&ev->hand);
 		  return;
@@ -158,7 +158,23 @@ apply_action_between_rounds(skat_state *ss, action *a, player *pl, server *s) {
 
 	  server_distribute_event(s, &e, mask_hands);
 
-	  return GAME_PHASE_REIZEN_BEGIN;
+	  DTODO_PRINTF("TODO: implement reizen");// TODO: implement reizen
+	  // return GAME_PHASE_REIZEN_BEGIN;
+	  ss->spielwert = 18;
+	  ss->stiche[0] = &ss->stiche_buf[0];
+	  ss->stiche[1] = &ss->stiche_buf[1];
+	  ss->stiche[2] = &ss->stiche_buf[1];
+	  card_collection_add_card_array(ss->stiche[0], ss->skat, 2);
+	  ss->sgs.alleinspieler = 0;
+	  ss->sgs.gr = (game_rules){.type = GAME_TYPE_COLOR, .trumpf = COLOR_KREUZ};
+	  ss->sgs.rr = (reiz_resultat){.reizwert = 18,
+								   .hand = 0,
+								   .schneider = 0,
+								   .schwarz = 0,
+								   .ouvert = 0,
+								   .contra = 0,
+								   .re = 0};
+	  return GAME_PHASE_PLAY_STICH_C1;
 	default:
 	  return GAME_PHASE_INVALID;
   }
@@ -170,7 +186,7 @@ apply_action_reizen_begin(skat_state *ss, action *a, player *pl, server *s) {
   event e;
   e.answer_to = a->id;
   e.player = pl->id;
-  DTODO_PRINTF("TODO: FIXME: XXX: Make work"); // TODO: FIXME: XXX: Make work
+  DTODO_PRINTF("TODO: FIXME: XXX: Make work");// TODO: FIXME: XXX: Make work
   switch (a->type) {
 	default:
 	  return GAME_PHASE_INVALID;
@@ -179,29 +195,30 @@ apply_action_reizen_begin(skat_state *ss, action *a, player *pl, server *s) {
 
 static int
 next_active_player(int player, int off) {
-  return (player+off)%3;
+  return (player + off) % 3;
 }
 
 static game_phase
 apply_action_stich(skat_state *ss, action *a, player *pl, server *s, int ind) {
   event e;
   int curr, result;
-  int winnerv; // indexed by vorhand + ap
+  int winnerv;// indexed by vorhand + ap
   int winner; // indexed by ap
-
 
   switch (a->type) {
 	case ACTION_PLAY_CARD:
-	  curr = next_active_player(ss->sgs.curr_stich.vorhand, ind);	
-	  if (!player_equals_by_id(pl, server_get_player_by_gupid(s, ss->sgs.active_players[curr])))
+	  curr = next_active_player(ss->sgs.curr_stich.vorhand, ind);
+	  if (!player_equals_by_id(pl, server_get_player_by_gupid(
+										   s, ss->sgs.active_players[curr])))
 		return GAME_PHASE_INVALID;
-	  if (stich_card_legal(&ss->sgs.gr, ss->sgs.curr_stich.cs, ind, &a->card, 
-						   &ss->player_hands[curr], &result) || !result)
+	  if (stich_card_legal(&ss->sgs.gr, ss->sgs.curr_stich.cs, ind, &a->card,
+						   &ss->player_hands[curr], &result)
+		  || !result)
 		return GAME_PHASE_INVALID;
-	 
+
 	  e.type = EVENT_PLAY_CARD;
-      e.answer_to = a->id;
-      e.player = pl->id;
+	  e.answer_to = a->id;
+	  e.player = pl->id;
 	  e.card = a->card;
 	  server_distribute_event(s, &e, NULL);
 
@@ -213,23 +230,23 @@ apply_action_stich(skat_state *ss, action *a, player *pl, server *s, int ind) {
 		return GAME_PHASE_PLAY_STICH_C3;
 	  }
 
-	  stich_get_winner(&ss->sgs.gr, &ss->sgs.curr_stich, &winnerv); // Sue me
+	  stich_get_winner(&ss->sgs.gr, &ss->sgs.curr_stich, &winnerv);// Sue me
 
 	  winner = next_active_player(ss->sgs.curr_stich.vorhand, winnerv);
 	  ss->sgs.curr_stich.winner = winner;
 
-	  card_collection_add_card_array(ss->stiche[winner], 
-	  								 ss->sgs.curr_stich.cs, 3);
+	  card_collection_add_card_array(ss->stiche[winner], ss->sgs.curr_stich.cs,
+									 3);
 
 	  e.type = EVENT_STICH_DONE;
-      e.answer_to = -1;
+	  e.answer_to = -1;
 	  e.stich_winner = s->ps[ss->sgs.active_players[winner]].id;
 	  server_distribute_event(s, &e, NULL);
 
-  	  ss->sgs.last_stich = ss->sgs.curr_stich;
+	  ss->sgs.last_stich = ss->sgs.curr_stich;
 	  ss->sgs.curr_stich =
 			  (stich){.vorhand = ss->sgs.last_stich.winner, .winner = -1};
-	  
+
 	  if (ss->sgs.stich_num++ < 9)
 		return GAME_PHASE_PLAY_STICH_C1;
 
@@ -241,7 +258,7 @@ apply_action_stich(skat_state *ss, action *a, player *pl, server *s, int ind) {
 	  e.answer_to = -1;
 	  e.type = EVENT_ROUND_DONE;
 	  server_distribute_event(s, &e, NULL);
-	
+
 	  return GAME_PHASE_BETWEEN_ROUNDS;
 	default:
 	  return GAME_PHASE_INVALID;
@@ -285,7 +302,7 @@ apply_action_stich(skat_state *ss, action *a, player *pl, server *s, int card) {
 	  e.type = EVENT_STICH_DONE;
 	  e.stich_winner = ss->sgs.active_players[ss->sgs.curr_stich.winner];
 	  server_distribute_event(s, &e, NULL);
-	  
+
 	  ss->sgs.last_stich = ss->sgs.curr_stich;
 	  ss->sgs.curr_stich =
 			  (stich){.vorhand = ss->sgs.last_stich.winner, .winner = -1};
@@ -293,14 +310,14 @@ apply_action_stich(skat_state *ss, action *a, player *pl, server *s, int card) {
 	  if (ss->sgs.stich_num++ < 9)
 		return GAME_PHASE_PLAY_STICH_C1;
 
-      // game finished
+	  // game finished
 	  skat_calculate_game_result(ss, e.score_round);
 
 	  for (int i = 0; i < 3; i++)
 		ss->sgs.total_score[(ss->sgs.last_active_player_index + i)
 							% s->ncons] += e.score_round[i];
 
-      e.answer_to = -1;
+	  e.answer_to = -1;
 	  e.type = EVENT_ROUND_DONE;
 	  server_distribute_event(s, &e, NULL);
 
@@ -348,23 +365,22 @@ void
 skat_state_tick(skat_state *ss, server *s) {}
 
 static inline void
-skat_get_player_hand(skat_state *ss, player *pl) {
-}
+skat_get_player_hand(skat_state *ss, player *pl) {}
 
 void
 skat_resync_player(skat_state *ss, skat_client_state *cs, player *pl) {
   cs->sgs = ss->sgs;
   cs->my_index = pl->index;
-  //cs->my_hand = ss->player_hands[pl->index];
-  if (ss->sgs.cgphase == GAME_PHASE_SKAT_AUFNEHMEN && pl->index == ss->sgs.alleinspieler) {
+  // cs->my_hand = ss->player_hands[pl->index];
+  if (ss->sgs.cgphase == GAME_PHASE_SKAT_AUFNEHMEN
+	  && pl->index == ss->sgs.alleinspieler) {
 	cs->skat[0] = ss->skat[0];
 	cs->skat[1] = ss->skat[1];
   }
-  //DTODO_PRINTF("TODO: this"); // TODO: this
-  
+  // DTODO_PRINTF("TODO: this"); // TODO: this
 }
 
 void
 skat_state_init(skat_state *ss) {
-  DTODO_PRINTF("TODO: "); // TODO
+  DTODO_PRINTF("TODO: ");// TODO
 }
