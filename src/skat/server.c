@@ -64,7 +64,7 @@ server_add_player_for_connection(server *s, player *pl, int n) {
 }
 
 connection_s2c *
-server_get_connection_by_pid(server *s, player_id pid, int *n) {
+server_get_connection_by_pid(server *s, player_id pid, unsigned int *n) {
   for (int i = 0; i < s->ncons; i++)
 	if (player_id_equals(&s->ps[i].id, &pid)) {
 	  if (n)
