@@ -78,7 +78,7 @@ establish_connection_server(server *s, int fd, pthread_t handler) {
   connection c;
   connection_s2c *s2c;
   player pl;
-  int n;
+  unsigned int n;
 
   init_conn(&c, fd, handler);
 
@@ -141,10 +141,7 @@ static int
 conn_handle_incoming_package_client_single(client *c, connection_c2s *conn,
 										   package *p) {
   switch (p->type) {
-	case REQ_RSP_ACTION:
-	  conn_enqueue_action(&conn->c, &p->req.ac);
-	  break;
-	case REQ_RSP_EVENT:
+	case REQ_RSP_EVENT:// clients receive events and send actions
 	  conn_enqueue_event(&conn->c, &p->req.ev);
 	  break;
 	case REQ_RSP_CONFIRM_JOIN:
@@ -237,24 +234,16 @@ conn_resync_player(server *s, connection_s2c *c, package *req_p) {
   send_package(&c->c, &p);
 }
 
-int
-conn_handle_incoming_packages_server(server *s, connection_s2c *c) {
-  package p;
-  int still_connected;
-  still_connected = retrieve_package(&c->c, &p);
-  if (!still_connected) {
-	server_acquire_state_lock(s);
-	server_disconnect_connection(s, c);
-	server_release_state_lock(s);
-	return 0;
-  }
-  switch (p.type) {
-	case REQ_RSP_ACTION:
-	  conn_enqueue_action(&c->c, &p.req.ac);
+static int
+conn_handle_incoming_packages_server_single(server *s, connection_s2c *c,
+											package *p) {
+  switch (p->type) {
+	case REQ_RSP_ACTION:// server distributes events and receives actions
+	  conn_enqueue_action(&c->c, &p->req.ac);
 	  break;
 	case REQ_RSP_RESYNC:
 	  server_acquire_state_lock(s);
-	  conn_resync_player(s, c, &p);
+	  conn_resync_player(s, c, p);
 	  server_release_state_lock(s);
 	  break;
 	case REQ_RSP_ERROR:
@@ -269,6 +258,20 @@ conn_handle_incoming_packages_server(server *s, connection_s2c *c) {
 	  CH_ASSERT_0(0, &c->c, CONN_ERROR_INVALID_PACKAGE_TYPE);
   }
   return 1;
+}
+
+int
+conn_handle_incoming_packages_server(server *s, connection_s2c *c) {
+  package p;
+  int still_connected;
+  still_connected = retrieve_package(&c->c, &p);
+  if (!still_connected) {
+	server_acquire_state_lock(s);
+	server_disconnect_connection(s, c);
+	server_release_state_lock(s);
+	return 0;
+  }
+  return conn_handle_incoming_packages_server_single(s, c, &p);
 }
 
 void

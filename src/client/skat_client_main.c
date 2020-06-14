@@ -2,6 +2,7 @@
 #include "skat/client.h"
 #include <errno.h>
 #include <limits.h>
+#include <skat/util.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -61,6 +62,8 @@ main(int argc, char **argv) {
 		 argv[optind], resume);
 
   if (graphical) {
+	// TODO: add graphical loop for render and skat logic
+	DTODO_PRINTF("TODO: add graphical loop for render and skat logic");
 	start_GRAPHICAL();
 	exit(EXIT_SUCCESS);
   }

@@ -3,6 +3,7 @@
 #include "skat/util.h"
 #include <netdb.h>
 #include <netinet/in.h>
+#include <skat/ctimer.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -12,16 +13,20 @@
 
 void
 client_acquire_state_lock(client *c) {
-  DPRINTF_COND(DEBUG_LOCK, "Acquiring client state lock from thread %ld", pthread_self());
+  DPRINTF_COND(DEBUG_LOCK, "Acquiring client state lock from thread %ld",
+			   pthread_self());
   pthread_mutex_lock(&c->lock);
-  DPRINTF_COND(DEBUG_LOCK, "Acquired client state lock from thread %ld", pthread_self());
+  DPRINTF_COND(DEBUG_LOCK, "Acquired client state lock from thread %ld",
+			   pthread_self());
 }
 
 void
 client_release_state_lock(client *c) {
-  DPRINTF_COND(DEBUG_LOCK, "Releasing client state lock from thread %ld", pthread_self());
+  DPRINTF_COND(DEBUG_LOCK, "Releasing client state lock from thread %ld",
+			   pthread_self());
   pthread_mutex_unlock(&c->lock);
-  DPRINTF_COND(DEBUG_LOCK, "Released client state lock from thread %ld", pthread_self());
+  DPRINTF_COND(DEBUG_LOCK, "Released client state lock from thread %ld",
+			   pthread_self());
 }
 
 typedef struct {
@@ -107,6 +112,36 @@ start_client_conn(client *c, const char *host, int p, int resume) {
 }
 
 void
+client_tick(client *c) {
+  DPRINTF_COND(DEBUG_TICK, "Client tick");
+
+  client_acquire_state_lock(c);
+
+  /*
+  action a;
+  event err_ev;
+  for (int i = 0; i < s->ncons; i++) {
+	if (!s->conns[i].c.active)
+	  continue;
+
+	while (conn_dequeue_action(&s->conns[i].c, &a)) {
+	  if (!skat_state_apply(&s->skat_state, &a, &s->ps[i], s)) {
+		DEBUG_PRINTF("Received illegal action of type %s from player %s with "
+					 "id %ld, rejecting",
+					 action_name_table[a.type], s->ps[i].id.str, a.id);
+		err_ev.type = EVENT_ILLEGAL_ACTION;
+		err_ev.answer_to = a.id;
+		copy_player_id(&err_ev.player, &s->ps[i].id);
+		conn_enqueue_event(&s->conns[i].c, &err_ev);
+	  }
+	}
+	skat_state_tick(&s->skat_state, s);
+  }
+   */
+  client_release_state_lock(c);
+}
+
+void
 client_disconnect_connection(client *c, connection_c2s *conn) {
   DERROR_PRINTF("Lost connection to server");
   exit(EXIT_FAILURE);
@@ -114,7 +149,7 @@ client_disconnect_connection(client *c, connection_c2s *conn) {
 
 void
 client_handle_resync(package *p) {
-  DTODO_PRINTF("TODO: implement resync on client side"); // TODO: implement
+  DTODO_PRINTF("TODO: implement resync on client side");// TODO: implement
 }
 
 void
@@ -125,14 +160,23 @@ client_init(client *c, char *host, int port, char *name) {
   c->name = name;
 }
 
+static void
+client_tick_wrap(void *c) {
+  client_tick(c);
+}
+
 _Noreturn void
 client_run(client *c, int resume) {
+  ctimer t;
+
+  ctimer_create(&t, c, client_tick_wrap,
+				(1000 * 1000 * 1000) / CLIENT_REFRESH_RATE);// in Hz
+
   DEBUG_PRINTF("Running client with with connection mode '%s'",
 			   resume ? "resume" : "new");
   client_acquire_state_lock(c);
   start_client_conn(c, c->host, c->port, resume);
   client_release_state_lock(c);
 
-  for (;;) {
-  }
+  ctimer_run(&t);
 }

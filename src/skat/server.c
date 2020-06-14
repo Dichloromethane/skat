@@ -46,13 +46,13 @@ server_distribute_event(server *s, event *ev,
 }
 
 connection_s2c *
-server_get_free_connection(server *s, int *n) {
-  int pm, i;
+server_get_free_connection(server *s, unsigned int *n) {
+  unsigned int pm, i;
   if (s->ncons > 4)
 	return NULL;
   pm = ~s->playermask;
-  i = __builtin_ctz(pm); 
-  s->playermask |= 1 << i;
+  i = __builtin_ctz(pm);
+  s->playermask |= 1u << i;
   *n = i;
   return &s->conns[i];
 }
@@ -96,16 +96,20 @@ server_disconnect_connection(server *s, connection_s2c *c) {
 
 void
 server_acquire_state_lock(server *s) {
-  DPRINTF_COND(DEBUG_LOCK, "Acquiring server state lock from thread %d", gettid());
+  DPRINTF_COND(DEBUG_LOCK, "Acquiring server state lock from thread %d",
+			   gettid());
   pthread_mutex_lock(&s->lock);
-  DPRINTF_COND(DEBUG_LOCK, "Acquired server state lock from thread %d", gettid());
+  DPRINTF_COND(DEBUG_LOCK, "Acquired server state lock from thread %d",
+			   gettid());
 }
 
 void
 server_release_state_lock(server *s) {
-  DPRINTF_COND(DEBUG_LOCK, "Releasing server state lock from thread %d", gettid());
+  DPRINTF_COND(DEBUG_LOCK, "Releasing server state lock from thread %d",
+			   gettid());
   pthread_mutex_unlock(&s->lock);
-  DPRINTF_COND(DEBUG_LOCK, "Released server state lock from thread %d", gettid());
+  DPRINTF_COND(DEBUG_LOCK, "Released server state lock from thread %d",
+			   gettid());
 }
 
 void
@@ -118,9 +122,10 @@ void
 server_tick(server *s) {
   DPRINTF_COND(DEBUG_TICK, "Server tick");
 
+  server_acquire_state_lock(s);
+
   action a;
   event err_ev;
-  server_acquire_state_lock(s);
   for (int i = 0; i < s->ncons; i++) {
 	if (!s->conns[i].c.active)
 	  continue;
