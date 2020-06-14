@@ -78,7 +78,7 @@ establish_connection_server(server *s, int fd, pthread_t handler) {
   connection c;
   connection_s2c *s2c;
   player pl;
-  unsigned int n;
+  int n;
 
   init_conn(&c, fd, handler);
 

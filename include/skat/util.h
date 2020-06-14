@@ -11,6 +11,7 @@ int util_rand_int(int min, int max);
 unsigned int round_to_next_pow2(unsigned int n);
 float minf(float a, float b);
 float maxf(float a, float b);
+void perm(int *, int, int);
 
 #define ERROR_COLOR "\e[31m"
 #define COLOR_CLEAR "\e[0m"

@@ -1,11 +1,11 @@
 CC=gcc
 
 WARNINGS=-Wall -Wextra -Wfatal-errors -Wno-unused-parameter -Wno-unused-function -Wno-unused-but-set-variable \
-         -Wno-unknown-pragmas -Wno-char-subscripts -Wno-switch-unreachable
+         -Wno-unknown-pragmas -Wno-char-subscripts -Wno-switch-unreachable -Wno-dangling-else -Wno-unused-result
 
 CPPFLAGS=-MMD -MP -pthread $(INCLUDEDIR_FLAGS) # -I /usr/include/libpng16
-#CFLAGS=-Wall -O3 -mcpu=native -pthread -flto
-CFLAGS=-O0 -ggdb3 
+CFLAGS=-O3 -ftree-vectorize -mcpu=native -flto $(EXTRA_CFLAGS)
+#CFLAGS=-O0 -ggdb3 
 
 LDFLAGS=
 
@@ -55,7 +55,7 @@ skat_server: $(SKAT_OBJ) $(SERVER_OBJ)
 skat_client: $(SKAT_OBJ) $(CLIENT_OBJ)
 	$(CC) $(CFLAGS) $(LDFLAGS) $^ $(LDLIBS_CLIENT) -o $@
 
-$(OBJ): $(BUILDDIR)%.o: $(SOURCEDIR)%.c | $(BUILDDIRS)
+$(OBJ): $(BUILDDIR)%.o: $(SOURCEDIR)%.c Makefile | $(BUILDDIRS)
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(WARNINGS) -o $@ -c $<
 
 $(BUILDDIRS):

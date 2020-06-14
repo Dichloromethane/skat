@@ -19,9 +19,10 @@ typedef struct server {
 } server;
 
 int server_has_player_id(server *, player_id *);
-connection_s2c *server_get_free_connection(server *, unsigned int *);
-connection_s2c *server_get_connection_by_pid(server *, player_id, unsigned int *);
+connection_s2c *server_get_free_connection(server *, int *);
+connection_s2c *server_get_connection_by_pid(server *, player_id, int *);
 player *server_get_player_by_pid(server *, player_id);
+player *server_get_player_by_gupid(server *, int);
 void server_add_player_for_connection(server *, player *, int);
 void server_notify_join(server *, player *);
 void server_resync_player(server *, player *, skat_client_state *);

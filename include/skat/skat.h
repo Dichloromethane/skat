@@ -69,7 +69,6 @@ typedef struct {
   reiz_resultat rr;
 
   int active_players[3]; // map active player -> gupid
-  int spectator; // ib gupid
 
   int score[4]; // indexed by gupid
 
@@ -85,7 +84,7 @@ typedef struct {
   int my_index;
   union {
     card_id skat[2];
-  }
+  };
 } skat_client_state;
 
 typedef struct {
@@ -93,6 +92,7 @@ typedef struct {
   card_collection player_hands[3]; // indexed by active player
   card_id skat[2]; 
   card_collection *stiche[3]; // indexed by active player
+  							  // Has to be initialzied after reizen
   card_collection stiche_buf[3]; // indexed via *stiche (3 weil ramschen)
   int spielwert;
 } skat_state;

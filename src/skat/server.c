@@ -46,8 +46,8 @@ server_distribute_event(server *s, event *ev,
 }
 
 connection_s2c *
-server_get_free_connection(server *s, unsigned int *n) {
-  unsigned int pm, i;
+server_get_free_connection(server *s, int *n) {
+  int pm, i;
   if (s->ncons > 4)
 	return NULL;
   pm = ~s->playermask;
@@ -64,7 +64,7 @@ server_add_player_for_connection(server *s, player *pl, int n) {
 }
 
 connection_s2c *
-server_get_connection_by_pid(server *s, player_id pid, unsigned int *n) {
+server_get_connection_by_pid(server *s, player_id pid, int *n) {
   for (int i = 0; i < s->ncons; i++)
 	if (player_id_equals(&s->ps[i].id, &pid)) {
 	  if (n)
