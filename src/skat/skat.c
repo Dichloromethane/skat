@@ -8,41 +8,31 @@
 
 #include "skat/skat.h"
 
-int
-game_setup_server(skat_state *ss) {
-  ss->sgs.cgphase = GAME_PHASE_SETUP;
-  return 0;
-}
-
-int
-game_start_server(skat_state *ss) {
-  DTODO_PRINTF("TODO: implement");// TODO: implement
-  return 0;
-}
-
 void
 skat_state_notify_disconnect(skat_state *ss, player *pl, server *s) {
-  DTODO_PRINTF("TODO: implement");// TODO: implement
+  DTODO_PRINTF("TODO: implement notify_disconnect");// TODO: implement
 }
+
 void
 skat_state_notify_join(skat_state *ss, player *pl, server *s) {
-  DTODO_PRINTF("TODO: implement");// TODO: implement
+  DTODO_PRINTF("TODO: implement notify_join");// TODO: implement
 }
 
 void
 skat_calculate_game_result(skat_state *ss, int *score) {
-  DTODO_PRINTF("TODO: implement");// TODO: implement
+  DTODO_PRINTF("TODO: implement calculate_game_result");// TODO: implement
 }
 
-// returns pos+1 on find, 0 otherwise
-static int
-is_active_player(shared_game_state *sgs, player *pl) {
-  return -1;
-}
+static void
+get_player_hand(skat_state *ss, player *pl, card_collection *col) {
+  for (int i = 0; i < 3; ++i) {
+	if (ss->sgs.active_players[i] == pl->index) {
+	  *col = ss->player_hands[i];
+	  return;
+	}
+  }
 
-static card_collection
-get_player_hand(skat_state *ss, player *pl) {
-  return -1;
+  card_collection_empty(col);
 }
 
 // Conforming to the rules. Poggers.
@@ -149,11 +139,7 @@ apply_action_between_rounds(skat_state *ss, action *a, player *pl, server *s) {
 	  e.type = EVENT_DISTRIBUTE_CARDS;
 
 	  void mask_hands(event * ev, player * pl) {
-		if (!is_active_player(&ss->sgs, pl)) {
-		  card_collection_empty(&ev->hand);
-		  return;
-		}
-		ev->hand = get_player_hand(ss, pl);
+		get_player_hand(ss, pl, &ev->hand);
 	  }
 
 	  server_distribute_event(s, &e, mask_hands);
@@ -363,9 +349,6 @@ skat_state_apply(skat_state *ss, action *a, player *pl, server *s) {
 
 void
 skat_state_tick(skat_state *ss, server *s) {}
-
-static inline void
-skat_get_player_hand(skat_state *ss, player *pl) {}
 
 void
 skat_resync_player(skat_state *ss, skat_client_state *cs, player *pl) {

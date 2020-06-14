@@ -8,7 +8,7 @@ typedef struct {
 
 typedef struct {
   player_id id;
-  int index;
+  int index;// gupid, 0-3
 } player;
 
 int player_equals_by_id(const player *, const player *);

@@ -17,14 +17,14 @@
 #define STRINGIFY(x) STRINGIFY_(x)
 #endif
 
-#ifdef GAME_PHASE_HDR_TO_STRING 
+#ifdef GAME_PHASE_HDR_TO_STRING
   #undef GAME_PHASE_HDR_TABLE_BEGIN
   #undef FIRST_GAME_PHASE
   #undef GAME_PHASE
   #undef GAME_PHASE_HDR_TABLE_END
   #define GAME_PHASE_HDR_TABLE_BEGIN char *game_phase_name_table[] = {
   #define FIRST_GAME_PHASE(x) GAME_PHASE(x)
-  #define GAME_PHASE(x) [GAME_PHASE_ ## x] = "GAME_PHASE_" #x 
+  #define GAME_PHASE(x) [GAME_PHASE_ ## x] = "GAME_PHASE_" #x
   #define GAME_PHASE_HDR_TABLE_END , NULL};
 #else
   #define GAME_PHASE_HDR_TABLE_BEGIN typedef enum {
@@ -90,17 +90,12 @@ typedef struct {
 typedef struct {
   shared_game_state sgs;
   card_collection player_hands[3]; // indexed by active player
-  card_id skat[2]; 
+  card_id skat[2];
   card_collection *stiche[3]; // indexed by active player
   							  // Has to be initialzied after reizen
   card_collection stiche_buf[3]; // indexed via *stiche (3 weil ramschen)
   int spielwert;
 } skat_state;
-
-int game_setup_server(skat_state *ss);
-int game_start_server(skat_state *ss);
-
-typedef void (*send_event_f)(event *, void (*)(event *, player *));
 
 void skat_state_notify_disconnect(skat_state *, player *, server *);
 void skat_state_notify_join(skat_state *, player *, server *);
