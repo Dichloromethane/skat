@@ -2,6 +2,7 @@
 #include "skat/util.h"
 #include <signal.h>
 #include <time.h>
+#include <pthread.h>
 
 static void
 ctimer_tick(sigval_t sv) {
@@ -30,7 +31,17 @@ ctimer_create(ctimer *t, void *arg, void (*timerf)(void *), int nsecs) {
   ERRNO_CHECK(timer_create(CLOCK_REALTIME, &sev, &t->timer_id));
 }
 
-_Noreturn void
+static void *
+ctimer_handler(void *arg) {
+  ctimer *t = arg;
+  while(!t->close) {
+	sem_wait(&t->activations);
+	t->timerf(t->arg);
+  }
+  return NULL;
+}
+
+void
 ctimer_run(ctimer *t) {
   struct itimerspec itspec;
 
@@ -42,9 +53,24 @@ ctimer_run(ctimer *t) {
 
   ERRNO_CHECK(timer_settime(t->timer_id, 0, &itspec, NULL));
 
+  pthread_create(&t->tid, NULL, ctimer_handler, t);
   DEBUG_PRINTF("Started Server Timer");
-  for (;;) {
-	sem_wait(&t->activations);
-	t->timerf(t->arg);
-  }
+}
+
+void
+ctimer_stop(ctimer *t) {
+  struct itimerspec itspec;
+
+  t->close = 0;
+  pthread_join(t->tid, NULL);
+
+  itspec.it_interval.tv_nsec = 0;
+  itspec.it_interval.tv_sec = 0;
+  itspec.it_value.tv_nsec = 0;
+  itspec.it_value.tv_sec = 0;
+
+  ERRNO_CHECK(timer_settime(t->timer_id, 0, &itspec, NULL));
+  timer_delete(t->timer_id);
+  
+  sem_destroy(&t->activations);
 }

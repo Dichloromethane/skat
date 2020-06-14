@@ -179,4 +179,7 @@ client_run(client *c, int resume) {
   client_release_state_lock(c);
 
   ctimer_run(&t);
+  pause();
+  DERROR_PRINTF("TF did we get here");
+  __builtin_unreachable();
 }

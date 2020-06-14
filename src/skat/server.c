@@ -8,9 +8,21 @@
 #include <sys/ioctl.h>
 #include <unistd.h>
 
+#define FOR_EACH_ACTIVE(s, var, block) for (int var; var < 4; var++) {\
+									     if (!is_active(s, var)) \
+										   continue; \
+										 else \
+										   block\
+										}
+
+static int
+is_active(server *s, int i) {
+  return (s->playermask >> i) && 1;
+}
+
 int
 server_has_player_id(server *s, player_id *pid) {
-  for (int i = 0; i < s->ncons; i++)
+  for (int i = 0; i < 4; i++) //otherwise we can't recover connections
 	if (player_id_equals(&s->ps[i].id, pid))
 	  return 1;
   return 0;
@@ -34,15 +46,14 @@ server_distribute_event(server *s, event *ev,
 						void (*mask_event)(event *, player *)) {
   event e;
   DEBUG_PRINTF("Distributing event of type %s", event_name_table[ev->type]);
-  ;
-  for (int i = 0; i < s->ncons; i++) {
+  FOR_EACH_ACTIVE(s, i, {
 	if (mask_event) {
 	  e = *ev;
 	  mask_event(&e, &s->ps[i]);
 	  server_send_event(s, &e, &s->ps[i]);
 	} else
 	  server_send_event(s, ev, &s->ps[i]);
-  }
+  });
 }
 
 connection_s2c *
@@ -65,18 +76,19 @@ server_add_player_for_connection(server *s, player *pl, int n) {
 
 connection_s2c *
 server_get_connection_by_pid(server *s, player_id pid, int *n) {
-  for (int i = 0; i < s->ncons; i++)
+  FOR_EACH_ACTIVE(s, i, {
 	if (player_id_equals(&s->ps[i].id, &pid)) {
 	  if (n)
 		*n = i;
 	  return &s->conns[i];
 	}
+  });
   return NULL;
 }
 
 player *
 server_get_player_by_pid(server *s, player_id pid) {
-  for (int i = 0; i < s->ncons; i++)
+  for (int i = 0; i < 4; i++)
 	if (player_id_equals(&s->ps[i].id, &pid))
 	  return &s->ps[i];
   return NULL;
@@ -88,9 +100,10 @@ server_disconnect_connection(server *s, connection_s2c *c) {
   pl = server_get_player_by_pid(s, c->pid);
 
   skat_state_notify_disconnect(&s->skat_state, pl, s);
-  for (int i = 0; i < s->ncons; i++)
+  FOR_EACH_ACTIVE(s, i, {
 	if (!player_equals_by_id(pl, &s->ps[i]))
 	  conn_notify_disconnect(&s->conns[i], pl);
+  });
   conn_disable_conn(&c->c);
 }
 
@@ -126,7 +139,7 @@ server_tick(server *s) {
 
   action a;
   event err_ev;
-  for (int i = 0; i < s->ncons; i++) {
+  FOR_EACH_ACTIVE(s, i, {
 	if (!s->conns[i].c.active)
 	  continue;
 
@@ -142,7 +155,8 @@ server_tick(server *s) {
 	  }
 	}
 	skat_state_tick(&s->skat_state, s);
-  }
+  });
+
   server_release_state_lock(s);
 }
 
@@ -150,9 +164,10 @@ void
 server_notify_join(server *s, player *pl) {
   DEBUG_PRINTF("Player %s joined", pl->id.str);
   skat_state_notify_join(&s->skat_state, pl, s);
-  for (int i = 0; i < s->ncons; i++)
+  FOR_EACH_ACTIVE(s, i, {
 	if (!player_equals_by_id(pl, &s->ps[i]))
 	  conn_notify_join(&s->conns[i], pl);
+  });
 }
 
 typedef struct {
@@ -235,6 +250,7 @@ server_init(server *s, int port) {
   s->ncons = 0;
   s->port = port;
   s->playermask = 0;
+  memset(s->ps, '\0', 4*sizeof(player));
   skat_state_init(&s->skat_state);
 }
 
@@ -257,4 +273,7 @@ server_run(server *s) {
   DEBUG_PRINTF("Running server");
 
   ctimer_run(&t);
+  pause();
+  DERROR_PRINTF("How did we get here? This is illegal");
+  __builtin_unreachable();
 }
