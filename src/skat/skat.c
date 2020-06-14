@@ -382,5 +382,7 @@ skat_resync_player(skat_state *ss, skat_client_state *cs, player *pl) {
 
 void
 skat_state_init(skat_state *ss) {
-  DTODO_PRINTF("TODO: ");// TODO
+  ss->sgs.cgphase = GAME_PHASE_SETUP;
+  memset(ss->sgs.score, 0, 4 * sizeof(int));
+  memset(ss->sgs.active_players, -1, 3 * sizeof(int));
 }
