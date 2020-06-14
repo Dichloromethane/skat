@@ -81,7 +81,7 @@ typedef struct {
 typedef struct {
   shared_game_state sgs;
   card_collection my_hand;
-  int my_index;
+  int my_index; // gupid
   union {
     card_id skat[2];
   };
