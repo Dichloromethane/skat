@@ -1,5 +1,7 @@
 #pragma once
 
+#define _GNU_SOURCE
+
 #include "skat/action.h"
 #include "skat/event.h"
 #include <pthread.h>

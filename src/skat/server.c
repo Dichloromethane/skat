@@ -8,21 +8,22 @@
 #include <sys/ioctl.h>
 #include <unistd.h>
 
-#define FOR_EACH_ACTIVE(s, var, block) for (int var; var < 4; var++) {\
-									     if (!is_active(s, var)) \
-										   continue; \
-										 else \
-										   block\
-										}
+#define FOR_EACH_ACTIVE(s, var, block) \
+  for (int var; var < 4; var++) { \
+	if (!is_active(s, var)) \
+	  continue; \
+	else \
+	  block \
+  }
 
 static int
-is_active(server *s, int i) {
-  return (s->playermask >> i) && 1;
+is_active(server *s, int gupid) {
+  return (s->playermask >> gupid) & 1;
 }
 
 int
 server_has_player_id(server *s, player_id *pid) {
-  for (int i = 0; i < 4; i++) //otherwise we can't recover connections
+  for (int i = 0; i < 4; i++)// otherwise we can't recover connections
 	if (player_id_equals(&s->ps[i].id, pid))
 	  return 1;
   return 0;
@@ -63,7 +64,7 @@ server_get_free_connection(server *s, int *n) {
 	return NULL;
   pm = ~s->playermask;
   i = __builtin_ctz(pm);
-  s->playermask |= 1u << i;
+  s->playermask |= 1 << i;
   *n = i;
   return &s->conns[i];
 }
@@ -250,7 +251,7 @@ server_init(server *s, int port) {
   s->ncons = 0;
   s->port = port;
   s->playermask = 0;
-  memset(s->ps, '\0', 4*sizeof(player));
+  memset(s->ps, '\0', 4 * sizeof(player));
   skat_state_init(&s->skat_state);
 }
 

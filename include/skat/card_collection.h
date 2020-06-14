@@ -1,5 +1,7 @@
 #pragma once
 
+#define _GNU_SOURCE
+
 #include "skat/card.h"
 #include <stdint.h>
 

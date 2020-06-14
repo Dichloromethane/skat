@@ -1,4 +1,3 @@
-
 #ifndef CONNECTION_C_HDR
 #define CONNECTION_C_HDR
 
@@ -11,6 +10,7 @@
 #include <pthread.h>
 #include <stdint.h>
 
+// clang-format off
 #ifndef STRINGIFY
 #define STRINGIFY_ #x
 #define STRINGIFY(x) STRINGIFY_(x)
@@ -76,6 +76,8 @@ CONN_ERROR_HDR_TABLE_BEGIN
 CONN_ERROR_HDR_TABLE_END
 
 #ifndef CONNECTION_HDR_TO_STRING
+; // to make clang-format happy
+// clang-format on
 
 extern char *conn_error_name_table[];
 extern char *req_rsp_name_table[];

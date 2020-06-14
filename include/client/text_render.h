@@ -1,5 +1,7 @@
 #pragma once
 
+#define _GNU_SOURCE
+
 #include "client/color.h"
 #include "client/constants.h"
 #include "client/shader.h"

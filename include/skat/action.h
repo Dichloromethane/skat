@@ -1,9 +1,11 @@
+// clang-format off
+#ifndef ACTION_HDR
+#define ACTION_HDR
+
+#define _GNU_SOURCE
 
 #include "skat/card.h"
 #include <stdint.h>
-
-#ifndef ACTION_HDR
-#define ACTION_HDR
 
 #ifndef STRINGIFY
 #define STRINGIFY_ #x
@@ -36,6 +38,8 @@ ACTION_HDR_TABLE_END
 
 
 #ifndef ACTION_HDR_TO_STRING
+; // to make clang-format happy
+// clang-format on
 
 typedef int64_t action_id;
 

@@ -1,8 +1,8 @@
 #include "skat/ctimer.h"
 #include "skat/util.h"
+#include <pthread.h>
 #include <signal.h>
 #include <time.h>
-#include <pthread.h>
 
 static void
 ctimer_tick(sigval_t sv) {
@@ -17,7 +17,7 @@ ctimer_create(ctimer *t, void *arg, void (*timerf)(void *), int nsecs) {
   struct sigevent sev;
 
   DEBUG_PRINTF("Creating timer");
-  
+
   t->timerf = timerf;
   t->arg = arg;
   t->nsecs = nsecs;
@@ -34,7 +34,7 @@ ctimer_create(ctimer *t, void *arg, void (*timerf)(void *), int nsecs) {
 static void *
 ctimer_handler(void *arg) {
   ctimer *t = arg;
-  while(!t->close) {
+  while (!t->close) {
 	sem_wait(&t->activations);
 	t->timerf(t->arg);
   }
@@ -71,6 +71,6 @@ ctimer_stop(ctimer *t) {
 
   ERRNO_CHECK(timer_settime(t->timer_id, 0, &itspec, NULL));
   timer_delete(t->timer_id);
-  
+
   sem_destroy(&t->activations);
 }

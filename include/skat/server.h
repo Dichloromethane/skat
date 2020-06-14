@@ -2,9 +2,9 @@
 
 #define _GNU_SOURCE
 
-#include "skat/skat.h"
 #include "skat/connection.h"
 #include "skat/player.h"
+#include "skat/skat.h"
 #include <pthread.h>
 
 typedef struct server {
@@ -15,7 +15,7 @@ typedef struct server {
   int ncons;
   connection_s2c conns[4];
   player ps[4];
-  unsigned int playermask;
+  int playermask;
 } server;
 
 int server_has_player_id(server *, player_id *);

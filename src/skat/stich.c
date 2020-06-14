@@ -92,11 +92,10 @@ stich_bekennt_any(const game_rules *const gr, const card_id *const first_id,
 #pragma ide diagnostic ignored "bugprone-branch-clone"
 int
 stich_card_legal(const game_rules *const gr, const card_id *const played_cards,
-				 const int played_cards_size,
-				 const card_id *const new_card,
+				 const int played_cards_size, const card_id *const new_card,
 				 const card_collection *const hand, int *const result) {
   int result_, contains;
-  if (card_collection_contains(hand, new_card, &contains)) 
+  if (card_collection_contains(hand, new_card, &contains))
 	return 1;
   else if (!contains)
 	result_ = 0;

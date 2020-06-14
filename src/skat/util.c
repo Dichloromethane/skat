@@ -1,9 +1,9 @@
 #include "skat/util.h"
 #include <fcntl.h>
-#include <stdio.h> 
+#include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
 #include <string.h>
+#include <unistd.h>
 
 int random_fd;
 
@@ -26,7 +26,7 @@ util_rand_int(const int min, const int max) {
 
 unsigned int
 round_to_next_pow2(unsigned int n) {
-  return n<=1?1:1 << (32 - __builtin_clz(n-1));
+  return n <= 1 ? 1 : 1 << (32 - __builtin_clz(n - 1));
 }
 
 float
@@ -47,12 +47,11 @@ perm(int *a, int size, int mask) {
   if (size <= 1)
 	return;
 
-  mes = 32 - __builtin_clz(size-1);
+  mes = 32 - __builtin_clz(size - 1);
   mem = (1 << mes) - 1;
   for (int i = 0; i < size; i++) {
-    r[mask & mem] = a[i];
+	r[mask & mem] = a[i];
 	mask >>= mes;
   }
-  memcpy(a, r, size*sizeof(int));
+  memcpy(a, r, size * sizeof(int));
 }
-

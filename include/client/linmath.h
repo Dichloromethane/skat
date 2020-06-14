@@ -1,6 +1,8 @@
 #ifndef LINMATH_H
 #define LINMATH_H
 
+#define _GNU_SOURCE
+
 #include <math.h>
 #include <string.h>
 

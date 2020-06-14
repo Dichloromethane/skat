@@ -1,5 +1,7 @@
 #pragma once
 
+#define _GNU_SOURCE
+
 #define PLAYER_ID_LENGTH 16
 
 typedef struct {

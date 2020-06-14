@@ -1,4 +1,4 @@
-
+// clang-format off
 #ifndef SKAT_HDR
 #define SKAT_HDR
 
@@ -48,6 +48,8 @@ GAME_PHASE_HDR_TABLE_BEGIN
 GAME_PHASE_HDR_TABLE_END
 
 #ifndef GAME_PHASE_HDR_TO_STRING
+; // to make clang-format happy
+// clang-format on
 
 extern char *game_phase_name_table[];
 
@@ -68,32 +70,32 @@ typedef struct {
   game_rules gr;
   reiz_resultat rr;
 
-  int active_players[3]; // map active player -> gupid
+  int active_players[3];// map active player -> gupid
 
-  int score[4]; // indexed by gupid
+  int score[4];// indexed by gupid
 
   stich curr_stich;
   stich last_stich;
-  int stich_num; // 0-9
-  int alleinspieler; // indexed by active player
+  int stich_num;    // 0-9
+  int alleinspieler;// indexed by active player
 } shared_game_state;
 
 typedef struct {
   shared_game_state sgs;
   card_collection my_hand;
-  int my_index; // gupid
+  int my_index;// gupid
   union {
-    card_id skat[2];
+	card_id skat[2];
   };
 } skat_client_state;
 
 typedef struct {
   shared_game_state sgs;
-  card_collection player_hands[3]; // indexed by active player
+  card_collection player_hands[3];// indexed by active player
   card_id skat[2];
-  card_collection *stiche[3]; // indexed by active player
-  							  // Has to be initialzied after reizen
-  card_collection stiche_buf[3]; // indexed via *stiche (3 weil ramschen)
+  card_collection *stiche[3];   // indexed by active player
+								// Has to be initialzied after reizen
+  card_collection stiche_buf[3];// indexed via *stiche (3 weil ramschen)
   int spielwert;
 } skat_state;
 

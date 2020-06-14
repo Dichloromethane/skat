@@ -1,13 +1,14 @@
-
+// clang-format off
 #ifndef EVENT_HDR
 #define EVENT_HDR
 
-#include <stdlib.h>
+#define _GNU_SOURCE
+
 #include "skat/action.h"
 #include "skat/card.h"
 #include "skat/card_collection.h"
 #include "skat/player.h"
-
+#include <stdlib.h>
 
 #ifndef STRINGIFY
 #define STRINGIFY_ #x
@@ -44,6 +45,8 @@ EVENT_HDR_TABLE_BEGIN
 EVENT_HDR_TABLE_END
 
 #ifndef EVENT_HDR_TO_STRING
+; // to make clang-format happy
+// clang-format on
 
 typedef struct {
   event_type type;
@@ -51,11 +54,11 @@ typedef struct {
   player_id player;
   union {
 	player_id ready_player;
-	int current_active_players[3]; // indexed by ap, contains gupid
+	int current_active_players[3];// indexed by ap, contains gupid
 	card_collection hand;
 	card_id card;
 	player_id stich_winner;
-	int score_round[3]; // indexed by ap
+	int score_round[3];// indexed by ap
   };
 } event;
 
