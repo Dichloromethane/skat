@@ -170,9 +170,9 @@ conn_handle_incoming_package_client_single(client *c, connection_c2s *conn,
 static int
 conn_await_package(connection *c, package *p, int (*acceptor)(package *)) {
   do {
-    if(!retrieve_package(c, p))
+	if (!retrieve_package(c, p))
 	  return 0;
-  } while(!acceptor(p));
+  } while (!acceptor(p));
   return 1;
 }
 
@@ -180,7 +180,6 @@ static int
 conf_resync_acceptor(package *p) {
   return p->type == REQ_RSP_RESYNC;
 }
-
 
 int
 conn_handle_incoming_packages_client(client *c, connection_c2s *conn) {
@@ -218,14 +217,20 @@ establish_connection_client(client *c, int socket_fd, pthread_t handler,
 
   send_package(&c2s->c, &p);
 
+  if (!retrieve_package(&c2s->c, &p))
+	return NULL;
+
+  CH_ASSERT_NULL((!resume && p.type == REQ_RSP_CONFIRM_JOIN)
+						 || (resume && p.type == REQ_RSP_CONFIRM_RESUME),
+				 &c2s->c, CONN_ERROR_INVALID_CONN_STATE);
+
   p.req.seq = ++c2s->c.cseq;
   p.type = REQ_RSP_RESYNC;
-
   send_package(&c2s->c, &p);
 
-  if(!conn_await_package(&c2s->c, &p, conf_resync_acceptor))
+  if (!conn_await_package(&c2s->c, &p, conf_resync_acceptor))
 	return NULL;
-  
+
   client_handle_resync(c, &p);
 
   p.req.seq++;
@@ -240,7 +245,7 @@ conf_resync_confirm_acceptor(package *p) {
   return p->type == REQ_RSP_CONFIRM_RESYNC;
 }
 
-static int 
+static int
 conn_resync_player(server *s, connection_s2c *c, package *req_p) {
   package p;
   p.type = REQ_RSP_RESYNC;

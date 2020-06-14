@@ -54,7 +54,7 @@ ctimer_run(ctimer *t) {
   ERRNO_CHECK(timer_settime(t->timer_id, 0, &itspec, NULL));
 
   pthread_create(&t->tid, NULL, ctimer_handler, t);
-  DEBUG_PRINTF("Started Server Timer");
+  DEBUG_PRINTF("Started Timer");
 }
 
 void
