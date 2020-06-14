@@ -148,8 +148,9 @@ client_disconnect_connection(client *c, connection_c2s *conn) {
 }
 
 void
-client_handle_resync(package *p) {
-  DTODO_PRINTF("TODO: implement resync on client side");// TODO: implement
+client_handle_resync(client *c, package *p) {
+  DEBUG_PRINTF("Resyncing client state");
+  c->cs = p->rsp.scs;  
 }
 
 void

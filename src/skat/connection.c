@@ -38,6 +38,8 @@ retrieve_package(connection *c, package *p) {
   res = read(c->fd, p, sizeof(package));
   DEBUG_PRINTF("Retrieved package of type %s with size %ld",
 			   req_rsp_name_table[p->type], res);
+  if (res != sizeof(package))
+	DERROR_PRINTF("Connection %d unexpectedly terminated", c->fd);
   return res == sizeof(package);
 }
 
@@ -100,6 +102,7 @@ establish_connection_server(server *s, int fd, pthread_t handler) {
 	init_conn_s2c(s2c, &c);
 	s2c->c.active = 1;
 	s2c->pid = pl.id;
+	pl.index = n;
 
 	server_add_player_for_connection(s, &pl, n);
 
@@ -123,6 +126,7 @@ establish_connection_server(server *s, int fd, pthread_t handler) {
 	init_conn_s2c(s2c, &c);
 	s2c->c.active = 1;
 	s2c->pid = pl.id;
+	pl.index = n;
 
 	server_notify_join(s, &pl);
 
@@ -163,6 +167,21 @@ conn_handle_incoming_package_client_single(client *c, connection_c2s *conn,
   return 1;
 }
 
+static int
+conn_await_package(connection *c, package *p, int (*acceptor)(package *)) {
+  do {
+    if(!retrieve_package(c, p))
+	  return 0;
+  } while(!acceptor(p));
+  return 1;
+}
+
+static int
+conf_resync_acceptor(package *p) {
+  return p->type == REQ_RSP_RESYNC;
+}
+
+
 int
 conn_handle_incoming_packages_client(client *c, connection_c2s *conn) {
   package p;
@@ -182,7 +201,6 @@ establish_connection_client(client *c, int socket_fd, pthread_t handler,
 							int resume) {
   DEBUG_PRINTF("%s connection to server",
 			   resume ? "Resuming" : "Establishing new");
-  package_queue pq;
 
   connection base_conn;
   init_conn(&base_conn, socket_fd, handler);
@@ -205,24 +223,24 @@ establish_connection_client(client *c, int socket_fd, pthread_t handler,
 
   send_package(&c2s->c, &p);
 
-  package_queue_init(&pq);
+  if(!conn_await_package(&c2s->c, &p, conf_resync_acceptor))
+	return NULL;
+  
+  client_handle_resync(c, &p);
 
-  retrieve_package(&c2s->c, &p);
-  while (p.type != REQ_RSP_RESYNC) {
-	package_queue_enq(&pq, &p);
-	retrieve_package(&c2s->c, &p);
-  }
-
-  client_handle_resync(&p);
-
-  while (package_queue_deq(&pq, &p)) {
-	conn_handle_incoming_package_client_single(c, c2s, &p);
-  }
+  p.req.seq++;
+  p.type = REQ_RSP_CONFIRM_RESYNC;
+  send_package(&c2s->c, &p);
 
   return c2s;
 }
 
-static void
+int
+conf_resync_confirm_acceptor(package *p) {
+  return p->type == REQ_RSP_CONFIRM_RESYNC;
+}
+
+static int 
 conn_resync_player(server *s, connection_s2c *c, package *req_p) {
   package p;
   p.type = REQ_RSP_RESYNC;
@@ -232,20 +250,23 @@ conn_resync_player(server *s, connection_s2c *c, package *req_p) {
   server_resync_player(s, pl, &p.rsp.scs);
 
   send_package(&c->c, &p);
+
+  return conn_await_package(&c->c, &p, conf_resync_confirm_acceptor);
 }
 
 static int
 conn_handle_incoming_packages_server_single(server *s, connection_s2c *c,
 											package *p) {
+  int still_connected;
   switch (p->type) {
 	case REQ_RSP_ACTION:// server distributes events and receives actions
 	  conn_enqueue_action(&c->c, &p->req.ac);
 	  break;
 	case REQ_RSP_RESYNC:
 	  server_acquire_state_lock(s);
-	  conn_resync_player(s, c, p);
+	  still_connected = conn_resync_player(s, c, p);
 	  server_release_state_lock(s);
-	  break;
+	  return still_connected;
 	case REQ_RSP_ERROR:
 	  DERROR_PRINTF("Received error from client, killing him");
 	  __attribute__((fallthrough));

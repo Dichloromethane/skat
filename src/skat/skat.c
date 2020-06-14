@@ -354,13 +354,12 @@ void
 skat_resync_player(skat_state *ss, skat_client_state *cs, player *pl) {
   cs->sgs = ss->sgs;
   cs->my_index = pl->index;
-  // cs->my_hand = ss->player_hands[pl->index];
+  get_player_hand(ss, pl, &cs->my_hand);
   if (ss->sgs.cgphase == GAME_PHASE_SKAT_AUFNEHMEN
 	  && pl->index == ss->sgs.alleinspieler) {
 	cs->skat[0] = ss->skat[0];
 	cs->skat[1] = ss->skat[1];
   }
-  // DTODO_PRINTF("TODO: this"); // TODO: this
 }
 
 void
