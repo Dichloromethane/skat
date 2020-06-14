@@ -172,7 +172,7 @@ apply_action_reizen_begin(skat_state *ss, action *a, player *pl, server *s) {
   event e;
   e.answer_to = a->id;
   e.player = pl->id;
-  DTODO_PRINTF("TODO: FIXME: XXX: Make work");// TODO: FIXME: XXX: Make work
+  DTODO_PRINTF("TODO: implement reizen");// TODO: implement reizen
   switch (a->type) {
 	default:
 	  return GAME_PHASE_INVALID;
