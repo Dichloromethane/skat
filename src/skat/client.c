@@ -149,9 +149,9 @@ client_disconnect_connection(client *c, connection_c2s *conn) {
 }
 
 void
-client_handle_resync(client *c, package *p) {
+client_handle_resync(client *c, payload_resync *pl) {
   DEBUG_PRINTF("Resyncing client state");
-  c->cs = p->rsp.scs;
+  c->cs = pl->scs;
 }
 
 void
