@@ -14,8 +14,5 @@ package_clean(package *p) {
 
 void
 package_free(package *p) {
-  if (p->payload) {
-	free(p->payload);
-  }
   package_clean(p);
 }
