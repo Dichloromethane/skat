@@ -37,32 +37,11 @@
   #define CONN_ERROR(x) [CONN_ERROR_ ## x] = "CONN_ERROR_" #x
   #define CONN_ERROR_HDR_TABLE_END , (void *)0};
 #else
-  #define REQ_RSP_HDR_TABLE_BEGIN typedef enum {
-  #define FIRST_REQ_RSP(x) REQ_RSP_ ## x = 0
-  #define REQ_RSP(x) REQ_RSP_ ## x
-  #define REQ_RSP_HDR_TABLE_END } req_rsp_type;
-
   #define CONN_ERROR_HDR_TABLE_BEGIN typedef enum {
   #define FIRST_CONN_ERROR(x) CONN_ERROR_ ## x = 0
   #define CONN_ERROR(x) CONN_ERROR_ ## x
   #define CONN_ERROR_HDR_TABLE_END } conn_error_type;
 #endif
-
-REQ_RSP_HDR_TABLE_BEGIN
-  FIRST_REQ_RSP(INVALID),
-  REQ_RSP(ERROR),
-  REQ_RSP(RESYNC),
-  REQ_RSP(CONFIRM_RESYNC),
-  REQ_RSP(JOIN),
-  REQ_RSP(CONFIRM_JOIN),
-  REQ_RSP(NOTIFY_JOIN),
-  REQ_RSP(CONN_RESUME),
-  REQ_RSP(CONFIRM_RESUME),
-  REQ_RSP(ACTION),
-  REQ_RSP(EVENT),
-  REQ_RSP(DISCONNECT),
-  REQ_RSP(NOTIFY_LEAVE)
-REQ_RSP_HDR_TABLE_END
 
 CONN_ERROR_HDR_TABLE_BEGIN
   CONN_ERROR(INVALID),
@@ -80,40 +59,12 @@ CONN_ERROR_HDR_TABLE_END
 // clang-format on
 
 extern char *conn_error_name_table[];
-extern char *req_rsp_name_table[];
-
-typedef int64_t seq_no;
 
 typedef struct server server;
 typedef struct client client;
 
 typedef struct {
-  seq_no seq;
-  union {
-	player_id pid;
-	action ac;
-	event ev;
-  };
-} request;
-
-typedef struct {
-  seq_no seq;
-  union {
-	conn_error_type cet;
-	skat_client_state scs;
-	int player_index;
-  };
-} response;
-
-typedef struct {
-  req_rsp_type type;
-  request req;
-  response rsp;
-} package;
-
-typedef struct {
   int fd;
-  seq_no cseq;
   pthread_t handler;
   int active;
   action_queue aq;
