@@ -414,6 +414,7 @@ conn_notify_join(connection_s2c *c, player *pl) {
   package_clean(&p);
   p.type = PACKAGE_NOTIFY_JOIN;
 
+  // TODO: send other player data as well, if this is a resuming player?
   payload_notify_join pl_nj;
   copy_player_id(&pl_nj.pid, &pl->id);
 
