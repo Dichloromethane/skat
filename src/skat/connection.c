@@ -36,12 +36,15 @@ send_package(connection *c, package *p) {
 
 static int
 retrieve_package(connection *c, package *p) {
+  package_clean(p);
+
   ssize_t res;
   res = read(c->fd, p, sizeof(package));
   if (res < 0 || (size_t) res != sizeof(package)) {
 	DERROR_PRINTF("Connection %d unexpectedly terminated while trying to "
 				  "retrieve package",
 				  c->fd);
+	package_clean(p);
 	return 0;
   }
 
@@ -52,8 +55,7 @@ retrieve_package(connection *c, package *p) {
 	  DERROR_PRINTF("Connection %d unexpectedly terminated while retrieving "
 					"payload of type %s with size %lu",
 					c->fd, package_name_table[p->type], p->payload_size);
-	  free(p->payload);
-	  p->payload = NULL;
+	  package_free(p);
 	  return 0;
 	}
   } else {
@@ -314,7 +316,7 @@ conf_resync_confirm_acceptor(package *p) {
 }
 
 static int
-conn_resync_player(server *s, connection_s2c *c, package *req_p) {
+conn_resync_player(server *s, connection_s2c *c) {
   package p;
 
   package_clean(&p);
@@ -332,7 +334,10 @@ conn_resync_player(server *s, connection_s2c *c, package *req_p) {
 
   package_clean(&p);
 
-  return conn_await_package(&c->c, req_p, conf_resync_confirm_acceptor);
+  int still_connected =
+		  conn_await_package(&c->c, &p, conf_resync_confirm_acceptor);
+  package_free(&p);
+  return still_connected;
 }
 
 static int
@@ -348,7 +353,7 @@ conn_handle_incoming_packages_server_single(server *s, connection_s2c *c,
 	  break;
 	case PACKAGE_RESYNC:
 	  server_acquire_state_lock(s);
-	  still_connected = conn_resync_player(s, c, p);
+	  still_connected = conn_resync_player(s, c);
 	  server_release_state_lock(s);
 	  return still_connected;
 	case PACKAGE_ERROR:
