@@ -75,7 +75,7 @@ static game_phase
 apply_action_setup(skat_state *ss, action *a, player *pl, server *s) {
   event e;
   e.answer_to = a->id;
-  e.player = pl->id;
+  e.player = pl->name;
   switch (a->type) {
 	case ACTION_READY:
 	  if (s->ncons < 3)
@@ -96,7 +96,7 @@ apply_action_between_rounds(skat_state *ss, action *a, player *pl, server *s) {
   int pm, ix;
   event e;
   e.answer_to = a->id;
-  e.player = pl->id;
+  e.player = pl->name;
   switch (a->type) {
 	case ACTION_READY:
 	  if (s->ncons < 3)
@@ -171,7 +171,7 @@ apply_action_reizen_begin(skat_state *ss, action *a, player *pl, server *s) {
   // remember to initialize stiche!
   event e;
   e.answer_to = a->id;
-  e.player = pl->id;
+  e.player = pl->name;
   DTODO_PRINTF("TODO: implement reizen");// TODO: implement reizen
   switch (a->type) {
 	default:
@@ -194,8 +194,8 @@ apply_action_stich(skat_state *ss, action *a, player *pl, server *s, int ind) {
   switch (a->type) {
 	case ACTION_PLAY_CARD:
 	  curr = next_active_player(ss->sgs.curr_stich.vorhand, ind);
-	  if (!player_equals_by_id(pl, server_get_player_by_gupid(
-										   s, ss->sgs.active_players[curr])))
+	  if (!player_equals_by_name(pl, server_get_player_by_gupid(
+											 s, ss->sgs.active_players[curr])))
 		return GAME_PHASE_INVALID;
 	  if (stich_card_legal(&ss->sgs.gr, ss->sgs.curr_stich.cs, ind, &a->card,
 						   &ss->player_hands[curr], &result)
@@ -204,7 +204,7 @@ apply_action_stich(skat_state *ss, action *a, player *pl, server *s, int ind) {
 
 	  e.type = EVENT_PLAY_CARD;
 	  e.answer_to = a->id;
-	  e.player = pl->id;
+	  e.player = pl->name;
 	  e.card = a->card;
 	  server_distribute_event(s, &e, NULL);
 
@@ -226,7 +226,7 @@ apply_action_stich(skat_state *ss, action *a, player *pl, server *s, int ind) {
 
 	  e.type = EVENT_STICH_DONE;
 	  e.answer_to = -1;
-	  e.stich_winner = s->ps[ss->sgs.active_players[winner]].id;
+	  e.stich_winner = s->ps[ss->sgs.active_players[winner]].name;
 	  server_distribute_event(s, &e, NULL);
 
 	  ss->sgs.last_stich = ss->sgs.curr_stich;
@@ -260,7 +260,7 @@ apply_action_stich(skat_state *ss, action *a, player *pl, server *s, int card) {
   switch (a->type) {
 	case ACTION_PLAY_CARD:
 	  cpi = (ss->sgs.curr_stich.vorhand + card) % 3;
-	  if (!player_id_equals(&pl->id, &ss->sgs.active_players[cpi]))
+	  if (!player_name_equals(&pl->id, &ss->sgs.active_players[cpi]))
 		return GAME_PHASE_INVALID;
 	  if (stich_card_legal(&ss->sgs.gr, ss->sgs.curr_stich.cs, &card, &a->card,
 						   &ss->player_hands[cpi], &result)

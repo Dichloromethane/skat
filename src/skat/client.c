@@ -132,7 +132,7 @@ client_tick(client *c) {
 					 action_name_table[a.type], s->ps[i].id.str, a.id);
 		err_ev.type = EVENT_ILLEGAL_ACTION;
 		err_ev.answer_to = a.id;
-		copy_player_id(&err_ev.player, &s->ps[i].id);
+		copy_player_name(&err_ev.player, &s->ps[i].id);
 		conn_enqueue_event(&s->conns[i].c, &err_ev);
 	  }
 	}

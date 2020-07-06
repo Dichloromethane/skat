@@ -73,7 +73,7 @@ typedef struct {
 
 typedef struct {
   connection c;
-  player_id pid;
+  player_name pid;
 } connection_s2c;
 
 typedef struct {

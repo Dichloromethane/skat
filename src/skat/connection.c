@@ -94,7 +94,7 @@ init_conn(connection *c, int fd, pthread_t handler) {
 static void
 init_conn_s2c(connection_s2c *s2c, connection *base_conn) {
   s2c->c = *base_conn;
-  init_player_id(&s2c->pid, "");
+  init_player_name(&s2c->pid, "");
 }
 
 static void
@@ -117,11 +117,11 @@ establish_connection_server(server *s, int fd, pthread_t handler) {
 
   if (p.type == PACKAGE_JOIN) {
 	payload_join *pl_join = p.payload;
-	copy_player_id(&pl.id, &pl_join->pid);
+	copy_player_name(&pl.name, &pl_join->pid);
 
 	server_acquire_state_lock(s);
 
-	CH_ASSERT_NULL(!server_has_player_id(s, &pl.id), &c,
+	CH_ASSERT_NULL(!server_has_player_id(s, &pl.name), &c,
 				   CONN_ERROR_PLAYER_ID_IN_USE);
 
 	CH_ASSERT_NULL(s2c = server_get_free_connection(s, &n), &c,
@@ -129,7 +129,7 @@ establish_connection_server(server *s, int fd, pthread_t handler) {
 
 	init_conn_s2c(s2c, &c);
 	s2c->c.active = 1;
-	s2c->pid = pl.id;
+	s2c->pid = pl.name;
 	pl.index = n;
 
 	server_add_player_for_connection(s, &pl, n);
@@ -152,17 +152,17 @@ establish_connection_server(server *s, int fd, pthread_t handler) {
   }
   if (p.type == PACKAGE_CONN_RESUME) {
 	payload_resume *pl_resume = p.payload;
-	copy_player_id(&pl.id, &pl_resume->pid);
+	copy_player_name(&pl.name, &pl_resume->pid);
 
 	server_acquire_state_lock(s);
 
-	CH_ASSERT_NULL(s2c = server_get_connection_by_pid(s, pl.id, &n), &c,
+	CH_ASSERT_NULL(s2c = server_get_connection_by_pid(s, pl.name, &n), &c,
 				   CONN_ERROR_NO_SUCH_PLAYER_ID);
 	CH_ASSERT_NULL(!s2c->c.active, &s2c->c, CONN_ERROR_PLAYER_ID_IN_USE);
 
 	init_conn_s2c(s2c, &c);
 	s2c->c.active = 1;
-	s2c->pid = pl.id;
+	s2c->pid = pl.name;
 	pl.index = n;
 
 	server_notify_join(s, &pl);
@@ -259,8 +259,8 @@ establish_connection_client(client *c, int socket_fd, pthread_t handler,
   init_conn_c2s(c2s, &base_conn);
 
   package p;
-  player_id pid;
-  init_player_id(&pid, c->name);
+  player_name pid;
+  init_player_name(&pid, c->name);
 
   package_clean(&p);
   if (resume) {
@@ -421,7 +421,7 @@ conn_notify_join(connection_s2c *c, player *pl) {
 
   // TODO: send other player data as well, if this is a resuming player?
   payload_notify_join pl_nj;
-  copy_player_id(&pl_nj.pid, &pl->id);
+  copy_player_name(&pl_nj.pid, &pl->name);
 
   p.payload_size = sizeof(payload_notify_join);
   p.payload = &pl_nj;
@@ -440,7 +440,7 @@ conn_notify_disconnect(connection_s2c *c, player *pl) {
   p.type = PACKAGE_NOTIFY_LEAVE;
 
   payload_notify_leave pl_nl;
-  copy_player_id(&pl_nl.pid, &pl->id);
+  copy_player_name(&pl_nl.pid, &pl->name);
 
   p.payload_size = sizeof(payload_notify_leave);
   p.payload = &pl_nl;

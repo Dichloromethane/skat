@@ -63,7 +63,7 @@ typedef struct {
 } payload_error;
 
 typedef struct {
-  player_id pid;
+  player_name pid;
 } payload_join;
 
 typedef payload_join payload_resume;

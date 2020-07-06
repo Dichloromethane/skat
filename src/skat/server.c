@@ -22,16 +22,16 @@ is_active(server *s, int gupid) {
 }
 
 int
-server_has_player_id(server *s, player_id *pid) {
+server_has_player_id(server *s, player_name *pid) {
   for (int i = 0; i < 4; i++)// otherwise we can't recover connections
-	if (player_id_equals(&s->ps[i].id, pid))
+	if (player_name_equals(&s->ps[i].name, pid))
 	  return 1;
   return 0;
 }
 
 void
 server_send_event(server *s, event *e, player *pl) {
-  connection_s2c *c = server_get_connection_by_pid(s, pl->id, NULL);
+  connection_s2c *c = server_get_connection_by_pid(s, pl->name, NULL);
   if (c) {
 	conn_enqueue_event(&c->c, e);
   }
@@ -76,9 +76,9 @@ server_add_player_for_connection(server *s, player *pl, int n) {
 }
 
 connection_s2c *
-server_get_connection_by_pid(server *s, player_id pid, int *n) {
+server_get_connection_by_pid(server *s, player_name pid, int *n) {
   FOR_EACH_ACTIVE(s, i, {
-	if (player_id_equals(&s->ps[i].id, &pid)) {
+	if (player_name_equals(&s->ps[i].name, &pid)) {
 	  if (n)
 		*n = i;
 	  return &s->conns[i];
@@ -88,9 +88,9 @@ server_get_connection_by_pid(server *s, player_id pid, int *n) {
 }
 
 player *
-server_get_player_by_pid(server *s, player_id pid) {
+server_get_player_by_pid(server *s, player_name pid) {
   for (int i = 0; i < 4; i++)
-	if (player_id_equals(&s->ps[i].id, &pid))
+	if (player_name_equals(&s->ps[i].name, &pid))
 	  return &s->ps[i];
   return NULL;
 }
@@ -102,7 +102,7 @@ server_disconnect_connection(server *s, connection_s2c *c) {
 
   skat_state_notify_disconnect(&s->skat_state, pl, s);
   FOR_EACH_ACTIVE(s, i, {
-	if (!player_equals_by_id(pl, &s->ps[i]))
+	if (!player_equals_by_name(pl, &s->ps[i]))
 	  conn_notify_disconnect(&s->conns[i], pl);
   });
   conn_disable_conn(&c->c);
@@ -128,7 +128,7 @@ server_release_state_lock(server *s) {
 
 void
 server_resync_player(server *s, player *pl, skat_client_state *cs) {
-  DEBUG_PRINTF("Resync requested by %s", pl->id.str);
+  DEBUG_PRINTF("Resync requested by %s", pl->name.str);
   skat_resync_player(&s->skat_state, cs, pl);
 }
 
@@ -148,10 +148,10 @@ server_tick(server *s) {
 	  if (!skat_state_apply(&s->skat_state, &a, &s->ps[i], s)) {
 		DEBUG_PRINTF("Received illegal action of type %s from player %s with "
 					 "id %ld, rejecting",
-					 action_name_table[a.type], s->ps[i].id.str, a.id);
+					 action_name_table[a.type], s->ps[i].name.str, a.id);
 		err_ev.type = EVENT_ILLEGAL_ACTION;
 		err_ev.answer_to = a.id;
-		copy_player_id(&err_ev.player, &s->ps[i].id);
+		copy_player_name(&err_ev.player, &s->ps[i].name);
 		conn_enqueue_event(&s->conns[i].c, &err_ev);
 	  }
 	}
@@ -163,10 +163,10 @@ server_tick(server *s) {
 
 void
 server_notify_join(server *s, player *pl) {
-  DEBUG_PRINTF("Player %s joined", pl->id.str);
+  DEBUG_PRINTF("Player %s joined", pl->name.str);
   skat_state_notify_join(&s->skat_state, pl, s);
   FOR_EACH_ACTIVE(s, i, {
-	if (!player_equals_by_id(pl, &s->ps[i]))
+	if (!player_equals_by_name(pl, &s->ps[i]))
 	  conn_notify_join(&s->conns[i], pl);
   });
 }
