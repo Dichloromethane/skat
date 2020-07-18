@@ -18,6 +18,7 @@ ctimer_create(ctimer *t, void *arg, void (*timerf)(void *), int nsecs) {
 
   DEBUG_PRINTF("Creating timer");
 
+  t->close = 0;
   t->timerf = timerf;
   t->arg = arg;
   t->nsecs = nsecs;
@@ -61,7 +62,7 @@ void
 ctimer_stop(ctimer *t) {
   struct itimerspec itspec;
 
-  t->close = 0;
+  t->close = 1;
   pthread_join(t->tid, NULL);
 
   itspec.it_interval.tv_nsec = 0;

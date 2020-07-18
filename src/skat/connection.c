@@ -30,7 +30,7 @@ send_package(connection *c, package *p) {
 			   package_name_table[p->type], p->payload_size);
   send(c->fd, p, sizeof(package), 0);
   if (p->payload_size > 0) {
-	send(c->fd, p->payload, p->payload_size, 0);
+	send(c->fd, p->payload.v, p->payload_size, 0);
   }
 }
 
@@ -49,8 +49,8 @@ retrieve_package(connection *c, package *p) {
   }
 
   if (p->payload_size > 0) {
-	p->payload = malloc(p->payload_size);
-	res = read(c->fd, p->payload, p->payload_size);
+	p->payload.v = malloc(p->payload_size);
+	res = read(c->fd, p->payload.v, p->payload_size);
 	if (res < 0 || (size_t) res != p->payload_size) {
 	  DERROR_PRINTF("Connection %d unexpectedly terminated while retrieving "
 					"payload of type %s with size %lu",
@@ -59,7 +59,7 @@ retrieve_package(connection *c, package *p) {
 	  return 0;
 	}
   } else {
-	p->payload = NULL;
+	p->payload.v = NULL;
   }
 
   DEBUG_PRINTF("Retrieved package of type %s with payload size %lu",
@@ -76,7 +76,7 @@ conn_error(connection *c, conn_error_type cet) {
 
   payload_error pl = (payload_error){.type = cet};
   p.payload_size = sizeof(payload_error);
-  p.payload = &pl;
+  p.payload.pl_er = &pl;
 
   DERROR_PRINTF("Connection error: %s", conn_error_name_table[cet]);
   send_package(c, &p);
@@ -94,7 +94,6 @@ init_conn(connection *c, int fd, pthread_t handler) {
 static void
 init_conn_s2c(connection_s2c *s2c, connection *base_conn) {
   s2c->c = *base_conn;
-  init_player_name(&s2c->pid, "");
 }
 
 static void
@@ -107,8 +106,7 @@ establish_connection_server(server *s, int fd, pthread_t handler) {
   package p;
   connection c;
   connection_s2c *s2c;
-  player pl;
-  int n;
+  int gupid;
 
   init_conn(&c, fd, handler);
 
@@ -116,25 +114,25 @@ establish_connection_server(server *s, int fd, pthread_t handler) {
   retrieve_package(&c, &p);
 
   if (p.type == PACKAGE_JOIN) {
-	payload_join *pl_join = p.payload;
-	copy_player_name(&pl.name, &pl_join->pid);
+	payload_join *pl_join = p.payload.pl_j;
 
 	server_acquire_state_lock(s);
 
-	CH_ASSERT_NULL(!server_has_player_id(s, &pl.name), &c,
+	CH_ASSERT_NULL(!server_has_player_id(s, &pl_join->pname), &c,
 				   CONN_ERROR_PLAYER_ID_IN_USE);
 
-	CH_ASSERT_NULL(s2c = server_get_free_connection(s, &n), &c,
+	CH_ASSERT_NULL(s2c = server_get_free_connection(s, &gupid), &c,
 				   CONN_ERROR_TOO_MANY_PLAYERS);
+
+	player *pl = create_player(gupid, &pl_join->pname);
 
 	init_conn_s2c(s2c, &c);
 	s2c->c.active = 1;
-	s2c->pid = pl.name;
-	pl.index = n;
+	s2c->gupid = gupid;
 
-	server_add_player_for_connection(s, &pl, n);
+	server_add_player_for_connection(s, pl, gupid);
 
-	server_notify_join(s, &pl);
+	server_notify_join(s, gupid);
 
 	server_release_state_lock(s);
 
@@ -142,30 +140,28 @@ establish_connection_server(server *s, int fd, pthread_t handler) {
 
 	p.type = PACKAGE_CONFIRM_JOIN;
 
-	payload_confirm_join pl_cj = (payload_confirm_join){.player_index = n};
+	payload_confirm_join pl_cj = (payload_confirm_join){.gupid = gupid};
 	p.payload_size = sizeof(payload_confirm_join);
-	p.payload = &pl_cj;
+	p.payload.pl_cj = &pl_cj;
 
 	send_package(&s2c->c, &p);
 
 	return s2c;
   }
   if (p.type == PACKAGE_CONN_RESUME) {
-	payload_resume *pl_resume = p.payload;
-	copy_player_name(&pl.name, &pl_resume->pid);
+	payload_resume *pl_resume = p.payload.pl_rm;
 
 	server_acquire_state_lock(s);
 
-	CH_ASSERT_NULL(s2c = server_get_connection_by_pid(s, pl.name, &n), &c,
-				   CONN_ERROR_NO_SUCH_PLAYER_ID);
+	CH_ASSERT_NULL(
+			s2c = server_get_connection_by_pname(s, &pl_resume->pname, &gupid),
+			&c, CONN_ERROR_NO_SUCH_PLAYER_ID);
 	CH_ASSERT_NULL(!s2c->c.active, &s2c->c, CONN_ERROR_PLAYER_ID_IN_USE);
 
 	init_conn_s2c(s2c, &c);
 	s2c->c.active = 1;
-	s2c->pid = pl.name;
-	pl.index = n;
 
-	server_notify_join(s, &pl);
+	server_notify_join(s, gupid);
 
 	server_release_state_lock(s);
 
@@ -173,15 +169,16 @@ establish_connection_server(server *s, int fd, pthread_t handler) {
 
 	p.type = PACKAGE_CONFIRM_RESUME;
 
-	payload_confirm_resume pl_res = (payload_confirm_resume){.player_index = n};
+	payload_confirm_resume pl_res = (payload_confirm_resume){.gupid = gupid};
 	p.payload_size = sizeof(payload_confirm_join);
-	p.payload = &pl_res;
+	p.payload.pl_cr = &pl_res;
 
 	send_package(&s2c->c, &p);
 
 	return s2c;
   }
   CH_ASSERT_NULL(0, &c, CONN_ERROR_INVALID_CONN_STATE);
+  __builtin_unreachable();
 }
 
 static int
@@ -190,7 +187,7 @@ conn_handle_incoming_package_client_single(client *c, connection_c2s *conn,
   payload_event *pl_ev;
   switch (p->type) {
 	case PACKAGE_EVENT:// clients receive events and send actions
-	  pl_ev = p->payload;
+	  pl_ev = p->payload.pl_ev;
 	  conn_enqueue_event(&conn->c, &pl_ev->ev);
 	  break;
 	case PACKAGE_CONFIRM_JOIN:
@@ -259,27 +256,33 @@ establish_connection_client(client *c, int socket_fd, pthread_t handler,
   init_conn_c2s(c2s, &base_conn);
 
   package p;
-  player_name pid;
-  init_player_name(&pid, c->name);
+  player_name *pname = create_player_name(c->name);
 
   package_clean(&p);
   if (resume) {
 	p.type = PACKAGE_CONN_RESUME;
 
-	payload_resume pl = (payload_resume){.pid = pid};
-	p.payload_size = sizeof(payload_resume);
-	p.payload = &pl;
+	size_t pl_size = sizeof(payload_resume) + player_name_extra_size(pname);
+	payload_resume *pl = malloc(pl_size);
+	pl->pname.length = pname->length;
+	copy_player_name(&pl->pname, pname);
+	p.payload_size = pl_size;
+	p.payload.pl_rm = pl;
   } else {
 	p.type = PACKAGE_JOIN;
 
-	payload_join pl = (payload_join){.pid = pid};
-	p.payload_size = sizeof(payload_join);
-	p.payload = &pl;
+	size_t pl_size = sizeof(payload_join) + player_name_extra_size(pname);
+	payload_join *pl = malloc(pl_size);
+	pl->pname.length = pname->length;
+	copy_player_name(&pl->pname, pname);
+	p.payload_size = pl_size;
+	p.payload.pl_j = pl;
   }
 
   send_package(&c2s->c, &p);
 
-  package_clean(&p);
+  package_free(&p);
+  destroy_player_name(pname);
 
   if (!retrieve_package(&c2s->c, &p))
 	return NULL;
@@ -298,7 +301,7 @@ establish_connection_client(client *c, int socket_fd, pthread_t handler,
   if (!conn_await_package(&c2s->c, &p, conf_resync_acceptor))
 	return NULL;
 
-  client_handle_resync(c, p.payload);
+  client_handle_resync(c, p.payload.pl_rs);
 
   package_free(&p);
 
@@ -322,14 +325,15 @@ conn_resync_player(server *s, connection_s2c *c) {
   package_clean(&p);
   p.type = PACKAGE_RESYNC;
 
-  player *pl = server_get_player_by_pid(s, c->pid);
+  player *pl = server_get_player_by_gupid(s, c->gupid);
 
   payload_resync pl_rs;
   server_resync_player(s, pl, &pl_rs.scs);
 
   p.payload_size = sizeof(payload_resync);
-  p.payload = &pl_rs;
+  p.payload.pl_rs = &pl_rs;
 
+  // FIXME: valgrind "Syscall param socketcall.sendto(msg) points to uninitialised byte(s)"
   send_package(&c->c, &p);
 
   package_clean(&p);
@@ -348,7 +352,7 @@ conn_handle_incoming_packages_server_single(server *s, connection_s2c *c,
 
   switch (p->type) {
 	case PACKAGE_ACTION:// server distributes events and receives actions
-	  pl_ac = p->payload;
+	  pl_ac = p->payload.pl_a;
 	  conn_enqueue_action(&c->c, &pl_ac->ac);
 	  break;
 	case PACKAGE_RESYNC:
@@ -397,7 +401,7 @@ conn_handle_events_server(connection_s2c *c) {
   package_clean(&p);
   p.type = PACKAGE_EVENT;
   p.payload_size = sizeof(payload_event);
-  p.payload = &pl_ev;
+  p.payload.pl_ev = &pl_ev;
 
   while (conn_dequeue_event(&c->c, &pl_ev.ev)) {
 	send_package(&c->c, &p);
@@ -420,13 +424,17 @@ conn_notify_join(connection_s2c *c, player *pl) {
   p.type = PACKAGE_NOTIFY_JOIN;
 
   // TODO: send other player data as well, if this is a resuming player?
-  payload_notify_join pl_nj;
-  copy_player_name(&pl_nj.pid, &pl->name);
-
-  p.payload_size = sizeof(payload_notify_join);
-  p.payload = &pl_nj;
+  size_t pl_nj_size =
+		  sizeof(payload_notify_join) + player_name_extra_size(&pl->name);
+  payload_notify_join *pl_nj = malloc(pl_nj_size);
+  pl_nj->pname.length = pl->name.length;
+  copy_player_name(&pl_nj->pname, &pl->name);
+  p.payload_size = pl_nj_size;
+  p.payload.pl_nj = pl_nj;
 
   send_package(&c->c, &p);
+
+  package_free(&p);
 }
 
 void
@@ -439,13 +447,18 @@ conn_notify_disconnect(connection_s2c *c, player *pl) {
   package_clean(&p);
   p.type = PACKAGE_NOTIFY_LEAVE;
 
-  payload_notify_leave pl_nl;
-  copy_player_name(&pl_nl.pid, &pl->name);
 
-  p.payload_size = sizeof(payload_notify_leave);
-  p.payload = &pl_nl;
+  size_t pl_nj_size =
+		  sizeof(payload_notify_leave) + player_name_extra_size(&pl->name);
+  payload_notify_leave *pl_nl = malloc(pl_nj_size);
+  pl_nl->pname.length = pl->name.length;
+  copy_player_name(&pl_nl->pname, &pl->name);
+  p.payload_size = pl_nj_size;
+  p.payload.pl_nl = pl_nl;
 
   send_package(&c->c, &p);
+
+  package_free(&p);
 }
 
 void

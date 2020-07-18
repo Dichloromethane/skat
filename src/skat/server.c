@@ -9,7 +9,7 @@
 #include <unistd.h>
 
 #define FOR_EACH_ACTIVE(s, var, block) \
-  for (int var; var < 4; var++) { \
+  for (int var = 0; var < 4; var++) { \
 	if (!is_active(s, var)) \
 	  continue; \
 	else \
@@ -24,14 +24,14 @@ is_active(server *s, int gupid) {
 int
 server_has_player_id(server *s, player_name *pid) {
   for (int i = 0; i < 4; i++)// otherwise we can't recover connections
-	if (player_name_equals(&s->ps[i].name, pid))
+	if (!&s->ps[i] && player_name_equals(&s->ps[i]->name, pid))
 	  return 1;
   return 0;
 }
 
 void
 server_send_event(server *s, event *e, player *pl) {
-  connection_s2c *c = server_get_connection_by_pid(s, pl->name, NULL);
+  connection_s2c *c = server_get_connection_by_gupid(s, pl->index);
   if (c) {
 	conn_enqueue_event(&c->c, e);
   }
@@ -39,7 +39,7 @@ server_send_event(server *s, event *e, player *pl) {
 
 player *
 server_get_player_by_gupid(server *s, int gupid) {
-  return &s->ps[gupid];
+  return s->ps[gupid];
 }
 
 void
@@ -50,10 +50,10 @@ server_distribute_event(server *s, event *ev,
   FOR_EACH_ACTIVE(s, i, {
 	if (mask_event) {
 	  e = *ev;
-	  mask_event(&e, &s->ps[i]);
-	  server_send_event(s, &e, &s->ps[i]);
+	  mask_event(&e, s->ps[i]);
+	  server_send_event(s, &e, s->ps[i]);
 	} else
-	  server_send_event(s, ev, &s->ps[i]);
+	  server_send_event(s, ev, s->ps[i]);
   });
 }
 
@@ -71,14 +71,14 @@ server_get_free_connection(server *s, int *n) {
 
 void
 server_add_player_for_connection(server *s, player *pl, int n) {
-  s->ps[n] = *pl;
+  s->ps[n] = pl;
   pl->index = n;
 }
 
 connection_s2c *
-server_get_connection_by_pid(server *s, player_name pid, int *n) {
+server_get_connection_by_pname(server *s, player_name *pname, int *n) {
   FOR_EACH_ACTIVE(s, i, {
-	if (player_name_equals(&s->ps[i].name, &pid)) {
+	if (player_name_equals(&s->ps[i]->name, pname)) {
 	  if (n)
 		*n = i;
 	  return &s->conns[i];
@@ -87,22 +87,27 @@ server_get_connection_by_pid(server *s, player_name pid, int *n) {
   return NULL;
 }
 
+connection_s2c *
+server_get_connection_by_gupid(server *s, int gupid) {
+  return &s->conns[gupid];
+}
+
 player *
-server_get_player_by_pid(server *s, player_name pid) {
+server_get_player_by_pname(server *s, player_name *pname) {
   for (int i = 0; i < 4; i++)
-	if (player_name_equals(&s->ps[i].name, &pid))
-	  return &s->ps[i];
+	if (player_name_equals(&s->ps[i]->name, pname))
+	  return s->ps[i];
   return NULL;
 }
 
 void
 server_disconnect_connection(server *s, connection_s2c *c) {
   player *pl;
-  pl = server_get_player_by_pid(s, c->pid);
+  pl = server_get_player_by_gupid(s, c->gupid);
 
   skat_state_notify_disconnect(&s->skat_state, pl, s);
   FOR_EACH_ACTIVE(s, i, {
-	if (!player_equals_by_name(pl, &s->ps[i]))
+	if (!player_equals_by_name(pl, s->ps[i]))
 	  conn_notify_disconnect(&s->conns[i], pl);
   });
   conn_disable_conn(&c->c);
@@ -128,7 +133,7 @@ server_release_state_lock(server *s) {
 
 void
 server_resync_player(server *s, player *pl, skat_client_state *cs) {
-  DEBUG_PRINTF("Resync requested by %s", pl->name.str);
+  DEBUG_PRINTF("Resync requested by %s", pl->name.name);
   skat_resync_player(&s->skat_state, cs, pl);
 }
 
@@ -145,13 +150,13 @@ server_tick(server *s) {
 	  continue;
 
 	while (conn_dequeue_action(&s->conns[i].c, &a)) {
-	  if (!skat_state_apply(&s->skat_state, &a, &s->ps[i], s)) {
+	  if (!skat_state_apply(&s->skat_state, &a, s->ps[i], s)) {
 		DEBUG_PRINTF("Received illegal action of type %s from player %s with "
 					 "id %ld, rejecting",
-					 action_name_table[a.type], s->ps[i].name.str, a.id);
+					 action_name_table[a.type], s->ps[i]->name.name, a.id);
 		err_ev.type = EVENT_ILLEGAL_ACTION;
 		err_ev.answer_to = a.id;
-		copy_player_name(&err_ev.player, &s->ps[i].name);
+		copy_player_name(&err_ev.player, &s->ps[i]->name);
 		conn_enqueue_event(&s->conns[i].c, &err_ev);
 	  }
 	}
@@ -162,11 +167,12 @@ server_tick(server *s) {
 }
 
 void
-server_notify_join(server *s, player *pl) {
-  DEBUG_PRINTF("Player %s joined", pl->name.str);
+server_notify_join(server *s, int gupid) {
+  player *pl = server_get_player_by_gupid(s, gupid);
+  DEBUG_PRINTF("Player %s joined", pl->name.name);
   skat_state_notify_join(&s->skat_state, pl, s);
   FOR_EACH_ACTIVE(s, i, {
-	if (!player_equals_by_name(pl, &s->ps[i]))
+	if (i != gupid)
 	  conn_notify_join(&s->conns[i], pl);
   });
 }
@@ -251,7 +257,7 @@ server_init(server *s, int port) {
   s->ncons = 0;
   s->port = port;
   s->playermask = 0;
-  memset(s->ps, '\0', 4 * sizeof(player));
+  memset(s->ps, '\0', 4 * sizeof(player *));
   skat_state_init(&s->skat_state);
 }
 

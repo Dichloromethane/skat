@@ -108,7 +108,7 @@ apply_action_between_rounds(skat_state *ss, action *a, player *pl, server *s) {
 	  if (ss->sgs.active_players[0] == -1) {
 		for (int i = 0, j = 0; i < 4; i++)
 		  if ((s->playermask >> i) & 1)
-			ss->sgs.active_players[j++] = s->ps[i].index;
+			ss->sgs.active_players[j++] = s->ps[i]->index;
 	  } else if (s->ncons == 3) {// we don't have a spectator
 		perm(ss->sgs.active_players, 3, 0x12);
 	  } else {
@@ -117,7 +117,7 @@ apply_action_between_rounds(skat_state *ss, action *a, player *pl, server *s) {
 		  pm |= 1 << ss->sgs.active_players[i];
 		ix = __builtin_ctz(~pm);
 		perm(ss->sgs.active_players, 3, 0x12);
-		ss->sgs.active_players[2] = s->ps[ix].index;
+		ss->sgs.active_players[2] = s->ps[ix]->index;
 	  }
 
 	  memcpy(e.current_active_players, ss->sgs.active_players, 3 * sizeof(int));
@@ -226,7 +226,7 @@ apply_action_stich(skat_state *ss, action *a, player *pl, server *s, int ind) {
 
 	  e.type = EVENT_STICH_DONE;
 	  e.answer_to = -1;
-	  e.stich_winner = s->ps[ss->sgs.active_players[winner]].name;
+	  e.stich_winner = s->ps[ss->sgs.active_players[winner]]->name;
 	  server_distribute_event(s, &e, NULL);
 
 	  ss->sgs.last_stich = ss->sgs.curr_stich;
@@ -352,6 +352,8 @@ skat_state_tick(skat_state *ss, server *s) {}
 
 void
 skat_resync_player(skat_state *ss, skat_client_state *cs, player *pl) {
+  memset(cs, 0, sizeof(skat_client_state));
+
   cs->sgs = ss->sgs;
   cs->my_index = pl->index;
   get_player_hand(ss, pl, &cs->my_hand);

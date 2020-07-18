@@ -53,25 +53,24 @@ PACKAGE_HDR_TABLE_END
 extern char *package_name_table[];
 
 typedef struct {
-  package_type type;
-  size_t payload_size;
-  void *payload;
-} package;
-
-typedef struct {
   conn_error_type type;
 } payload_error;
 
 typedef struct {
-  player_name pid;
+  player_name pname;
 } payload_join;
 
 typedef payload_join payload_resume;
-typedef payload_join payload_notify_join;
-typedef payload_join payload_notify_leave;
 
 typedef struct {
-  int player_index;
+  int gupid;
+  player_name pname;
+} payload_notify_join;
+
+typedef payload_notify_join payload_notify_leave;
+
+typedef struct {
+  int gupid;
 } payload_confirm_join;
 
 typedef payload_confirm_join payload_confirm_resume;
@@ -87,6 +86,24 @@ typedef struct {
 typedef struct {
   action ac;
 } payload_action;
+
+typedef struct {
+  package_type type;
+  size_t payload_size;
+  union {
+	void *v;
+	payload_error *pl_er;
+	payload_join *pl_j;
+	payload_resume *pl_rm;
+	payload_notify_join *pl_nj;
+	payload_notify_leave *pl_nl;
+	payload_confirm_join *pl_cj;
+	payload_confirm_resume *pl_cr;
+	payload_resync *pl_rs;
+	payload_event *pl_ev;
+	payload_action *pl_a;
+  } payload;
+} package;
 
 void package_clean(package *);
 void package_free(package *);

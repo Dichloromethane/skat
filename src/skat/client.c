@@ -157,6 +157,7 @@ client_handle_resync(client *c, payload_resync *pl) {
 void
 client_init(client *c, char *host, int port, char *name) {
   DEBUG_PRINTF("Initializing client '%s' for server '%s:%d'", name, host, port);
+  pthread_mutex_init(&c->lock, NULL);
   c->host = host;
   c->port = port;
   c->name = name;

@@ -9,12 +9,12 @@ void
 package_clean(package *p) {
   p->type = PACKAGE_INVALID;
   p->payload_size = 0;
-  p->payload = NULL;
+  p->payload.v = NULL;
 }
 
 void
 package_free(package *p) {
-  if (p->payload)
-	free(p->payload);
+  if (p->payload.v)
+	free(p->payload.v);
   package_clean(p);
 }

@@ -14,17 +14,19 @@ typedef struct server {
   int port;
   int ncons;
   connection_s2c conns[4];
-  player ps[4];
+  player *ps[4];
   int playermask;
 } server;
 
 int server_has_player_id(server *, player_name *);
 connection_s2c *server_get_free_connection(server *, int *);
-connection_s2c *server_get_connection_by_pid(server *, player_name, int *);
-player *server_get_player_by_pid(server *, player_name);
+connection_s2c *server_get_connection_by_pname(server *s, player_name *pname,
+											   int *n);
+connection_s2c *server_get_connection_by_gupid(server *s, int gupid);
+player *server_get_player_by_pname(server *s, player_name *pname);
 player *server_get_player_by_gupid(server *, int);
 void server_add_player_for_connection(server *, player *, int);
-void server_notify_join(server *, player *);
+void server_notify_join(server *, int gupid);
 void server_resync_player(server *, player *, skat_client_state *);
 
 void server_acquire_state_lock(server *);
