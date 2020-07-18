@@ -62,7 +62,7 @@ typedef struct {
 
 typedef payload_join payload_resume;
 
-typedef struct {
+typedef struct payload_notify_join {
   int gupid;
   player_name pname;
 } payload_notify_join;

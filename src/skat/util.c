@@ -4,8 +4,13 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <pthread.h>
 
 int random_fd;
+
+#ifdef HAS_DEBUG_PRINTF
+pthread_mutex_t debug_printf_lock = PTHREAD_MUTEX_INITIALIZER;
+#endif
 
 __attribute__((constructor(101))) void
 open_random_fd(void) {

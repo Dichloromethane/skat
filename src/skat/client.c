@@ -50,7 +50,7 @@ client_conn_thread(void *args) {
 	if (!conn_handle_incoming_packages_client(cargs->c, conn)) {
 	  return NULL;
 	}
-	conn_handle_events_client(conn);
+	conn_handle_actions_client(conn);
   }
 }
 
@@ -155,12 +155,25 @@ client_handle_resync(client *c, payload_resync *pl) {
 }
 
 void
+client_notify_join(client *c, payload_notify_join *pl_nj) {
+  DEBUG_PRINTF("%s has joined the game", pl_nj->pname.name);
+  client_skat_state_notify_join(&c->cs, pl_nj);
+}
+
+void
+client_notify_leave(client *c, payload_notify_leave *pl_nl) {
+  DEBUG_PRINTF("%s has left the game", pl_nl->pname.name);
+  client_skat_state_notify_leave(&c->cs, pl_nl);
+}
+
+void
 client_init(client *c, char *host, int port, char *name) {
   DEBUG_PRINTF("Initializing client '%s' for server '%s:%d'", name, host, port);
   pthread_mutex_init(&c->lock, NULL);
   c->host = host;
   c->port = port;
   c->name = name;
+  memset(c->pls, '\0', sizeof(c->pls));
 }
 
 static void

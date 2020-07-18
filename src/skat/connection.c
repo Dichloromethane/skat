@@ -184,11 +184,9 @@ establish_connection_server(server *s, int fd, pthread_t handler) {
 static int
 conn_handle_incoming_package_client_single(client *c, connection_c2s *conn,
 										   package *p) {
-  payload_event *pl_ev;
   switch (p->type) {
 	case PACKAGE_EVENT:// clients receive events and send actions
-	  pl_ev = p->payload.pl_ev;
-	  conn_enqueue_event(&conn->c, &pl_ev->ev);
+	  conn_enqueue_event(&conn->c, &p->payload.pl_ev->ev);
 	  break;
 	case PACKAGE_CONFIRM_JOIN:
 	  __attribute__((fallthrough));
@@ -202,6 +200,16 @@ conn_handle_incoming_package_client_single(client *c, connection_c2s *conn,
 	  client_disconnect_connection(c, conn);
 	  client_release_state_lock(c);
 	  return 0;
+	case PACKAGE_NOTIFY_JOIN:
+	  client_acquire_state_lock(c);
+	  client_notify_join(c, p->payload.pl_nj);
+	  client_release_state_lock(c);
+	  break;
+	case PACKAGE_NOTIFY_LEAVE:
+	  client_acquire_state_lock(c);
+	  client_notify_leave(c, p->payload.pl_nl);
+	  client_release_state_lock(c);
+	  break;
 	default:
 	  DTODO_PRINTF("TODO: rest of the client side protocol");// TODO: this
 	  CH_ASSERT_0(0, &conn->c, CONN_ERROR_INVALID_PACKAGE_TYPE);
@@ -409,8 +417,18 @@ conn_handle_events_server(connection_s2c *c) {
 }
 
 void
-conn_handle_events_client(connection_c2s *conn) {
-  DTODO_PRINTF("TODO: this");// TODO: this
+conn_handle_actions_client(connection_c2s *conn) {
+  payload_action pl_a;
+  package p;
+
+  package_clean(&p);
+  p.type = PACKAGE_ACTION;
+  p.payload_size = sizeof(payload_action);
+  p.payload.pl_a = &pl_a;
+
+  while (conn_dequeue_action(&conn->c, &pl_a.ac)) {
+	send_package(&conn->c, &p);
+  }
 }
 
 void
@@ -446,7 +464,6 @@ conn_notify_disconnect(connection_s2c *c, player *pl) {
 
   package_clean(&p);
   p.type = PACKAGE_NOTIFY_LEAVE;
-
 
   size_t pl_nj_size =
 		  sizeof(payload_notify_leave) + player_name_extra_size(&pl->name);

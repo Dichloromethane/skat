@@ -102,6 +102,12 @@ typedef struct {
 void skat_state_notify_disconnect(skat_state *, player *, server *);
 void skat_state_notify_join(skat_state *, player *, server *);
 
+struct payload_notify_join;
+typedef struct payload_notify_join payload_notify_join;
+void client_skat_state_notify_join(skat_client_state *, payload_notify_join *);
+typedef payload_notify_join payload_notify_leave;
+void client_skat_state_notify_leave(skat_client_state *, payload_notify_leave *);
+
 int skat_state_apply(skat_state *, action *, player *, server *);
 void skat_state_tick(skat_state *, server *);
 

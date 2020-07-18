@@ -15,6 +15,7 @@ typedef struct client {
   char *host;
   char *name;
   skat_client_state cs;
+  player *pls[4];
 } client;
 
 void client_acquire_state_lock(client *c);
@@ -22,6 +23,8 @@ void client_release_state_lock(client *c);
 
 void client_disconnect_connection(client *c, connection_c2s *conn);
 void client_handle_resync(client *c, payload_resync *pl);
+void client_notify_join(client *, payload_notify_join *);
+void client_notify_leave(client *, payload_notify_leave *);
 
 void client_init(client *c, char *host, int port, char *name);
 _Noreturn void client_run(client *c, int resume);

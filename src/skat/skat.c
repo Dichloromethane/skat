@@ -370,3 +370,13 @@ skat_state_init(skat_state *ss) {
   memset(ss->sgs.score, 0, 4 * sizeof(int));
   memset(ss->sgs.active_players, -1, 3 * sizeof(int));
 }
+
+void
+client_skat_state_notify_join(skat_client_state *cs, payload_notify_join *pl_nj) {
+  DTODO_PRINTF("We don't yet know what to do here"); //TODO: this
+}
+
+void
+client_skat_state_notify_leave(skat_client_state *cs, payload_notify_leave *pl_nl) {
+  DTODO_PRINTF("... Neither do we here"); //TODO: this
+}

@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <sys/syscall.h>
 #include <unistd.h>
+#include <pthread.h>
 
 int util_rand_int(int min, int max);
 unsigned int round_to_next_pow2(unsigned int n);
@@ -34,13 +35,18 @@ void perm(int *, int, int);
   } while (0)
 
 #ifdef HAS_DEBUG_PRINTF
+
+extern pthread_mutex_t debug_printf_lock;
+
 #define DEBUG_PRINTF_RAW(fmt, ...) dprintf(2, fmt, ##__VA_ARGS__)
 #define DEBUG_PRINTF_LABEL(label, fmt, ...) \
   do { \
 	char *debug_pr_123456789; \
 	asprintf(&debug_pr_123456789, "(%s:%d)", __func__, __LINE__); \
+	pthread_mutex_lock(&debug_printf_lock);\
 	DEBUG_PRINTF_RAW(label " %s\n     " fmt "\n", debug_pr_123456789, \
 					 ##__VA_ARGS__); \
+	pthread_mutex_unlock(&debug_printf_lock);\
 	free(debug_pr_123456789); \
   } while (0)
 

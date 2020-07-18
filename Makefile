@@ -1,7 +1,8 @@
 CC=gcc
 
-WARNINGS=-Wall -Wextra -Wfatal-errors -Wno-unused-parameter -Wno-unused-function -Wno-unused-but-set-variable \
-         -Wno-unknown-pragmas -Wno-char-subscripts -Wno-switch-unreachable -Wno-dangling-else -Wno-unused-result
+WARNINGS=-Wall -Wextra -Wno-unused-parameter -Wno-unused-function -Wno-unused-but-set-variable \
+         -Wno-unknown-pragmas -Wno-char-subscripts -Wno-switch-unreachable -Wno-dangling-else \
+		 -Wno-unused-result -Wfatal-errors 
 
 CPPFLAGS=-MMD -MP -pthread $(INCLUDEDIR_FLAGS) # -I /usr/include/libpng16
 #CFLAGS=-O3 -ftree-vectorize -mcpu=native -mtune=native -flto $(EXTRA_CFLAGS)
@@ -43,7 +44,8 @@ OBJ=$(SKAT_OBJ) $(SERVER_OBJ) $(CLIENT_OBJ)
 
 DEP=$(OBJ:.o=.d)
 
-.PHONY: default all png clean distclean force_rebuild
+ 
+.PHONY: default all png clean distclean
 
 default: all
 
