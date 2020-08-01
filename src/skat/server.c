@@ -105,7 +105,7 @@ server_disconnect_connection(server *s, connection_s2c *c) {
   player *pl;
   pl = server_get_player_by_gupid(s, c->gupid);
 
-  skat_state_notify_disconnect(&s->skat_state, pl, s);
+  skat_state_notify_disconnect(&s->ss, pl, s);
   FOR_EACH_ACTIVE(s, i, {
 	if (!player_equals_by_name(pl, s->ps[i]))
 	  conn_notify_disconnect(&s->conns[i], pl);
@@ -134,7 +134,7 @@ server_release_state_lock(server *s) {
 void
 server_resync_player(server *s, player *pl, skat_client_state *cs) {
   DEBUG_PRINTF("Resync requested by %s", pl->name.name);
-  skat_resync_player(&s->skat_state, cs, pl);
+  skat_resync_player(&s->ss, cs, pl);
 }
 
 void
@@ -150,7 +150,7 @@ server_tick(server *s) {
 	  continue;
 
 	while (conn_dequeue_action(&s->conns[i].c, &a)) {
-	  if (!skat_state_apply(&s->skat_state, &a, s->ps[i], s)) {
+	  if (!skat_server_state_apply(&s->ss, &a, s->ps[i], s)) {
 		DEBUG_PRINTF("Received illegal action of type %s from player %s with "
 					 "id %ld, rejecting",
 					 action_name_table[a.type], s->ps[i]->name.name, a.id);
@@ -160,7 +160,7 @@ server_tick(server *s) {
 		conn_enqueue_event(&s->conns[i].c, &err_ev);
 	  }
 	}
-	skat_state_tick(&s->skat_state, s);
+	skat_server_state_tick(&s->ss, s);
   });
 
   server_release_state_lock(s);
@@ -170,7 +170,7 @@ void
 server_notify_join(server *s, int gupid) {
   player *pl = server_get_player_by_gupid(s, gupid);
   DEBUG_PRINTF("Player %s joined", pl->name.name);
-  skat_state_notify_join(&s->skat_state, pl, s);
+  skat_state_notify_join(&s->ss, pl, s);
   FOR_EACH_ACTIVE(s, i, {
 	if (i != gupid)
 	  conn_notify_join(&s->conns[i], pl);
@@ -257,8 +257,8 @@ server_init(server *s, int port) {
   s->ncons = 0;
   s->port = port;
   s->playermask = 0;
-  memset(s->ps, '\0', 4 * sizeof(player *));
-  skat_state_init(&s->skat_state);
+  memset(s->ps, '\0', sizeof(s->ps));
+  skat_state_init(&s->ss);
 }
 
 static void

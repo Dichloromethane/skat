@@ -54,6 +54,7 @@ GAME_PHASE_HDR_TABLE_END
 extern char *game_phase_name_table[];
 
 typedef struct server server;
+typedef struct client client;
 
 typedef struct {
   int reizwert;
@@ -97,10 +98,10 @@ typedef struct {
 								// Has to be initialzied after reizen
   card_collection stiche_buf[3];// indexed via *stiche (3 weil ramschen)
   int spielwert;
-} skat_state;
+} skat_server_state;
 
-void skat_state_notify_disconnect(skat_state *, player *, server *);
-void skat_state_notify_join(skat_state *, player *, server *);
+void skat_state_notify_disconnect(skat_server_state *, player *, server *);
+void skat_state_notify_join(skat_server_state *, player *, server *);
 
 struct payload_notify_join;
 typedef struct payload_notify_join payload_notify_join;
@@ -108,12 +109,15 @@ void client_skat_state_notify_join(skat_client_state *, payload_notify_join *);
 typedef payload_notify_join payload_notify_leave;
 void client_skat_state_notify_leave(skat_client_state *, payload_notify_leave *);
 
-int skat_state_apply(skat_state *, action *, player *, server *);
-void skat_state_tick(skat_state *, server *);
+int skat_server_state_apply(skat_server_state *ss, action *a, player *pl, server *s);
+void skat_server_state_tick(skat_server_state *ss, server *s);
 
-void skat_resync_player(skat_state *, skat_client_state *, player *);
+int skat_client_state_apply(skat_client_state *cs, event *e, client *s);
+void skat_client_state_tick(skat_client_state *cs, client *c);
 
-void skat_state_init(skat_state *);
+void skat_resync_player(skat_server_state *, skat_client_state *, player *);
+
+void skat_state_init(skat_server_state *);
 
 #endif
 #endif

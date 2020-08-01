@@ -9,22 +9,22 @@
 #include "skat/skat.h"
 
 void
-skat_state_notify_disconnect(skat_state *ss, player *pl, server *s) {
+skat_state_notify_disconnect(skat_server_state *ss, player *pl, server *s) {
   DTODO_PRINTF("TODO: implement notify_disconnect");// TODO: implement
 }
 
 void
-skat_state_notify_join(skat_state *ss, player *pl, server *s) {
+skat_state_notify_join(skat_server_state *ss, player *pl, server *s) {
   DTODO_PRINTF("TODO: implement notify_join");// TODO: implement
 }
 
 void
-skat_calculate_game_result(skat_state *ss, int *score) {
+skat_calculate_game_result(skat_server_state *ss, int *score) {
   DTODO_PRINTF("TODO: implement calculate_game_result");// TODO: implement
 }
 
 static void
-get_player_hand(skat_state *ss, player *pl, card_collection *col) {
+get_player_hand(skat_server_state *ss, player *pl, card_collection *col) {
   for (int i = 0; i < 3; ++i) {
 	if (ss->sgs.active_players[i] == pl->index) {
 	  *col = ss->player_hands[i];
@@ -37,7 +37,7 @@ get_player_hand(skat_state *ss, player *pl, card_collection *col) {
 
 // Conforming to the rules. Poggers.
 static int
-distribute_cards(skat_state *ss) {
+distribute_cards(skat_server_state *ss) {
   card_collection draw_pile;
   card_collection_fill(&draw_pile);
 
@@ -72,7 +72,7 @@ distribute_cards(skat_state *ss) {
 }
 
 static game_phase
-apply_action_setup(skat_state *ss, action *a, player *pl, server *s) {
+apply_action_setup(skat_server_state *ss, action *a, player *pl, server *s) {
   event e;
   e.answer_to = a->id;
   e.player = pl->name;
@@ -92,7 +92,7 @@ apply_action_setup(skat_state *ss, action *a, player *pl, server *s) {
 }
 
 static game_phase
-apply_action_between_rounds(skat_state *ss, action *a, player *pl, server *s) {
+apply_action_between_rounds(skat_server_state *ss, action *a, player *pl, server *s) {
   int pm, ix;
   event e;
   e.answer_to = a->id;
@@ -167,7 +167,7 @@ apply_action_between_rounds(skat_state *ss, action *a, player *pl, server *s) {
 }
 
 static game_phase
-apply_action_reizen_begin(skat_state *ss, action *a, player *pl, server *s) {
+apply_action_reizen_begin(skat_server_state *ss, action *a, player *pl, server *s) {
   // remember to initialize stiche!
   event e;
   e.answer_to = a->id;
@@ -185,7 +185,7 @@ next_active_player(int player, int off) {
 }
 
 static game_phase
-apply_action_stich(skat_state *ss, action *a, player *pl, server *s, int ind) {
+apply_action_stich(skat_server_state *ss, action *a, player *pl, server *s, int ind) {
   event e;
   int curr, result;
   int winnerv;// indexed by vorhand + ap
@@ -315,7 +315,7 @@ apply_action_stich(skat_state *ss, action *a, player *pl, server *s, int card) {
 */
 
 static game_phase
-apply_action(skat_state *ss, action *a, player *pl, server *s) {
+apply_action(skat_server_state *ss, action *a, player *pl, server *s) {
   DEBUG_PRINTF("Applying action %s in skat state %s",
 			   action_name_table[a->type],
 			   game_phase_name_table[ss->sgs.cgphase]);
@@ -338,7 +338,7 @@ apply_action(skat_state *ss, action *a, player *pl, server *s) {
 }
 
 int
-skat_state_apply(skat_state *ss, action *a, player *pl, server *s) {
+skat_server_state_apply(skat_server_state *ss, action *a, player *pl, server *s) {
   game_phase new;
   new = apply_action(ss, a, pl, s);
   if (new == GAME_PHASE_INVALID)
@@ -348,10 +348,25 @@ skat_state_apply(skat_state *ss, action *a, player *pl, server *s) {
 }
 
 void
-skat_state_tick(skat_state *ss, server *s) {}
+skat_server_state_tick(skat_server_state *ss, server *s) {}
+
+int
+skat_client_state_apply(skat_client_state *cs, event *e, client *c) {
+  /*
+  game_phase new;
+  new = apply_action(ss, a, pl, s);
+  if (new == GAME_PHASE_INVALID)
+	return 0;
+  ss->sgs.cgphase = new;
+   */
+  return 1;
+}
 
 void
-skat_resync_player(skat_state *ss, skat_client_state *cs, player *pl) {
+skat_client_state_tick(skat_client_state *cs, client *c) {}
+
+void
+skat_resync_player(skat_server_state *ss, skat_client_state *cs, player *pl) {
   memset(cs, 0, sizeof(skat_client_state));
 
   cs->sgs = ss->sgs;
@@ -365,9 +380,9 @@ skat_resync_player(skat_state *ss, skat_client_state *cs, player *pl) {
 }
 
 void
-skat_state_init(skat_state *ss) {
+skat_state_init(skat_server_state *ss) {
   ss->sgs.cgphase = GAME_PHASE_SETUP;
-  memset(ss->sgs.score, 0, 4 * sizeof(int));
+  memset(ss->sgs.score, 0, sizeof(ss->sgs.score));
   memset(ss->sgs.active_players, -1, 3 * sizeof(int));
 }
 

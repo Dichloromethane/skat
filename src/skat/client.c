@@ -118,27 +118,22 @@ client_tick(client *c) {
 
   client_acquire_state_lock(c);
 
-  /*
-  action a;
-  event err_ev;
-  for (int i = 0; i < s->ncons; i++) {
-	if (!s->conns[i].c.active)
-	  continue;
-
-	while (conn_dequeue_action(&s->conns[i].c, &a)) {
-	  if (!skat_state_apply(&s->skat_state, &a, &s->ps[i], s)) {
-		DEBUG_PRINTF("Received illegal action of type %s from player %s with "
-					 "id %ld, rejecting",
-					 action_name_table[a.type], s->ps[i].id.str, a.id);
-		err_ev.type = EVENT_ILLEGAL_ACTION;
-		err_ev.answer_to = a.id;
-		copy_player_name(&err_ev.player, &s->ps[i].id);
-		conn_enqueue_event(&s->conns[i].c, &err_ev);
-	  }
+  event e;
+  // event err_ev;
+  while (conn_dequeue_event(&c->c2s.c, &e)) {
+	if (!skat_client_state_apply(&c->cs, &e, c)) {
+	  DEBUG_PRINTF("Received illegal event of type %s from server, rejecting",
+				   event_name_table[e.type]);
+	  /*
+	  err_ev.type = EVENT_ILLEGAL_ACTION;
+	  err_ev.answer_to = a.id;
+	  copy_player_name(&err_ev.player, &s->ps[i].id);
+	  conn_enqueue_event(&s->conns[i].c, &err_ev);
+	   */
 	}
-	skat_state_tick(&s->skat_state, s);
   }
-   */
+  skat_client_state_tick(&c->cs, c);
+
   client_release_state_lock(c);
 }
 

@@ -9,7 +9,7 @@
 
 typedef struct server {
   pthread_mutex_t lock;
-  skat_state skat_state;
+  skat_server_state ss;
   pthread_t conn_listener;
   int port;
   int ncons;
