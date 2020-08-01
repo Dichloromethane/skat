@@ -118,8 +118,20 @@ establish_connection_server(server *s, int fd, pthread_t handler) {
 
 	server_acquire_state_lock(s);
 
-	CH_ASSERT_NULL(!server_has_player_id(s, &pl_join->pname), &c,
-				   CONN_ERROR_PLAYER_ID_IN_USE);
+	DEBUG_PRINTF("New player join with name '%s'", pl_join->pname.name);
+	for (int i = 0; i < 4; i++) {
+	  player *pl = s->ps[i];
+	  if (pl) {
+		int active = server_is_player_active(s, i);
+		DEBUG_PRINTF("Existing player %d: '%s' (%s)", i, pl->name.name,
+					 active ? "active" : "inactive");
+	  } else {
+		DEBUG_PRINTF("Empty player slot %d", i);
+	  }
+	}
+
+	CH_ASSERT_NULL(!server_has_player_name(s, &pl_join->pname), &c,
+				   CONN_ERROR_PLAYER_NAME_IN_USE);
 
 	CH_ASSERT_NULL(s2c = server_get_free_connection(s, &gupid), &c,
 				   CONN_ERROR_TOO_MANY_PLAYERS);
@@ -147,16 +159,27 @@ establish_connection_server(server *s, int fd, pthread_t handler) {
 	send_package(&s2c->c, &p);
 
 	return s2c;
-  }
-  if (p.type == PACKAGE_CONN_RESUME) {
+  } else if (p.type == PACKAGE_CONN_RESUME) {
 	payload_resume *pl_resume = p.payload.pl_rm;
 
 	server_acquire_state_lock(s);
 
+	DEBUG_PRINTF("Resuming player join with name '%s'", pl_resume->pname.name);
+	for (int i = 0; i < 4; i++) {
+	  player *pl = s->ps[i];
+	  if (pl) {
+		int active = server_is_player_active(s, i);
+		DEBUG_PRINTF("Existing player %d: %s (%s)", i, pl->name.name,
+					 active ? "active" : "inactive");
+	  } else {
+		DEBUG_PRINTF("Empty player slot %d", i);
+	  }
+	}
+
 	CH_ASSERT_NULL(
 			s2c = server_get_connection_by_pname(s, &pl_resume->pname, &gupid),
-			&c, CONN_ERROR_NO_SUCH_PLAYER_ID);
-	CH_ASSERT_NULL(!s2c->c.active, &s2c->c, CONN_ERROR_PLAYER_ID_IN_USE);
+			&c, CONN_ERROR_NO_SUCH_PLAYER_NAME);
+	CH_ASSERT_NULL(!s2c->c.active, &s2c->c, CONN_ERROR_PLAYER_NAME_IN_USE);
 
 	init_conn_s2c(s2c, &c);
 	s2c->c.active = 1;
@@ -177,6 +200,7 @@ establish_connection_server(server *s, int fd, pthread_t handler) {
 
 	return s2c;
   }
+
   CH_ASSERT_NULL(0, &c, CONN_ERROR_INVALID_CONN_STATE);
   __builtin_unreachable();
 }
@@ -229,7 +253,7 @@ conn_await_package(connection *c, package *p, int (*acceptor)(package *)) {
 
 static int
 conf_resync_acceptor(package *p) {
-  return p->type == PACKAGE_RESYNC;
+  return p->type == PACKAGE_ERROR || p->type == PACKAGE_RESYNC;
 }
 
 int
@@ -295,6 +319,12 @@ establish_connection_client(client *c, int socket_fd, pthread_t handler,
   if (!retrieve_package(&c2s->c, &p))
 	return NULL;
 
+  if (p.type == PACKAGE_ERROR) {
+	DERROR_PRINTF("Encountered error %s while connecting to server",
+				  conn_error_name_table[p.payload.pl_er->type]);
+	return NULL;
+  }
+
   CH_ASSERT_NULL((!resume && p.type == PACKAGE_CONFIRM_JOIN)
 						 || (resume && p.type == PACKAGE_CONFIRM_RESUME),
 				 &c2s->c, CONN_ERROR_INVALID_CONN_STATE);
@@ -308,6 +338,12 @@ establish_connection_client(client *c, int socket_fd, pthread_t handler,
 
   if (!conn_await_package(&c2s->c, &p, conf_resync_acceptor))
 	return NULL;
+
+  if (p.type == PACKAGE_ERROR) {
+	DERROR_PRINTF("Encountered error %s while resyncing with server",
+				  conn_error_name_table[p.payload.pl_er->type]);
+	return NULL;
+  }
 
   client_handle_resync(c, p.payload.pl_rs);
 
@@ -341,11 +377,13 @@ conn_resync_player(server *s, connection_s2c *c) {
   p.payload_size = sizeof(payload_resync);
   p.payload.pl_rs = &pl_rs;
 
-  // FIXME: valgrind "Syscall param socketcall.sendto(msg) points to uninitialised byte(s)"
+  // FIXME: valgrind "Syscall param socketcall.sendto(msg) points to
+  // uninitialised byte(s)"
   send_package(&c->c, &p);
 
   package_clean(&p);
 
+  // TODO: deal with PACKAGE_ERROR ?
   int still_connected =
 		  conn_await_package(&c->c, &p, conf_resync_confirm_acceptor);
   package_free(&p);

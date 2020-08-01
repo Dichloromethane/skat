@@ -10,21 +10,21 @@
 
 #define FOR_EACH_ACTIVE(s, var, block) \
   for (int var = 0; var < 4; var++) { \
-	if (!is_active(s, var)) \
+	if (!server_is_player_active(s, var)) \
 	  continue; \
 	else \
 	  block \
   }
 
-static int
-is_active(server *s, int gupid) {
+int
+server_is_player_active(server *s, int gupid) {
   return (s->playermask >> gupid) & 1;
 }
 
 int
-server_has_player_id(server *s, player_name *pid) {
+server_has_player_name(server *s, player_name *pname) {
   for (int i = 0; i < 4; i++)// otherwise we can't recover connections
-	if (!&s->ps[i] && player_name_equals(&s->ps[i]->name, pid))
+	if (s->ps[i] != NULL && player_name_equals(&s->ps[i]->name, pname))
 	  return 1;
   return 0;
 }
@@ -169,7 +169,7 @@ server_tick(server *s) {
 void
 server_notify_join(server *s, int gupid) {
   player *pl = server_get_player_by_gupid(s, gupid);
-  DEBUG_PRINTF("Player %s joined", pl->name.name);
+  DEBUG_PRINTF("Player '%s' joined with gupid %d", pl->name.name, gupid);
   skat_state_notify_join(&s->ss, pl, s);
   FOR_EACH_ACTIVE(s, i, {
 	if (i != gupid)

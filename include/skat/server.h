@@ -18,7 +18,8 @@ typedef struct server {
   int playermask;
 } server;
 
-int server_has_player_id(server *, player_name *);
+int server_is_player_active(server *s, int gupid);
+int server_has_player_name(server *s, player_name *pname);
 connection_s2c *server_get_free_connection(server *, int *);
 connection_s2c *server_get_connection_by_pname(server *s, player_name *pname,
 											   int *n);
