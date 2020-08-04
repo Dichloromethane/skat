@@ -17,8 +17,14 @@ LDLIBS_CLIENT=$(LDLIBS) -lglfw -lGL -ldl -lfreetype -lm # -lGLU -lX11 -lXrandr -
 TOOLSDIR=tools/
 
 INCLUDEDIR=include/ conf/
+SKAT_INCLUDEDIR=include/skat/
+SERVER_INCLUDEDIR=include/server/
+CLIENT_INCLUDEDIR=include/client/
+
+XMACROSDIR=defs/
+
 SYSTEM_INCLUDES=/usr/include/freetype2
-INCLUDEDIR_FLAGS=$(addprefix -I,$(INCLUDEDIR) $(SYSTEM_INCLUDES))
+INCLUDEDIR_FLAGS=$(addprefix -I,$(INCLUDEDIR) $(XMACROSDIR) $(SYSTEM_INCLUDES))
 
 SOURCEDIR=src/
 SKAT_SOURCEDIR=$(SOURCEDIR)skat/
@@ -35,7 +41,9 @@ SKAT_SOURCE=$(wildcard $(SKAT_SOURCEDIR)*.c)
 SERVER_SOURCE=$(wildcard $(SERVER_SOURCEDIR)*.c)
 CLIENT_SOURCE=$(wildcard $(CLIENT_SOURCEDIR)*.c)
 SOURCE=$(SKAT_SOURCE) $(SERVER_SOURCE) $(CLIENT_SOURCE)
-HEADER=$(wildcard $(SKAT_SOURCEDIR)*.h) $(wildcard $(SERVER_SOURCEDIR)*.h) $(wildcard $(CLIENT_SOURCEDIR)*.h)
+
+HEADER=$(wildcard $(addsuffix *.h,$(INCLUDEDIR))) $(wildcard $(SKAT_INCLUDEDIR)*.h) $(wildcard $(SERVER_INCLUDEDIR)*.h) $(wildcard $(CLIENT_INCLUDEDIR)*.h)
+XMACROS=$(wildcard $(XMACROSDIR)*.def)
 
 SKAT_OBJ=$(patsubst $(SOURCEDIR)%,$(BUILDDIR)%,$(SKAT_SOURCE:.c=.o))
 SERVER_OBJ=$(patsubst $(SOURCEDIR)%,$(BUILDDIR)%,$(SERVER_SOURCE:.c=.o))
@@ -70,7 +78,7 @@ clean:
 	$(RM) $(DEP) $(OBJ) dep_graph.png
 	-rmdir $(BUILDDIRS)
 
-format: $(SOURCE) $(ALL_HEADERS)
+format: $(SOURCE) $(HEADER) $(XMACROS)
 	clang-format -i $^
 
 png:

@@ -19,6 +19,16 @@
 #define CH_ASSERT_0(stmt, c, err)    CH_ASSERT(stmt, c, err, 0)
 #define CH_ASSERT_NULL(stmt, c, err) CH_ASSERT(stmt, c, err, NULL)
 
+#define ATOMIC_QUEUE_NO_INCLUDE_HEADER
+#define TYPE action
+#include "atomic_queue.def"
+#undef TYPE
+
+#define TYPE event
+#include "atomic_queue.def"
+#undef TYPE
+#undef ATOMIC_QUEUE_NO_INCLUDE_HEADER
+
 #undef CONNECTION_C_HDR
 #define CONNECTION_HDR_TO_STRING
 

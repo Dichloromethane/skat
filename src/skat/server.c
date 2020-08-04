@@ -194,13 +194,13 @@ server_handler(void *args) {
 	close(hargs->conn_fd);
 	return NULL;
   }
+  DEBUG_PRINTF("Connection with %d established, commencing normal operations",
+               hargs->conn_fd);
   for (;;) {
 	if (!conn_handle_incoming_packages_server(hargs->s, conn)) {
 	  DEBUG_PRINTF("Connection with %d closed", hargs->conn_fd);
 	  return NULL;
 	}
-	DEBUG_PRINTF("Connection with %d established, commencing normal operations",
-				 hargs->conn_fd);
 	conn_handle_events_server(conn);
   }
 }

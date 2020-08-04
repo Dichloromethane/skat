@@ -1,0 +1,64 @@
+#include <pthread.h>
+#include <stdlib.h>
+
+#ifndef AQ_MERGE
+#define AQ_MERGE_(x, y) x##y
+#define AQ_MERGE(x, y)  AQ_MERGE_(x, y)
+#endif
+
+#ifndef AQ_COPY
+#define AQ_COPY(to, from) \
+  do { \
+	*(to) = *(from); \
+  } while (0)
+#endif
+
+#ifndef ATOMIC_QUEUE_NO_INCLUDE_HEADER
+#include "atomic_queue_header.def"
+#endif
+
+#define ATOMIC_QUEUE(type) \
+  void AQ_MERGE(init_, AQ_MERGE(type, _queue))(AQ_MERGE(type, _queue) * q) { \
+	q->head = q->tail = NULL; \
+	pthread_mutex_init(&q->lock, NULL); \
+  } \
+\
+  void AQ_MERGE(enqueue_, type)(AQ_MERGE(type, _queue) * q, type * content) { \
+	AQ_MERGE(type, _queue_node) *n = malloc(sizeof(AQ_MERGE(type, _queue_node))); \
+	AQ_COPY(&n->content, content); \
+\
+	n->next = NULL; \
+	pthread_mutex_lock(&q->lock); \
+	if (!q->head) \
+	  q->head = q->tail = n; \
+	else { \
+	  q->tail->next = n; \
+	  q->tail = n; \
+	} \
+	pthread_mutex_unlock(&q->lock); \
+  } \
+\
+  int AQ_MERGE(dequeue_, type)(AQ_MERGE(type, _queue) * q, type * content) { \
+	if (!q->head) \
+	  return 0; \
+	AQ_MERGE(type, _queue_node) *n = q->head; \
+	if (q->head == q->tail) \
+	  q->head = q->tail = NULL; \
+	else \
+	  q->head = q->head->next; \
+	if (content) \
+	  AQ_COPY(content, &n->content); \
+	free(n); \
+	return 1; \
+  } \
+\
+  void AQ_MERGE(clear_, AQ_MERGE(type, _queue))(AQ_MERGE(type, _queue) * q) { \
+	pthread_mutex_lock(&q->lock); \
+	while (AQ_MERGE(dequeue_, type)(q, NULL)) \
+	  ; \
+	pthread_mutex_unlock(&q->lock); \
+  }
+
+ATOMIC_QUEUE(TYPE)
+
+#undef ATOMIC_QUEUE

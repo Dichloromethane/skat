@@ -339,6 +339,8 @@ apply_action(skat_server_state *ss, action *a, player *pl, server *s) {
 
 int
 skat_server_state_apply(skat_server_state *ss, action *a, player *pl, server *s) {
+  DEBUG_PRINTF("Applying action %s by player '%s'", action_name_table[a->type], pl->name.name);
+
   game_phase new;
   new = apply_action(ss, a, pl, s);
   if (new == GAME_PHASE_INVALID)
@@ -352,14 +354,16 @@ skat_server_state_tick(skat_server_state *ss, server *s) {}
 
 int
 skat_client_state_apply(skat_client_state *cs, event *e, client *c) {
+  DTODO_PRINTF("Trying to apply event %s", event_name_table[e->type]);
+  return 0;
   /*
   game_phase new;
   new = apply_action(ss, a, pl, s);
   if (new == GAME_PHASE_INVALID)
 	return 0;
   ss->sgs.cgphase = new;
-   */
   return 1;
+   */
 }
 
 void

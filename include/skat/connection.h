@@ -4,7 +4,6 @@
 #define _GNU_SOURCE
 
 #include "skat/action.h"
-#include "skat/atomic_queue.h"
 #include "skat/event.h"
 #include "skat/skat.h"
 #include <pthread.h>
@@ -59,6 +58,14 @@ CONN_ERROR_HDR_TABLE_END
 // clang-format on
 
 extern char *conn_error_name_table[];
+
+#define TYPE action
+#include "atomic_queue_header.def"
+#undef TYPE
+
+#define TYPE event
+#include "atomic_queue_header.def"
+#undef TYPE
 
 typedef struct server server;
 typedef struct client client;

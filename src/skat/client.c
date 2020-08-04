@@ -46,6 +46,7 @@ client_conn_thread(void *args) {
 	close(cargs->socket_fd);
 	exit(EXIT_FAILURE);
   }
+
   for (;;) {
 	if (!conn_handle_incoming_packages_client(cargs->c, conn)) {
 	  return NULL;
@@ -110,6 +111,17 @@ start_client_conn(client *c, const char *host, int p, int resume) {
   args->resume = resume;
 
   pthread_create(&c->conn_thread, NULL, client_conn_thread, args);
+}
+
+static void *client_exec_async_handler(void *args){
+  client *c = args;
+  // TODO: this
+  return NULL;
+}
+
+static void
+start_exec_async_thread(client *c) {
+  pthread_create(&c->exec_async_handler, NULL, client_exec_async_handler, c);
 }
 
 void
@@ -187,6 +199,7 @@ client_run(client *c, int resume) {
 			   resume ? "resume" : "new");
   client_acquire_state_lock(c);
   start_client_conn(c, c->host, c->port, resume);
+  start_exec_async_thread(c);
   client_release_state_lock(c);
 
   ctimer_run(&t);
@@ -194,3 +207,4 @@ client_run(client *c, int resume) {
   DERROR_PRINTF("TF did we get here");
   __builtin_unreachable();
 }
+
