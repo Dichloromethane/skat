@@ -113,15 +113,37 @@ start_client_conn(client *c, const char *host, int p, int resume) {
   pthread_create(&c->conn_thread, NULL, client_conn_thread, args);
 }
 
-static void *client_exec_async_handler(void *args){
+_Noreturn static void *
+client_exec_async_handler(void *args) {
   client *c = args;
-  // TODO: this
-  return NULL;
+
+  async_callback acb;
+  for (;;) {
+	dequeue_async_callback_blocking(&c->acq, &acb);
+	acb.do_stuff(acb.data);
+  }
 }
 
 static void
 start_exec_async_thread(client *c) {
   pthread_create(&c->exec_async_handler, NULL, client_exec_async_handler, c);
+}
+
+_Noreturn static void *
+client_io_handler(void *args) {
+  client *c = args;
+
+  DEBUG_PRINTF("Starting IO Thread");
+
+  async_callback acb;
+  for (;; dequeue_async_callback_blocking(&c->acq, &acb)) {
+	// printf("IO\n");
+  }
+}
+
+static void
+start_io_thread(client *c) {
+  pthread_create(&c->io_handler, NULL, client_io_handler, c);
 }
 
 void
@@ -177,6 +199,7 @@ void
 client_init(client *c, char *host, int port, char *name) {
   DEBUG_PRINTF("Initializing client '%s' for server '%s:%d'", name, host, port);
   pthread_mutex_init(&c->lock, NULL);
+  init_async_callback_queue(&c->acq);
   c->host = host;
   c->port = port;
   c->name = name;
@@ -200,6 +223,7 @@ client_run(client *c, int resume) {
   client_acquire_state_lock(c);
   start_client_conn(c, c->host, c->port, resume);
   start_exec_async_thread(c);
+  start_io_thread(c);
   client_release_state_lock(c);
 
   ctimer_run(&t);
@@ -207,4 +231,3 @@ client_run(client *c, int resume) {
   DERROR_PRINTF("TF did we get here");
   __builtin_unreachable();
 }
-

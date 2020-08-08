@@ -3,6 +3,7 @@
 #define _GNU_SOURCE
 
 #include "skat/connection.h"
+#include "skat/exec_async.h"
 #include "skat/package.h"
 #include "skat/skat.h"
 #include "skat/util.h"
@@ -12,6 +13,8 @@ typedef struct client {
   pthread_mutex_t lock;
   pthread_t conn_thread;
   pthread_t exec_async_handler;
+  pthread_t io_handler;
+  async_callback_queue acq;
   connection_c2s c2s;
   int port;
   char *host;
