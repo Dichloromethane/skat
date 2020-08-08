@@ -45,8 +45,10 @@
 \
   int AQ_MERGE(dequeue_, type)(AQ_MERGE(type, _queue) * q, type * content) { \
 	pthread_mutex_lock(&q->lock); \
-	if (!q->head) \
+	if (!q->head) { \
+	  pthread_mutex_unlock(&q->lock); \
 	  return 0; \
+	} \
 	AQ_MERGE(type, _queue_node) *n = q->head; \
 	if (q->head == q->tail) \
 	  q->head = q->tail = NULL; \
@@ -89,7 +91,7 @@
 \
   void AQ_MERGE(clear_, AQ_MERGE(type, _queue))(AQ_MERGE(type, _queue) * q) { \
 	pthread_mutex_lock(&q->lock); \
-	while (!AQ_MERGE(dequeue_, type)(q, NULL)) \
+	while (!AQ_MERGE(internal_dequeue_, type)(q, NULL)) \
 	  ; \
 	pthread_mutex_unlock(&q->lock); \
   }
