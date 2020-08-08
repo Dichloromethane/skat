@@ -2,6 +2,7 @@
 #include "conf.h"
 #include "skat/ctimer.h"
 #include "skat/util.h"
+#include <errno.h>
 #include <netinet/in.h>
 #include <stdlib.h>
 #include <string.h>
@@ -195,7 +196,7 @@ server_handler(void *args) {
 	return NULL;
   }
   DEBUG_PRINTF("Connection with %d established, commencing normal operations",
-               hargs->conn_fd);
+			   hargs->conn_fd);
   for (;;) {
 	if (!conn_handle_incoming_packages_server(hargs->s, conn)) {
 	  DEBUG_PRINTF("Connection with %d closed", hargs->conn_fd);
@@ -236,17 +237,21 @@ server_listener(void *args) {
 static void
 server_start_conn_listener(server *s, int p) {
   server_listener_args *args;
-  int opt = 1;
+  // int opt = 1;
   DEBUG_PRINTF("Starting connection listener");
   args = malloc(sizeof(server_listener_args));
   args->s = s;
   args->socket_fd = socket(AF_INET, SOCK_STREAM, 0);
-  setsockopt(args->socket_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt,
-			 sizeof(opt));
+  /*setsockopt(args->socket_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt,
+			 sizeof(opt));*/
   args->addr.sin_family = AF_INET;
   args->addr.sin_addr.s_addr = INADDR_ANY;
   args->addr.sin_port = htons(p);
-  bind(args->socket_fd, (struct sockaddr *) &args->addr, sizeof(args->addr));
+  if (bind(args->socket_fd, (struct sockaddr *) &args->addr, sizeof(args->addr))
+	  == -1) {
+	DERROR_PRINTF("bind: %s", strerror(errno));
+	exit(EXIT_FAILURE);
+  }
   pthread_create(&s->conn_listener, NULL, server_listener, args);
 }
 

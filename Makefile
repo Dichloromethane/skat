@@ -1,4 +1,4 @@
-CC=gcc-10
+CC=gcc
 
 WARNINGS=-Wall -Wextra -Wno-unused-parameter -Wno-unused-function -Wno-unused-but-set-variable \
          -Wno-unknown-pragmas -Wno-char-subscripts -Wno-switch-unreachable -Wno-dangling-else \
