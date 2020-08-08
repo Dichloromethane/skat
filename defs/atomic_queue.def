@@ -21,24 +21,30 @@
   void AQ_MERGE(init_, AQ_MERGE(type, _queue))(AQ_MERGE(type, _queue) * q) { \
 	q->head = q->tail = NULL; \
 	pthread_mutex_init(&q->lock, NULL); \
+	pthread_cond_init(&q->not_empty, NULL); \
   } \
 \
+\
   void AQ_MERGE(enqueue_, type)(AQ_MERGE(type, _queue) * q, type * content) { \
-	AQ_MERGE(type, _queue_node) *n = malloc(sizeof(AQ_MERGE(type, _queue_node))); \
+	AQ_MERGE(type, _queue_node) *n = \
+			malloc(sizeof(AQ_MERGE(type, _queue_node))); \
 	AQ_COPY(&n->content, content); \
 \
 	n->next = NULL; \
 	pthread_mutex_lock(&q->lock); \
-	if (!q->head) \
+	if (!q->head) { \
 	  q->head = q->tail = n; \
-	else { \
+	  pthread_cond_signal(&q->not_empty); \
+	} else { \
 	  q->tail->next = n; \
 	  q->tail = n; \
 	} \
 	pthread_mutex_unlock(&q->lock); \
   } \
 \
+\
   int AQ_MERGE(dequeue_, type)(AQ_MERGE(type, _queue) * q, type * content) { \
+	pthread_mutex_lock(&q->lock); \
 	if (!q->head) \
 	  return 0; \
 	AQ_MERGE(type, _queue_node) *n = q->head; \
@@ -46,15 +52,28 @@
 	  q->head = q->tail = NULL; \
 	else \
 	  q->head = q->head->next; \
+	pthread_mutex_unlock(&q->lock); \
+\
 	if (content) \
 	  AQ_COPY(content, &n->content); \
 	free(n); \
 	return 1; \
   } \
 \
+\
+  void AQ_MERGE(dequeue_, AQ_MERGE(type, _blocking))( \
+		  AQ_MERGE(type, _queue) * q, type * content) { \
+	pthread_mutex_lock(&q->lock); \
+	while (!AQ_MERGE(dequeue_, type)(q, content)) { \
+	  pthread_cond_wait(&q->not_empty, &q->lock); \
+	} \
+	pthread_mutex_unlock(&q->lock); \
+  } \
+\
+\
   void AQ_MERGE(clear_, AQ_MERGE(type, _queue))(AQ_MERGE(type, _queue) * q) { \
 	pthread_mutex_lock(&q->lock); \
-	while (AQ_MERGE(dequeue_, type)(q, NULL)) \
+	while (!AQ_MERGE(dequeue_, type)(q, NULL)) \
 	  ; \
 	pthread_mutex_unlock(&q->lock); \
   }
