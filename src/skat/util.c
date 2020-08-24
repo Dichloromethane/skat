@@ -1,10 +1,10 @@
 #include "skat/util.h"
 #include <fcntl.h>
+#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <pthread.h>
 
 int random_fd;
 
@@ -29,9 +29,19 @@ util_rand_int(const int min, const int max) {
   return (random % (max - min)) + min;
 }
 
-unsigned int
-round_to_next_pow2(unsigned int n) {
+size_t
+round_to_next_pow2(size_t n) {
   return n <= 1 ? 1 : 1 << (32 - __builtin_clz(n - 1));
+}
+
+size_t
+minst(size_t a, size_t b) {
+  return a < b ? a : b;
+}
+
+size_t
+maxst(size_t a, size_t b) {
+  return a > b ? a : b;
 }
 
 float
