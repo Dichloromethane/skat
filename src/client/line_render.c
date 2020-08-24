@@ -61,10 +61,10 @@ render_line(color col, float start_x, float start_y, float end_x, float end_y) {
 
 void
 render_box(color col, float start_x, float start_y, float width, float height) {
-  float min_x = minf(start_x, start_x + width);
-  float max_x = maxf(start_x, start_x + width);
-  float min_y = minf(start_y, start_y + height);
-  float max_y = maxf(start_y, start_y + height);
+  float min_x = MIN(start_x, start_x + width);
+  float max_x = MAX(start_x, start_x + width);
+  float min_y = MIN(start_y, start_y + height);
+  float max_y = MAX(start_y, start_y + height);
 
   shader_use(ls.shd);
 

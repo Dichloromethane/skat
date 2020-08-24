@@ -9,12 +9,11 @@
 #include <sys/syscall.h>
 #include <unistd.h>
 
+#define MIN(a, b) (a < b ? a : b)
+#define MAX(a, b) (a > b ? a : b)
+
 int util_rand_int(int min, int max);
 size_t round_to_next_pow2(size_t n);
-size_t minst(size_t a, size_t b);
-size_t maxst(size_t a, size_t b);
-float minf(float a, float b);
-float maxf(float a, float b);
 void perm(int *, int, int);
 
 #define ERROR_COLOR "\e[31m"

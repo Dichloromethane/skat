@@ -17,8 +17,9 @@ typedef struct {
   float adv_y;
   unsigned int bm_w;
   unsigned int bm_h;
-  int bm_l;
-  int bm_t;
+  int bm_l;// how many units to the left are missing from the bitmap
+  int bm_t;// how many units are above the bottom line
+  unsigned int bm_bottom_h;// how many units are below the bottom line
   unsigned int row_width;
   unsigned int row_height;
   unsigned int tex_x;
@@ -34,6 +35,9 @@ typedef struct {
   unsigned int width;
   unsigned int height;
   unsigned int max_row_height;
+  unsigned int max_glyph_bottom_height;
+  unsigned int max_glyph_top_height;
+  unsigned int max_glyph_height;
   shader *shd;
   GLint attribute_coord;
   GLint uniform_tex;

@@ -100,7 +100,7 @@ str_buf_n_replace(str_buf *sb, const char *str, size_t len, size_t index) {
   if (len == 0)
 	return;
 
-  sb->len = maxst(sb->len, index + len);
+  sb->len = MAX(sb->len, index + len);
 
   str_buf_ensure_capacity(sb, sb->len + 1);
 
@@ -132,4 +132,16 @@ str_buf_append_n_str(str_buf *sb_existing, const char *str, size_t len) {
   strncpy(&sb_existing->buf[sb_existing->len], str, len);
 
   sb_existing->len += len;
+  sb_existing->buf[sb_existing->len] = '\0';
+}
+
+void
+str_buf_remove(str_buf *sb, size_t amount) {
+  if (amount > sb->len) {
+	DERROR_PRINTF("Cannot remove more than buffer length");
+	exit(EXIT_FAILURE);
+  }
+
+  sb->len -= amount;
+  sb->buf[sb->len] = '\0';
 }

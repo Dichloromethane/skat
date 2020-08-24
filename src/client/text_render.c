@@ -4,6 +4,7 @@
 #include "client/constants.h"
 #include "client/linmath.h"
 #include "client/text_render.h"
+#include "skat/util.h"
 #include <client/vertex.h>
 #include <stdarg.h>
 #include <string.h>
@@ -62,8 +63,7 @@ text_render_init() {
 
   FT_Face font_face;
   // FIXME: calculate path
-  err = FT_New_Face(ft_library, "./font/LiberationSerif-Regular.ttf", 0,
-					&font_face);
+  err = FT_New_Face(ft_library, "./font/freefont/FreeMono.otf", 0, &font_face);
   if (err != FT_Err_Ok) {
 	const char *message = get_ft_error_message(err);
 	printf("Error: Could not load font file: %s (0x%02x)\n", message, err);
@@ -105,11 +105,15 @@ text_render_init() {
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
   ts.max_row_height = 0;
+  ts.max_glyph_bottom_height = 0;
+  ts.max_glyph_top_height = 0;
+  ts.max_glyph_height = 0;
 
   unsigned int height = 0;
   unsigned int row_width = 0;
   unsigned int row_height = 0;
   unsigned char row_start = 0;
+
   for (unsigned char c = 0; c < 128; c++) {
 	err = FT_Load_Char(font_face, c, FT_LOAD_RENDER);
 	if (err != FT_Err_Ok) {
@@ -157,9 +161,9 @@ text_render_init() {
 		rcd->off_y = (float) height / (float) ts.height;
 	  }
 	  height += row_height;
-	  if (row_height > ts.max_row_height) {
+	  if (row_height > ts.max_row_height)
 		ts.max_row_height = row_height;
-	  }
+
 	  row_width = 0;
 	  row_height = 0;
 	  row_start = c;
@@ -167,6 +171,12 @@ text_render_init() {
 
 	cd->tex_x = row_width;
 	cd->off_x = (float) row_width / (float) ts.width;
+
+	cd->bm_bottom_h = MAX(0, (int) cd->bm_h - cd->bm_t);
+	if (ts.max_glyph_bottom_height < cd->bm_bottom_h)
+	  ts.max_glyph_bottom_height = cd->bm_bottom_h;
+	if (cd->bm_t > 0 && ts.max_glyph_top_height < (unsigned int) cd->bm_t)
+	  ts.max_glyph_top_height = cd->bm_t;
 
 	row_width += w;
 	if (h > row_height) {
@@ -187,6 +197,8 @@ text_render_init() {
 	ts.max_row_height = row_height;
   }
 
+  ts.max_glyph_height = ts.max_glyph_bottom_height + ts.max_glyph_top_height;
+
   /*for (unsigned char c = 0; c < 128; c++) {
 	character_data *cd = &ts.char_data[c];
 	printf("%3d: %d,%d\n", c, cd->tex_x, cd->tex_y);
@@ -203,6 +215,13 @@ text_render_init() {
 	character_data *cd = &ts.char_data[c];
 	glTexSubImage2D(GL_TEXTURE_2D, 0, cd->tex_x, cd->tex_y, cd->bm_w, cd->bm_h,
 					GL_RED, GL_UNSIGNED_BYTE, g->bitmap.buffer);
+
+	if (ts.max_glyph_top_height == cd->bm_t) {
+	  printf("max top height: %d\n", c);
+	}
+	if (ts.max_glyph_bottom_height == cd->bm_bottom_h) {
+	  printf("max bottom height: %d\n", c);
+	}
   }
 
   FT_Done_FreeType(ft_library);
@@ -278,19 +297,21 @@ text_render_print(text_render_loc trl, color col, float x, float y, float size,
 	switch (trl) {
 	  case TRL_BOTTOM_LEFT:
 		x2 = curX + tex_norm_x(c->bm_l);
-		y2 = curY - tex_norm_y(c->bm_t);
+		y2 = curY - tex_norm_y(c->bm_t)
+			 - tex_norm_y(ts.max_glyph_bottom_height);
 		w = tex_norm_x(c->bm_w);
 		h = tex_norm_y(c->bm_h);
 		break;
 	  case TRL_TOP_LEFT:
 		x2 = curX + tex_norm_x(c->bm_l);
-		y2 = curY + tex_norm_y(ts.max_row_height - c->bm_t);
+		y2 = curY - tex_norm_y(c->bm_t) + tex_norm_y(ts.max_glyph_top_height);
 		w = tex_norm_x(c->bm_w);
 		h = tex_norm_y(c->bm_h);
 		break;
 	  case TRL_CENTER_LEFT:
 		x2 = curX + tex_norm_x(c->bm_l);
-		y2 = curY + tex_norm_y(ts.max_row_height / 2.0f - c->bm_t);
+		y2 = curY - tex_norm_y(c->bm_t) + tex_norm_y(ts.max_glyph_top_height)
+			 - tex_norm_y(ts.max_glyph_height / 2.0f);
 		w = tex_norm_x(c->bm_w);
 		h = tex_norm_y(c->bm_h);
 		break;

@@ -9,6 +9,7 @@
 #include "client/shader.h"
 #include "client/text_render.h"
 #include "client/vertex.h"
+#include "skat/str_buf.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -16,6 +17,7 @@
 
 float screen_width = WIDTH;
 float screen_height = HEIGHT;
+str_buf input;
 
 static void
 error_callback(int error, const char *description) {
@@ -59,10 +61,41 @@ resize_callback(GLFWwindow *window, int width, int height) {
 
 static void
 key_callback(GLFWwindow *window, int key, int scancode, int action, int mods) {
-  printf("key_callback: key=%d scancode=%d action=%d mods=%d\n", key, scancode,
-		 action, mods);
+  const char *action_name = action == 0   ? "release"
+							: action == 1 ? "press"
+							: action == 2 ? "repeat"
+										  : "unknown";
+  const char *key_name = glfwGetKeyName(key, scancode);
+  int shift = (mods & GLFW_MOD_SHIFT) != 0;
+  int ctrl = (mods & GLFW_MOD_CONTROL) != 0;
+  int alt = (mods & GLFW_MOD_ALT) != 0;
+  int super = (mods & GLFW_MOD_SUPER) != 0;
+  int caps_lock = (mods & GLFW_MOD_CAPS_LOCK) != 0;
+  int num_lock = (mods & GLFW_MOD_NUM_LOCK) != 0;
+  printf("key_callback: key=%s (%d) scancode=%d action=%s mods=[shift=%d, "
+		 "ctrl=%d, alt=%d, super=%d, caps_lock=%d, num_lock=%d] (0x%x)\n",
+		 key_name, key, scancode, action_name, shift, ctrl, alt, super,
+		 caps_lock, num_lock, mods);
   if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
 	glfwSetWindowShouldClose(window, GLFW_TRUE);
+  else if (key == GLFW_KEY_BACKSPACE && action == GLFW_PRESS) {
+	if (input.len > 0)
+	  str_buf_remove(&input, 1);
+  } else if (key == GLFW_KEY_ENTER && action == GLFW_PRESS)
+	str_buf_empty(&input);
+}
+
+static void
+char_callback(struct GLFWwindow *window, unsigned int codepoint) {
+  if (codepoint >= 32 && codepoint <= 126) {// printable ascii character
+	printf("char_callback: '%c'\n", codepoint);
+	if (input.len >= 31) {
+	  str_buf_empty(&input);
+	}
+	str_buf_append_char(&input, (char) codepoint);
+  } else {
+	printf("char_callback: (0x%x)\n", codepoint);
+  }
 }
 
 static void
@@ -157,6 +190,7 @@ start_GRAPHICAL(void) {
 
   glfwSetWindowSizeCallback(window, resize_callback);
   glfwSetKeyCallback(window, key_callback);
+  glfwSetCharCallback(window, char_callback);
 
   glfwMakeContextCurrent(window);
 
@@ -173,6 +207,7 @@ start_GRAPHICAL(void) {
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
+  str_buf_new_from_char(&input, "TeQuBrFoJuOpThLgDq0123456789 /j");
   line_render_init();
   text_render_init();
   preprare_triangle();
@@ -185,11 +220,21 @@ start_GRAPHICAL(void) {
 
 	draw_triangle();
 
-	text_render_print(TRL_TOP_LEFT, GREEN, 10.0f, 0.0f, 1.0f,
-					  "TeQuBrFoJuOvThLaDo!");
-	text_render_print(TRL_TOP_LEFT, BLUE, 10.0f, 36.0f, 1.0f,
-					  "TeQuBrFoJuOvThLaDo?");
-	text_render_debug(1.0f, 175.0f, 1.0f);
+	render_line(GREEN, 10, 8, 900, 8);
+	text_render_print(TRL_TOP_LEFT, GREEN, 10.0f, 8.0f, 1.0f,
+					  "TeQuBrFoJuOvThLaDo! /j");
+
+	render_line(BLUE, 10, 96, 900, 96);
+	text_render_print(TRL_BOTTOM_LEFT, BLUE, 10.0f, 96.0f, 1.0f,
+					  "TeQuBrFoJuOvThLaDo? /j");
+
+    render_line(BLACK, 690, 150, 1222, 150);
+	text_render_debug(700, 150.0f, 1.0f);
+
+	render_box(RED, 9, 650 - (18 / 2), 599, 18);
+	render_line(GRAY, 9 - 1, 650, (9 - 1) + 599 + 2, 650);
+	text_render_print(TRL_CENTER_LEFT, BLACK, 10.0f, 650.0f, 0.5f, "%s",
+					  input.buf);
 
 	glfwSwapBuffers(window);
 	glfwPollEvents();

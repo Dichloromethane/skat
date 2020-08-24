@@ -34,26 +34,6 @@ round_to_next_pow2(size_t n) {
   return n <= 1 ? 1 : 1 << (32 - __builtin_clz(n - 1));
 }
 
-size_t
-minst(size_t a, size_t b) {
-  return a < b ? a : b;
-}
-
-size_t
-maxst(size_t a, size_t b) {
-  return a > b ? a : b;
-}
-
-float
-minf(float a, float b) {
-  return a < b ? a : b;
-}
-
-float
-maxf(float a, float b) {
-  return a > b ? a : b;
-}
-
 void
 perm(int *a, int size, int mask) {
   int r[size];

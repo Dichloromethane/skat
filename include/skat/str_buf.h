@@ -31,3 +31,5 @@ void str_buf_append(str_buf *sb_existing, const str_buf *str_buf_new);
 void str_buf_append_char(str_buf *sb_existing, char c);
 void str_buf_append_str(str_buf *sb_existing, const char *str);
 void str_buf_append_n_str(str_buf *sb_existing, const char *str, size_t len);
+
+void str_buf_remove(str_buf *sb, size_t amount);
