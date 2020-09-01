@@ -230,9 +230,28 @@ text_render_init() {
   FT_Done_FreeType(ft_library);
 }
 
+float
+text_render_string_width(float size, const char *fmt, ...) {
+  va_list ap;
+  va_start(ap, fmt);
+  char *text;
+  vasprintf(&text, fmt, ap);
+  va_end(ap);
+
+  float curX = 0;
+  for (char *p = text; *p; p++) {
+	character_data *c = &ts.char_data[*p];
+	curX += c->adv_x;
+  }
+
+  free(text);
+
+  return size * curX;
+}
+
 void
-text_render_print(text_render_loc trl, color col, float x, float y, float size,
-				  const char *fmt, ...) {
+text_render_printf(text_render_loc trl, color col, float x, float y, float size,
+				   const char *fmt, ...) {
   va_list ap;
   va_start(ap, fmt);
   char *text;
@@ -259,6 +278,30 @@ text_render_print(text_render_loc trl, color col, float x, float y, float size,
   glUniform4fv(ts.uniform_color, 1, rgba);
 #endif
 
+  float offX, offY;
+  switch (trl) {
+	case TRL_BOTTOM_LEFT:
+	  offX = 0.0f;
+	  offY = -(float) ts.max_glyph_bottom_height;
+	  break;
+	case TRL_TOP_LEFT:
+	  offX = 0.0f;
+	  offY = (float) ts.max_glyph_top_height;
+	  break;
+	case TRL_CENTER_LEFT:
+	  offX = 0.0f;
+	  offY = (float) ts.max_glyph_top_height
+			 - (float) ts.max_glyph_height / 2.0f;
+	  break;
+	case TRL_CENTER:
+	  offX = -text_render_string_width(1.0f, fmt, ap) / 2.0f;
+	  offY = (float) ts.max_glyph_top_height
+			 - (float) ts.max_glyph_height / 2.0f;
+	  break;
+	default:
+	  __builtin_unreachable();
+  }
+
   size_t coords_len = 6 * strlen(text);
   vertex2f_st *coords = malloc(coords_len * sizeof(vertex2f_st));
   unsigned int idx = 0;
@@ -266,34 +309,11 @@ text_render_print(text_render_loc trl, color col, float x, float y, float size,
   float curX = 0, curY = 0;
   for (char *p = text; *p; p++) {
 	character_data *c = &ts.char_data[*p];
-	float x2, y2, w, h;
 
-	switch (trl) {
-	  case TRL_BOTTOM_LEFT:
-		x2 = curX + (float) c->bm_l;
-		y2 = curY - (float) c->bm_t - (float) ts.max_glyph_bottom_height;
-		w = (float) c->bm_w;
-		h = (float) c->bm_h;
-		break;
-	  case TRL_TOP_LEFT:
-		x2 = curX + (float) c->bm_l;
-		y2 = curY - (float) c->bm_t + (float) ts.max_glyph_top_height;
-		w = (float) c->bm_w;
-		h = (float) c->bm_h;
-		break;
-	  case TRL_CENTER_LEFT:
-		x2 = curX + (float) c->bm_l;
-		y2 = curY - (float) c->bm_t + (float) ts.max_glyph_top_height
-			 - (float) ts.max_glyph_height / 2.0f;
-		w = (float) c->bm_w;
-		h = (float) c->bm_h;
-		break;
-	  case TRL_CENTER:
-		DTODO_PRINTF("TRL_CENTER");
-		break;
-	  default:
-		__builtin_unreachable();
-	}
+	float x2 = curX + (float) c->bm_l + offX;
+	float y2 = curY - (float) c->bm_t + offY;
+	float w = (float) c->bm_w;
+	float h = (float) c->bm_h;
 
 	curX += c->adv_x;
 	curY += c->adv_y;
@@ -322,7 +342,7 @@ text_render_print(text_render_loc trl, color col, float x, float y, float size,
 }
 
 void
-text_render_debug(float x, float y, float s) {
+text_render_debug(float x, float y, float size) {
   float w = (float) ts.width;
   float h = (float) ts.height;
 
@@ -339,7 +359,7 @@ text_render_debug(float x, float y, float s) {
   mat4x4 model;
   mat4x4_identity(model);
   mat4x4_translate_in_place(model, x, y, 0);
-  mat4x4_scale_aniso(model, model, s, s, 1);
+  mat4x4_scale_aniso(model, model, size, size, 1);
   glUniformMatrix4fv(ts.uniform_model, 1, GL_FALSE, (const GLfloat *) model);
 
   glEnableVertexAttribArray(ts.attribute_coord);

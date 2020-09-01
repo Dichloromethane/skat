@@ -103,7 +103,7 @@ draw_cross() {
   render_line(GRAY, 0, 0, WIDTH, HEIGHT);
   render_line(BLUE, 0, HEIGHT, WIDTH, 0);
 
-  //render_box(RED, WIDTH - 1, HEIGHT - 1, -20, -20);
+  // render_box(RED, WIDTH - 1, HEIGHT - 1, -20, -20);
 }
 
 static struct {
@@ -226,20 +226,26 @@ start_GRAPHICAL(void) {
 	render_line(RED, 0, HEIGHT - 2, WIDTH, HEIGHT - 2);
 
 	render_line(GREEN, 10, 10, 900, 10);
-	text_render_print(TRL_TOP_LEFT, GREEN, 10, 10, 1.0f,
-					  "TeQuBrFoJuOvThLaDo! /j");
+	text_render_printf(TRL_TOP_LEFT, GREEN, 10, 10, 1.0f,
+					   "TeQuBrFoJuOvThLaDo! /j");
 
 	render_line(BLUE, 10, 160, 900, 160);
-	text_render_print(TRL_BOTTOM_LEFT, BLUE, 10, 160, 1.0f,
-					  "TeQuBrFoJuOvThLaDo? /j");
+	text_render_printf(TRL_BOTTOM_LEFT, BLUE, 10, 160, 1.0f,
+					   "TeQuBrFoJuOvThLaDo? /j");
+
+    render_box(CYAN, 1440 - (880 / 2), 85 - (60 / 2), 880, 60);
+	render_line(MAGENTA, 1440 - (880 / 2), 85, 1440 + (880 / 2), 85);
+	render_line(MAGENTA, 1440, 85 - (60 / 2), 1440, 85 + (60 / 2));
+	text_render_printf(TRL_CENTER, MAGENTA, 1440, 85, 1.0f,
+					   "TeQuBrFoJuOvThLaDo? /j");
 
 	render_line(BLACK, 0, 200, WIDTH, 200);
 	text_render_debug(1, 200, 1.0f);
 
 	render_box(RED, 9, 1000 - (44 / 2), 932, 44);
 	render_line(GRAY, 9 - 1, 1000, (9 - 1) + 932 + 3, 1000);
-	text_render_print(TRL_CENTER_LEFT, BLACK, 10, 1000, 0.75f, "%s",
-					  input.buf);
+	text_render_printf(TRL_CENTER_LEFT, BLACK, 10, 1000, 0.75f, "%s",
+					   input.buf);
 
 	glfwSwapBuffers(window);
 	glfwPollEvents();
