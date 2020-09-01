@@ -1,18 +1,16 @@
 #ifndef PACKAGE_C_HDR
 #define PACKAGE_C_HDR
 
-#define _GNU_SOURCE
-
 #include "skat/connection.h"
 #include <stdint.h>
 #include <stdlib.h>
 
-// clang-format off
 #ifndef STRINGIFY
-#define STRINGIFY_ #x
+#define STRINGIFY_   #x
 #define STRINGIFY(x) STRINGIFY_(x)
 #endif
 
+// clang-format off
 #ifdef PACKAGE_HDR_TO_STRING
 #undef PACKAGE_HDR_TABLE_BEGIN
   #undef FIRST_PACKAGE

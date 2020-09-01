@@ -92,7 +92,8 @@ apply_action_setup(skat_server_state *ss, action *a, player *pl, server *s) {
 }
 
 static game_phase
-apply_action_between_rounds(skat_server_state *ss, action *a, player *pl, server *s) {
+apply_action_between_rounds(skat_server_state *ss, action *a, player *pl,
+							server *s) {
   int pm, ix;
   event e;
   e.answer_to = a->id;
@@ -167,7 +168,8 @@ apply_action_between_rounds(skat_server_state *ss, action *a, player *pl, server
 }
 
 static game_phase
-apply_action_reizen_begin(skat_server_state *ss, action *a, player *pl, server *s) {
+apply_action_reizen_begin(skat_server_state *ss, action *a, player *pl,
+						  server *s) {
   // remember to initialize stiche!
   event e;
   e.answer_to = a->id;
@@ -185,7 +187,8 @@ next_active_player(int player, int off) {
 }
 
 static game_phase
-apply_action_stich(skat_server_state *ss, action *a, player *pl, server *s, int ind) {
+apply_action_stich(skat_server_state *ss, action *a, player *pl, server *s,
+				   int ind) {
   event e;
   int curr, result;
   int winnerv;// indexed by vorhand + ap
@@ -338,8 +341,10 @@ apply_action(skat_server_state *ss, action *a, player *pl, server *s) {
 }
 
 int
-skat_server_state_apply(skat_server_state *ss, action *a, player *pl, server *s) {
-  DEBUG_PRINTF("Applying action %s by player '%s'", action_name_table[a->type], pl->name.name);
+skat_server_state_apply(skat_server_state *ss, action *a, player *pl,
+						server *s) {
+  DEBUG_PRINTF("Applying action %s by player '%s'", action_name_table[a->type],
+			   pl->name.name);
 
   game_phase new;
   new = apply_action(ss, a, pl, s);
@@ -391,11 +396,13 @@ skat_state_init(skat_server_state *ss) {
 }
 
 void
-client_skat_state_notify_join(skat_client_state *cs, payload_notify_join *pl_nj) {
-  DTODO_PRINTF("We don't yet know what to do here"); //TODO: this
+client_skat_state_notify_join(skat_client_state *cs,
+							  payload_notify_join *pl_nj) {
+  DTODO_PRINTF("We don't yet know what to do here");// TODO: this
 }
 
 void
-client_skat_state_notify_leave(skat_client_state *cs, payload_notify_leave *pl_nl) {
-  DTODO_PRINTF("... Neither do we here"); //TODO: this
+client_skat_state_notify_leave(skat_client_state *cs,
+							   payload_notify_leave *pl_nl) {
+  DTODO_PRINTF("... Neither do we here");// TODO: this
 }

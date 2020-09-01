@@ -1,8 +1,5 @@
-// clang-format off
 #ifndef EVENT_HDR
 #define EVENT_HDR
-
-#define _GNU_SOURCE
 
 #include "skat/action.h"
 #include "skat/card.h"
@@ -11,10 +8,11 @@
 #include <stdlib.h>
 
 #ifndef STRINGIFY
-#define STRINGIFY_ #x
+#define STRINGIFY_   #x
 #define STRINGIFY(x) STRINGIFY_(x)
 #endif
 
+// clang-format off
 #ifdef EVENT_HDR_TO_STRING
   #undef EVENT_HDR_TABLE_BEGIN
   #undef FIRST_EVENT

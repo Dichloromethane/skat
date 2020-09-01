@@ -1,7 +1,5 @@
 #pragma once
 
-#define _GNU_SOURCE
-
 #include "skat/connection.h"
 #include "skat/exec_async.h"
 #include "skat/package.h"

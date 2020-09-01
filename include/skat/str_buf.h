@@ -1,7 +1,5 @@
 #pragma once
 
-#define _GNU_SOURCE
-
 #include <stddef.h>
 
 #define STR_BUF_DEFAULT_MIN_CAPACITY = (16)

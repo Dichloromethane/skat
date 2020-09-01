@@ -1,7 +1,5 @@
 #pragma once
 
-#define _GNU_SOURCE
-
 #include <semaphore.h>
 
 typedef struct {

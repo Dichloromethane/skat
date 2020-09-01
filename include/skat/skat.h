@@ -1,8 +1,5 @@
-// clang-format off
 #ifndef SKAT_HDR
 #define SKAT_HDR
-
-#define _GNU_SOURCE
 
 #include "skat/action.h"
 #include "skat/card.h"
@@ -13,10 +10,11 @@
 #include "skat/stich.h"
 
 #ifndef STRINGIFY
-#define STRINGIFY_ #x
+#define STRINGIFY_   #x
 #define STRINGIFY(x) STRINGIFY_(x)
 #endif
 
+// clang-format off
 #ifdef GAME_PHASE_HDR_TO_STRING
   #undef GAME_PHASE_HDR_TABLE_BEGIN
   #undef FIRST_GAME_PHASE
@@ -107,9 +105,11 @@ struct payload_notify_join;
 typedef struct payload_notify_join payload_notify_join;
 void client_skat_state_notify_join(skat_client_state *, payload_notify_join *);
 typedef payload_notify_join payload_notify_leave;
-void client_skat_state_notify_leave(skat_client_state *, payload_notify_leave *);
+void client_skat_state_notify_leave(skat_client_state *,
+									payload_notify_leave *);
 
-int skat_server_state_apply(skat_server_state *ss, action *a, player *pl, server *s);
+int skat_server_state_apply(skat_server_state *ss, action *a, player *pl,
+							server *s);
 void skat_server_state_tick(skat_server_state *ss, server *s);
 
 int skat_client_state_apply(skat_client_state *cs, event *e, client *s);

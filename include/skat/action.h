@@ -1,17 +1,15 @@
-// clang-format off
 #ifndef ACTION_HDR
 #define ACTION_HDR
-
-#define _GNU_SOURCE
 
 #include "skat/card.h"
 #include <stdint.h>
 
 #ifndef STRINGIFY
-#define STRINGIFY_ #x
+#define STRINGIFY_   #x
 #define STRINGIFY(x) STRINGIFY_(x)
 #endif
 
+// clang-format off
 #ifdef ACTION_HDR_TO_STRING
   #undef ACTION_HDR_TABLE_BEGIN
   #undef FIRST_ACTION

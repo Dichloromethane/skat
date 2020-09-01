@@ -1,7 +1,5 @@
 #pragma once
 
-#define _GNU_SOURCE
-
 #include <stddef.h>
 
 #define PLAYER_MAX_NAME_LENGTH 256

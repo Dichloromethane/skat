@@ -1,7 +1,5 @@
 #pragma once
 
-#define _GNU_SOURCE
-
 #include "client/color.h"
 
 void line_render_init(void);

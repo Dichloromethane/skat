@@ -38,9 +38,9 @@ run(client *c) {
 static void *async_ready2(void *data) {
   client *c = data;
   if (client_is_in_readyable_state(c)) {
-    client_ready(c);
+	client_ready(c);
   } else {
-    global_has_error = 1;
+	global_has_error = 1;
 	global_error_message = "Client not readyable";
   }
 }
@@ -53,7 +53,7 @@ static void *async_ready(void *data) {
 	client_ready(c);
   } else {
 
-    show_error("Client not readyable");
+	show_error("Client not readyable");
   }
 }
 
@@ -74,11 +74,11 @@ run2() {
 	// read command (first word)
 
 	// read rest according to the command
-    // ready
+	// ready
 	if (strncmp(command, "ready", sizeof("ready")))
 	  execute_ready();
-    // play <card index>
-    else if (strncmp(command, "play", sizeof("play"))) {
+	// play <card index>
+	else if (strncmp(command, "play", sizeof("play"))) {
 		int card_index;
 		scanf("%d", &card_index);
 		execute_play(card_index);

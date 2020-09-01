@@ -1,20 +1,18 @@
 #ifndef CONNECTION_C_HDR
 #define CONNECTION_C_HDR
 
-#define _GNU_SOURCE
-
 #include "skat/action.h"
 #include "skat/event.h"
 #include "skat/skat.h"
 #include <pthread.h>
 #include <stdint.h>
 
-// clang-format off
 #ifndef STRINGIFY
-#define STRINGIFY_ #x
+#define STRINGIFY_   #x
 #define STRINGIFY(x) STRINGIFY_(x)
 #endif
 
+// clang-format off
 #ifdef CONNECTION_HDR_TO_STRING
   #undef REQ_RSP_HDR_TABLE_BEGIN
   #undef FIRST_REQ_RSP

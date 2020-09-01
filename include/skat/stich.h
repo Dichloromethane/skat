@@ -1,7 +1,5 @@
 #pragma once
 
-#define _GNU_SOURCE
-
 #include "skat/card.h"
 #include "skat/card_collection.h"
 #include "skat/game_rules.h"
