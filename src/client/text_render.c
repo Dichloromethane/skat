@@ -9,8 +9,8 @@
 #include <stdarg.h>
 #include <string.h>
 
-#define FONT_TEXTURE_ATLAS_WIDTH  (2048)
-#define FONT_TEXTURE_ATLAS_HEIGHT (2048)
+#define FONT_TEXTURE_ATLAS_WIDTH  (1024)
+#define FONT_TEXTURE_ATLAS_HEIGHT (1024)
 
 static const char *
 get_ft_error_message(FT_Error err) {
@@ -71,7 +71,8 @@ text_render_init() {
 	exit(EXIT_FAILURE);
   }
 
-  err = FT_Set_Pixel_Sizes(font_face, 0, 256);
+  // err = FT_Set_Pixel_Sizes(font_face, 0, 256);
+  err = FT_Set_Char_Size(font_face, 0, 16 * 64, 300, 300);
   if (err != FT_Err_Ok) {
 	const char *message = get_ft_error_message(err);
 	printf("Error: Could not set pixel sizes: %s (0x%02x)\n", message, err);
@@ -216,45 +217,18 @@ text_render_init() {
 	glTexSubImage2D(GL_TEXTURE_2D, 0, cd->tex_x, cd->tex_y, cd->bm_w, cd->bm_h,
 					GL_RED, GL_UNSIGNED_BYTE, g->bitmap.buffer);
 
+	/*
 	if (ts.max_glyph_top_height == cd->bm_t) {
 	  printf("max top height: %d\n", c);
 	}
 	if (ts.max_glyph_bottom_height == cd->bm_bottom_h) {
 	  printf("max bottom height: %d\n", c);
 	}
+	*/
   }
 
   FT_Done_FreeType(ft_library);
 }
-
-#define tex_norm_x(texX) \
-  _Generic((texX), float \
-		   : _tex_normf_x, int \
-		   : _tex_normi_x, unsigned int \
-		   : _tex_normui_x)(texX)
-#define tex_norm_y(texY) \
-  _Generic((texY), float \
-		   : _tex_normf_y, int \
-		   : _tex_normi_y, unsigned int \
-		   : _tex_normui_y)(texY)
-
-#define TEX_NORM_X_FUNC(type, shorttype) \
-  static inline float _tex_norm##shorttype##_x(type texX) { \
-	return texX * (float) WIDTH / 5120.0f; \
-  }
-#define TEX_NORM_Y_FUNC(type, shorttype) \
-  static inline float _tex_norm##shorttype##_y(type texY) { \
-	return texY * (float) HEIGHT / 5120.0f; \
-  }
-
-TEX_NORM_X_FUNC(float, f)
-TEX_NORM_Y_FUNC(float, f)
-
-TEX_NORM_X_FUNC(int, i)
-TEX_NORM_Y_FUNC(int, i)
-
-TEX_NORM_X_FUNC(unsigned int, ui)
-TEX_NORM_Y_FUNC(unsigned int, ui)
 
 void
 text_render_print(text_render_loc trl, color col, float x, float y, float size,
@@ -296,34 +270,33 @@ text_render_print(text_render_loc trl, color col, float x, float y, float size,
 
 	switch (trl) {
 	  case TRL_BOTTOM_LEFT:
-		x2 = curX + tex_norm_x(c->bm_l);
-		y2 = curY - tex_norm_y(c->bm_t)
-			 - tex_norm_y(ts.max_glyph_bottom_height);
-		w = tex_norm_x(c->bm_w);
-		h = tex_norm_y(c->bm_h);
+		x2 = curX + (float) c->bm_l;
+		y2 = curY - (float) c->bm_t - (float) ts.max_glyph_bottom_height;
+		w = (float) c->bm_w;
+		h = (float) c->bm_h;
 		break;
 	  case TRL_TOP_LEFT:
-		x2 = curX + tex_norm_x(c->bm_l);
-		y2 = curY - tex_norm_y(c->bm_t) + tex_norm_y(ts.max_glyph_top_height);
-		w = tex_norm_x(c->bm_w);
-		h = tex_norm_y(c->bm_h);
+		x2 = curX + (float) c->bm_l;
+		y2 = curY - (float) c->bm_t + (float) ts.max_glyph_top_height;
+		w = (float) c->bm_w;
+		h = (float) c->bm_h;
 		break;
 	  case TRL_CENTER_LEFT:
-		x2 = curX + tex_norm_x(c->bm_l);
-		y2 = curY - tex_norm_y(c->bm_t) + tex_norm_y(ts.max_glyph_top_height)
-			 - tex_norm_y(ts.max_glyph_height / 2.0f);
-		w = tex_norm_x(c->bm_w);
-		h = tex_norm_y(c->bm_h);
+		x2 = curX + (float) c->bm_l;
+		y2 = curY - (float) c->bm_t + (float) ts.max_glyph_top_height
+			 - (float) ts.max_glyph_height / 2.0f;
+		w = (float) c->bm_w;
+		h = (float) c->bm_h;
 		break;
 	  case TRL_CENTER:
-		printf("NYI\n");
+		DTODO_PRINTF("TRL_CENTER");
 		break;
 	  default:
 		__builtin_unreachable();
 	}
 
-	curX += tex_norm_x(c->adv_x);
-	curY += tex_norm_y(c->adv_y);
+	curX += c->adv_x;
+	curY += c->adv_y;
 
 	if (!w || !h) {
 	  // printf("Skipping char '%c'\n", *p);
@@ -350,8 +323,8 @@ text_render_print(text_render_loc trl, color col, float x, float y, float size,
 
 void
 text_render_debug(float x, float y, float s) {
-  float w = tex_norm_x(ts.width);
-  float h = tex_norm_y(ts.height);
+  float w = (float) ts.width;
+  float h = (float) ts.height;
 
   shader_use(ts.shd);
   glBindTexture(GL_TEXTURE_2D, ts.texture_id);

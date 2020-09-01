@@ -2,8 +2,8 @@
 
 #define _GNU_SOURCE
 
-#define WIDTH  (1280)
-#define HEIGHT (720)
+#define WIDTH  (1920)
+#define HEIGHT (1080)
 //#define RAINBOW_TEXT 1
 
 extern float screen_width;

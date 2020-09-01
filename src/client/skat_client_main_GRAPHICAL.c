@@ -94,7 +94,7 @@ char_callback(struct GLFWwindow *window, unsigned int codepoint) {
 	}
 	str_buf_append_char(&input, (char) codepoint);
   } else {
-	printf("char_callback: (0x%x)\n", codepoint);
+	printf("char_callback: (0x%02x)\n", codepoint);
   }
 }
 
@@ -103,7 +103,7 @@ draw_cross() {
   render_line(GRAY, 0, 0, WIDTH, HEIGHT);
   render_line(BLUE, 0, HEIGHT, WIDTH, 0);
 
-  render_box(RED, WIDTH - 1, HEIGHT - 1, -20, -20);
+  //render_box(RED, WIDTH - 1, HEIGHT - 1, -20, -20);
 }
 
 static struct {
@@ -113,10 +113,10 @@ static struct {
 } triangle_data;
 
 static void
-preprare_triangle(void) {
-  vertex2f_rgb triangle_vertices[3] = {{0.0f, -0.6f, 1.f, 0.f, 0.f},
-									   {-0.6f, 0.4f, 0.f, 1.f, 0.f},
-									   {0.6f, 0.4f, 0.f, 0.f, 1.f}};
+prepare_triangle(void) {
+  vertex2f_rgb triangle_vertices[3] = {{0.0f, 0.5774f, 1.f, 0.f, 0.f},
+									   {-0.5f, -0.2887f, 0.f, 1.f, 0.f},
+									   {0.5f, -0.2887f, 0.f, 0.f, 1.f}};
 
   // NOTE: OpenGL error checks have been omitted for brevity
   triangle_data.program = shader_create_load_file("./shader/test");
@@ -207,10 +207,10 @@ start_GRAPHICAL(void) {
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-  str_buf_new_from_char(&input, "TeQuBrFoJuOpThLgDq0123456789 /j");
+  str_buf_new_from_char(&input, "\1TQuBroJuOpThLgDq0123456789 /j\1");
   line_render_init();
   text_render_init();
-  preprare_triangle();
+  prepare_triangle();
 
   while (!glfwWindowShouldClose(window)) {
 	glClearColor(1, 1, 1, 1);
@@ -220,20 +220,25 @@ start_GRAPHICAL(void) {
 
 	draw_triangle();
 
-	render_line(GREEN, 10, 8, 900, 8);
-	text_render_print(TRL_TOP_LEFT, GREEN, 10.0f, 8.0f, 1.0f,
+	render_line(RED, 1, 0, 1, HEIGHT);
+	render_line(RED, WIDTH, 0, WIDTH, HEIGHT);
+	render_line(RED, 0, 0, WIDTH, 0);
+	render_line(RED, 0, HEIGHT - 2, WIDTH, HEIGHT - 2);
+
+	render_line(GREEN, 10, 10, 900, 10);
+	text_render_print(TRL_TOP_LEFT, GREEN, 10, 10, 1.0f,
 					  "TeQuBrFoJuOvThLaDo! /j");
 
-	render_line(BLUE, 10, 96, 900, 96);
-	text_render_print(TRL_BOTTOM_LEFT, BLUE, 10.0f, 96.0f, 1.0f,
+	render_line(BLUE, 10, 160, 900, 160);
+	text_render_print(TRL_BOTTOM_LEFT, BLUE, 10, 160, 1.0f,
 					  "TeQuBrFoJuOvThLaDo? /j");
 
-    render_line(BLACK, 690, 150, 1222, 150);
-	text_render_debug(700, 150.0f, 1.0f);
+	render_line(BLACK, 0, 200, WIDTH, 200);
+	text_render_debug(1, 200, 1.0f);
 
-	render_box(RED, 9, 650 - (18 / 2), 599, 18);
-	render_line(GRAY, 9 - 1, 650, (9 - 1) + 599 + 2, 650);
-	text_render_print(TRL_CENTER_LEFT, BLACK, 10.0f, 650.0f, 0.5f, "%s",
+	render_box(RED, 9, 1000 - (44 / 2), 932, 44);
+	render_line(GRAY, 9 - 1, 1000, (9 - 1) + 932 + 3, 1000);
+	text_render_print(TRL_CENTER_LEFT, BLACK, 10, 1000, 0.75f, "%s",
 					  input.buf);
 
 	glfwSwapBuffers(window);
