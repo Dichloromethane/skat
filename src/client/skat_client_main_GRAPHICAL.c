@@ -233,7 +233,7 @@ start_GRAPHICAL(void) {
 	text_render_printf(TRL_BOTTOM_LEFT, BLUE, 10, 160, 1.0f,
 					   "TeQuBrFoJuOvThLaDo? /j");
 
-    render_box(CYAN, 1440 - (880 / 2), 85 - (60 / 2), 880, 60);
+	render_box(CYAN, 1440 - (880 / 2), 85 - (60 / 2), 880, 60);
 	render_line(MAGENTA, 1440 - (880 / 2), 85, 1440 + (880 / 2), 85);
 	render_line(MAGENTA, 1440, 85 - (60 / 2), 1440, 85 + (60 / 2));
 	text_render_printf(TRL_CENTER, MAGENTA, 1440, 85, 1.0f,

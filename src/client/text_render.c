@@ -1,12 +1,10 @@
-#define _GNU_SOURCE
-#include <stdio.h>
-
+#include "client/text_render.h"
 #include "client/constants.h"
 #include "client/linmath.h"
-#include "client/text_render.h"
+#include "client/vertex.h"
 #include "skat/util.h"
-#include <client/vertex.h>
 #include <stdarg.h>
+#include <stdio.h>
 #include <string.h>
 
 #define FONT_TEXTURE_ATLAS_WIDTH  (1024)
