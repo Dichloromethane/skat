@@ -10,6 +10,8 @@
 
 #include <glad/glad.h>
 
+#define CHARACTER_COUNT (128)
+
 typedef struct {
   float adv_x;
   float adv_y;
@@ -45,7 +47,7 @@ typedef struct {
   GLint uniform_projection;
   GLint uniform_model;
   GLuint vbo;
-  character_data char_data[128];
+  character_data char_data[CHARACTER_COUNT];
 } text_state;
 
 typedef enum {

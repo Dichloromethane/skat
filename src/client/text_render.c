@@ -113,7 +113,7 @@ text_render_init() {
   unsigned int row_height = 0;
   unsigned char row_start = 0;
 
-  for (unsigned char c = 0; c < 128; c++) {
+  for (unsigned char c = 0; c < CHARACTER_COUNT; c++) {
 	err = FT_Load_Char(font_face, c, FT_LOAD_RENDER);
 	if (err != FT_Err_Ok) {
 	  const char *message = get_ft_error_message(err);
@@ -183,9 +183,9 @@ text_render_init() {
 	}
   }
   /*
-  printf("Retroactively setting width/height/y/y of %d-%d\n", row_start, 128);
+  printf("Retroactively setting width/height/y/y of %d-%d\n", row_start, CHARACTER_COUNT);
    */
-  for (unsigned rc = row_start; rc < 128; rc++) {
+  for (unsigned rc = row_start; rc < CHARACTER_COUNT; rc++) {
 	character_data *rcd = &ts.char_data[rc];
 	rcd->row_width = row_width;
 	rcd->row_height = row_height;
@@ -197,13 +197,14 @@ text_render_init() {
   }
 
   ts.max_glyph_height = ts.max_glyph_bottom_height + ts.max_glyph_top_height;
+  "\u1234";
 
-  /*for (unsigned char c = 0; c < 128; c++) {
+  /*for (unsigned char c = 0; c < CHARACTER_COUNT; c++) {
 	character_data *cd = &ts.char_data[c];
 	printf("%3d: %d,%d\n", c, cd->tex_x, cd->tex_y);
   }*/
 
-  for (unsigned char c = 0; c < 128; c++) {
+  for (unsigned char c = 0; c < CHARACTER_COUNT; c++) {
 	err = FT_Load_Char(font_face, c, FT_LOAD_RENDER);
 	if (err != FT_Err_Ok) {
 	  const char *message = get_ft_error_message(err);
