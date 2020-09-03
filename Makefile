@@ -4,7 +4,7 @@ WARNINGS=-Wall -Wextra -Wno-unused-parameter -Wno-unused-function -Wno-unused-bu
          -Wno-unknown-pragmas -Wno-char-subscripts -Wno-switch-unreachable -Wno-dangling-else \
 		 -Wno-unused-result -Wfatal-errors
 
-CPPFLAGS=-MMD -MP -pthread $(INCLUDEDIR_FLAGS) # -I /usr/include/libpng16
+CPPFLAGS=-MMD -MP -pthread $(INCLUDEDIR_FLAGS) -D _GNU_SOURCE # -I /usr/include/libpng16
 #CFLAGS=-O3 -ftree-vectorize -mcpu=native -mtune=native -flto $(EXTRA_CFLAGS)
 CFLAGS=-O0 -ggdb3 #-fsanitize=address
 
