@@ -17,7 +17,11 @@
 
 float screen_width = WIDTH;
 float screen_height = HEIGHT;
-str_buf input;
+static str_buf input;
+
+static int fullscreen_window, old_window_x, old_window_y, old_window_width,
+		old_window_height;
+static const GLFWvidmode *PRIMARY_MODE;
 
 static void
 error_callback(int error, const char *description) {
@@ -57,6 +61,23 @@ resize_callback(GLFWwindow *window, int width, int height) {
   screen_height = (float) height;
 
   printf("Resizing to %d x %d\n", width, height);
+
+  int is_fullscreen = glfwGetWindowMonitor(window) != NULL;
+  if (!is_fullscreen) {
+	old_window_width = width;
+	old_window_height = height;
+  }
+}
+
+static void
+pos_callback(GLFWwindow *window, int xpos, int ypos) {
+  printf("Moving to %d,%d\n", xpos, ypos);
+
+  int is_fullscreen = glfwGetWindowMonitor(window) != NULL;
+  if (!is_fullscreen) {
+	old_window_x = xpos;
+	old_window_y = ypos;
+  }
 }
 
 static void
@@ -78,7 +99,18 @@ key_callback(GLFWwindow *window, int key, int scancode, int action, int mods) {
 		 caps_lock, num_lock, mods);
   if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
 	glfwSetWindowShouldClose(window, GLFW_TRUE);
-  else if (key == GLFW_KEY_BACKSPACE && action == GLFW_PRESS) {
+  else if (key == GLFW_KEY_F11 && action == GLFW_PRESS) {
+	if (fullscreen_window) {
+	  fullscreen_window = 0;
+	  glfwSetWindowMonitor(window, NULL, old_window_x, old_window_y,
+						   old_window_width, old_window_height, GLFW_DONT_CARE);
+	} else {
+	  fullscreen_window = 1;
+	  glfwSetWindowMonitor(window, glfwGetPrimaryMonitor(), 0, 0,
+						   PRIMARY_MODE->width, PRIMARY_MODE->height,
+						   PRIMARY_MODE->refreshRate);
+	}
+  } else if (key == GLFW_KEY_BACKSPACE && action == GLFW_PRESS) {
 	if (input.len > 0)
 	  str_buf_remove(&input, 1);
   } else if (key == GLFW_KEY_ENTER && action == GLFW_PRESS)
@@ -168,7 +200,7 @@ draw_triangle(void) {
 }
 
 int
-start_GRAPHICAL(void) {
+start_GRAPHICAL(int fullscreen) {
   glfwSetErrorCallback(error_callback);
 
   if (!glfwInit())
@@ -181,7 +213,30 @@ start_GRAPHICAL(void) {
   glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
   // glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
 
-  GLFWwindow *window = glfwCreateWindow(WIDTH, HEIGHT, "Skat", NULL, NULL);
+  GLFWwindow *window;
+
+  GLFWmonitor *monitor = glfwGetPrimaryMonitor();
+  PRIMARY_MODE = glfwGetVideoMode(monitor);
+
+  glfwWindowHint(GLFW_RED_BITS, PRIMARY_MODE->redBits);
+  glfwWindowHint(GLFW_GREEN_BITS, PRIMARY_MODE->greenBits);
+  glfwWindowHint(GLFW_BLUE_BITS, PRIMARY_MODE->blueBits);
+  glfwWindowHint(GLFW_REFRESH_RATE, PRIMARY_MODE->refreshRate);
+
+  fullscreen_window = fullscreen;
+  old_window_x = 0;
+  old_window_y = 0;
+  old_window_width = WIDTH;
+  old_window_height = HEIGHT;
+  if (fullscreen) {
+	screen_width = (float) PRIMARY_MODE->width;
+	screen_height = (float) PRIMARY_MODE->height;
+
+	window = glfwCreateWindow(PRIMARY_MODE->width, PRIMARY_MODE->height, "Skat",
+							  monitor, NULL);
+  } else {
+	window = glfwCreateWindow(WIDTH, HEIGHT, "Skat", NULL, NULL);
+  }
   if (!window) {
 	printf("Failed to create GLFW window\n");
 	glfwTerminate();
@@ -189,6 +244,7 @@ start_GRAPHICAL(void) {
   }
 
   glfwSetWindowSizeCallback(window, resize_callback);
+  glfwSetWindowPosCallback(window, pos_callback);
   glfwSetKeyCallback(window, key_callback);
   glfwSetCharCallback(window, char_callback);
 
@@ -200,7 +256,7 @@ start_GRAPHICAL(void) {
 	exit(EXIT_FAILURE);
   }
 
-  printf("This is OpenGL version %s with renderer %s\n",
+  printf("This is OpenGL version '%s' with renderer '%s'\n",
 		 glGetString(GL_VERSION), glGetString(GL_RENDERER));
 
   glfwSwapInterval(1);

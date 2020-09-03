@@ -9,10 +9,10 @@
 
 static void
 print_usage(const char *const name) {
-  fprintf(stderr, "Usage: %s [-r] [-h host] [-p port] name\n", name);
+  fprintf(stderr, "Usage: %s [-r] [-g] [-f] [-h host] [-p port] name\n", name);
 }
 
-int start_GRAPHICAL(void);
+int start_GRAPHICAL(int fullscreen);
 
 int
 main(int argc, char **argv) {
@@ -22,14 +22,18 @@ main(int argc, char **argv) {
   long port = DEFAULT_PORT;
   int resume = 0;
   int graphical = 0;
+  int fullscreen = 0;
 
-  while ((opt = getopt(argc, argv, "h:p:rg")) != -1) {
+  while ((opt = getopt(argc, argv, "h:p:rgf")) != -1) {
 	switch (opt) {
 	  case 'r':
 		resume = 1;
 		break;
 	  case 'g':
 		graphical = 1;
+		break;
+	  case 'f':
+		fullscreen = 1;
 		break;
 	  case 'h':
 		host = argv[optind - 1];
@@ -64,7 +68,7 @@ main(int argc, char **argv) {
   if (graphical) {
 	// TODO: add graphical loop for render and skat logic
 	DTODO_PRINTF("TODO: add graphical loop for render and skat logic");
-	start_GRAPHICAL();
+	start_GRAPHICAL(fullscreen);
 	exit(EXIT_SUCCESS);
   }
 
