@@ -183,7 +183,8 @@ text_render_init() {
 	}
   }
   /*
-  printf("Retroactively setting width/height/y/y of %d-%d\n", row_start, CHARACTER_COUNT);
+  printf("Retroactively setting width/height/y/y of %d-%d\n", row_start,
+  CHARACTER_COUNT);
    */
   for (unsigned rc = row_start; rc < CHARACTER_COUNT; rc++) {
 	character_data *rcd = &ts.char_data[rc];
@@ -197,7 +198,6 @@ text_render_init() {
   }
 
   ts.max_glyph_height = ts.max_glyph_bottom_height + ts.max_glyph_top_height;
-  "\u1234";
 
   /*for (unsigned char c = 0; c < CHARACTER_COUNT; c++) {
 	character_data *cd = &ts.char_data[c];
