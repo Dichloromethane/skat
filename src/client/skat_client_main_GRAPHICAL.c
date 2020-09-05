@@ -10,10 +10,10 @@
 #include "client/text_render.h"
 #include "client/vertex.h"
 #include "skat/str_buf.h"
+#include "skat/util.h"
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
 
 float screen_width = WIDTH;
 float screen_height = HEIGHT;
@@ -101,10 +101,12 @@ key_callback(GLFWwindow *window, int key, int scancode, int action, int mods) {
 	glfwSetWindowShouldClose(window, GLFW_TRUE);
   else if (key == GLFW_KEY_F11 && action == GLFW_PRESS) {
 	if (fullscreen_window) {
+	  DEBUG_PRINTF("Exiting Fullscreen Mode");
 	  fullscreen_window = 0;
 	  glfwSetWindowMonitor(window, NULL, old_window_x, old_window_y,
 						   old_window_width, old_window_height, GLFW_DONT_CARE);
 	} else {
+      DEBUG_PRINTF("Entering Fullscreen Mode");
 	  fullscreen_window = 1;
 	  glfwSetWindowMonitor(window, glfwGetPrimaryMonitor(), 0, 0,
 						   PRIMARY_MODE->width, PRIMARY_MODE->height,
