@@ -4,15 +4,18 @@
 
 int
 utf8_valid(const char *utf8_str) {
+  if (!utf8_str) {
+	DERROR_PRINTF("null pointer");
+	exit(1);
+  }
+
   const unsigned char *str = (const unsigned char *) utf8_str;
 
   // better be safe than sorry ;)
-  if (!str)
-	return 0;
-  else if ((str[0] & 0b11111000u) == 0b11110000u
-		   && (str[1] & 0b11000000u) == 0b10000000u
-		   && (str[2] & 0b11000000u) == 0b10000000u
-		   && (str[3] & 0b11000000u) == 0b10000000u)// 4 bytes
+  if ((str[0] & 0b11111000u) == 0b11110000u
+	  && (str[1] & 0b11000000u) == 0b10000000u
+	  && (str[2] & 0b11000000u) == 0b10000000u
+	  && (str[3] & 0b11000000u) == 0b10000000u)// 4 bytes
 	return 1;
   else if ((str[0] & 0b11110000u) == 0b11100000u
 		   && (str[1] & 0b11000000u) == 0b10000000u
@@ -29,16 +32,18 @@ utf8_valid(const char *utf8_str) {
 
 const char *
 utf8_codepoint(const char *utf8_str, unicode_codepoint_t *out_cp) {
+  if (!utf8_str) {
+	DERROR_PRINTF("null pointer");
+	exit(1);
+  }
+
   const unsigned char *str = (const unsigned char *) utf8_str;
 
   // better be safe than sorry ;)
-  if (!str) {
-	DERROR_PRINTF("null pointer");
-	exit(1);
-  } else if ((str[0] & 0b11111000u) == 0b11110000u
-			 && (str[1] & 0b11000000u) == 0b10000000u
-			 && (str[2] & 0b11000000u) == 0b10000000u
-			 && (str[3] & 0b11000000u) == 0b10000000u) {// 4 bytes utf8
+  if ((str[0] & 0b11111000u) == 0b11110000u
+	  && (str[1] & 0b11000000u) == 0b10000000u
+	  && (str[2] & 0b11000000u) == 0b10000000u
+	  && (str[3] & 0b11000000u) == 0b10000000u) {// 4 bytes utf8
 	if (out_cp)
 	  *out_cp = ((str[0] & 0b00000111u) << 18u)
 				| ((str[1] & 0b00111111u) << 12u)
