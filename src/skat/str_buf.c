@@ -133,15 +133,13 @@ str_buf_append_str(str_buf *sb_existing, const char *str) {
 
 void
 str_buf_append_n_str(str_buf *sb_existing, const char *str, size_t len) {
-  size_t minimum_size = sb_existing->len + len + 1;
-
-  str_buf_ensure_capacity(sb_existing, minimum_size);
-
-  strncpy(&sb_existing->buf[sb_existing->len], str, len);
-
   size_t i;
-  for (i = 0; i < len && str[i] != '\0'; i++)
+  for (i = 0; i < len && str[i] != '\0'; i++) {
+	size_t minimum_size = sb_existing->len + i + 1;
+	str_buf_ensure_capacity(sb_existing, minimum_size);
+
 	sb_existing->buf[sb_existing->len + i] = str[i];
+  }
 
   sb_existing->len += i;
   sb_existing->buf[sb_existing->len] = '\0';
