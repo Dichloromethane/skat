@@ -7,25 +7,24 @@ utf8_valid(const char *utf8_str) {
   const unsigned char *str = (const unsigned char *) utf8_str;
 
   // better be safe than sorry ;)
-  if (!str) {
+  if (!str)
 	return 0;
-  } else if ((str[0] & 0b11111000u) == 0b11110000u
-			 && (str[1] & 0b11000000u) == 0b10000000u
-			 && (str[2] & 0b11000000u) == 0b10000000u
-			 && (str[3] & 0b11000000u) == 0b10000000u) {// 4 bytes
+  else if ((str[0] & 0b11111000u) == 0b11110000u
+		   && (str[1] & 0b11000000u) == 0b10000000u
+		   && (str[2] & 0b11000000u) == 0b10000000u
+		   && (str[3] & 0b11000000u) == 0b10000000u)// 4 bytes
 	return 1;
-  } else if ((str[0] & 0b11110000u) == 0b11100000u
-			 && (str[1] & 0b11000000u) == 0b10000000u
-			 && (str[2] & 0b11000000u) == 0b10000000u) {// 3 bytes
+  else if ((str[0] & 0b11110000u) == 0b11100000u
+		   && (str[1] & 0b11000000u) == 0b10000000u
+		   && (str[2] & 0b11000000u) == 0b10000000u)// 3 bytes
 	return 1;
-  } else if ((str[0] & 0b11100000u) == 0b11000000u
-			 && (str[1] & 0b11000000u) == 0b10000000u) {// 2 bytes
+  else if ((str[0] & 0b11100000u) == 0b11000000u
+		   && (str[1] & 0b11000000u) == 0b10000000u)// 2 bytes
 	return 1;
-  } else if ((str[0] & 0b10000000u) == 0b00000000u) {// 1 byte
+  else if ((str[0] & 0b10000000u) == 0b00000000u)// 1 byte
 	return 1;
-  } else {// no utf8 codepoint
+  else// invalid utf8 codepoint
 	return 0;
-  }
 }
 
 const char *
@@ -61,7 +60,7 @@ utf8_codepoint(const char *utf8_str, unicode_codepoint_t *out_cp) {
 	if (out_cp)
 	  *out_cp = (str[0] & 0b01111111u);
 	utf8_str++;
-  } else {// no utf8 codepoint
+  } else {// invalid utf8 codepoint
 	DERROR_PRINTF("Found an invalid utf8 codepoint");
 	exit(1);
   }
