@@ -3,12 +3,10 @@
 #include "client/linmath.h"
 #include "client/vertex.h"
 #include "skat/util.h"
+#include <skat/utf8.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
-
-#define FONT_TEXTURE_ATLAS_WIDTH  (1024)
-#define FONT_TEXTURE_ATLAS_HEIGHT (1024)
 
 static const char *
 get_ft_error_message(FT_Error err) {
@@ -111,9 +109,9 @@ text_render_init() {
   unsigned int height = 0;
   unsigned int row_width = 0;
   unsigned int row_height = 0;
-  unsigned char row_start = 0;
+  FT_ULong row_start = 0;
 
-  for (unsigned char c = 0; c < CHARACTER_COUNT; c++) {
+  for (FT_ULong c = 0; c < CHARACTER_COUNT; c++) {
 	err = FT_Load_Char(font_face, c, FT_LOAD_RENDER);
 	if (err != FT_Err_Ok) {
 	  const char *message = get_ft_error_message(err);
@@ -152,7 +150,7 @@ text_render_init() {
 			 row_width, row_height, height);
 	  printf("Retroactively setting width/height/y/y of %d-%d\n", row_start, c);
 	   */
-	  for (unsigned rc = row_start; rc < c; rc++) {
+	  for (FT_ULong rc = row_start; rc < c; rc++) {
 		character_data *rcd = &ts.char_data[rc];
 		rcd->row_width = row_width;
 		rcd->row_height = row_height;
@@ -186,7 +184,7 @@ text_render_init() {
   printf("Retroactively setting width/height/y/y of %d-%d\n", row_start,
   CHARACTER_COUNT);
    */
-  for (unsigned rc = row_start; rc < CHARACTER_COUNT; rc++) {
+  for (FT_ULong rc = row_start; rc < CHARACTER_COUNT; rc++) {
 	character_data *rcd = &ts.char_data[rc];
 	rcd->row_width = row_width;
 	rcd->row_height = row_height;
@@ -204,7 +202,7 @@ text_render_init() {
 	printf("%3d: %d,%d\n", c, cd->tex_x, cd->tex_y);
   }*/
 
-  for (unsigned char c = 0; c < CHARACTER_COUNT; c++) {
+  for (FT_ULong c = 0; c < CHARACTER_COUNT; c++) {
 	err = FT_Load_Char(font_face, c, FT_LOAD_RENDER);
 	if (err != FT_Err_Ok) {
 	  const char *message = get_ft_error_message(err);
@@ -238,8 +236,10 @@ text_render_string_width(float size, const char *fmt, ...) {
   va_end(ap);
 
   float curX = 0;
-  for (char *p = text; *p; p++) {
-	character_data *c = &ts.char_data[*p];
+  unicode_codepoint_t cp;
+  for (const char *next = text; *next;) {
+    next = utf8_codepoint(next, &cp);
+    character_data *c = &ts.char_data[cp];
 	curX += c->adv_x;
   }
 
@@ -306,8 +306,10 @@ text_render_printf(text_render_loc trl, color col, float x, float y, float size,
   unsigned int idx = 0;
 
   float curX = 0, curY = 0;
-  for (char *p = text; *p; p++) {
-	character_data *c = &ts.char_data[*p];
+  unicode_codepoint_t cp;
+  for (const char *next = text; *next;) {
+    next = utf8_codepoint(next, &cp);
+	character_data *c = &ts.char_data[cp];
 
 	float x2 = curX + (float) c->bm_l + offX;
 	float y2 = curY - (float) c->bm_t + offY;

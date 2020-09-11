@@ -10,7 +10,9 @@
 
 #include <glad/glad.h>
 
-#define CHARACTER_COUNT (128)
+#define FONT_TEXTURE_ATLAS_WIDTH  (8192)
+#define FONT_TEXTURE_ATLAS_HEIGHT (8192)
+#define CHARACTER_COUNT           (32768)
 
 typedef struct {
   float adv_x;

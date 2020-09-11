@@ -10,6 +10,7 @@
 #include "client/text_render.h"
 #include "client/vertex.h"
 #include "skat/str_buf.h"
+#include "skat/utf8.h"
 #include "skat/util.h"
 
 #include <stdio.h>
@@ -106,7 +107,7 @@ key_callback(GLFWwindow *window, int key, int scancode, int action, int mods) {
 	  glfwSetWindowMonitor(window, NULL, old_window_x, old_window_y,
 						   old_window_width, old_window_height, GLFW_DONT_CARE);
 	} else {
-      DEBUG_PRINTF("Entering Fullscreen Mode");
+	  DEBUG_PRINTF("Entering Fullscreen Mode");
 	  fullscreen_window = 1;
 	  glfwSetWindowMonitor(window, glfwGetPrimaryMonitor(), 0, 0,
 						   PRIMARY_MODE->width, PRIMARY_MODE->height,
@@ -120,16 +121,14 @@ key_callback(GLFWwindow *window, int key, int scancode, int action, int mods) {
 }
 
 static void
-char_callback(struct GLFWwindow *window, unsigned int codepoint) {
-  if (codepoint >= 32 && codepoint <= 126) {// printable ascii character
-	printf("char_callback: '%c'\n", codepoint);
-	if (input.len >= 31) {
-	  str_buf_empty(&input);
-	}
-	str_buf_append_char(&input, (char) codepoint);
-  } else {
-	printf("char_callback: (0x%02x)\n", codepoint);
+char_callback(GLFWwindow *window, unsigned int codepoint) {
+  printf("char_callback: '%c' (0x%04x)\n", codepoint, codepoint);
+  if (str_buf_utf8_length(&input) >= 31) {
+	str_buf_empty(&input);
   }
+  char utf8_cp[4];
+  utf8_convert_unicode_codepoint(codepoint, utf8_cp);
+  str_buf_append_n_str(&input, utf8_cp, 4);
 }
 
 static void
@@ -291,16 +290,16 @@ start_GRAPHICAL(int fullscreen) {
 	text_render_printf(TRL_BOTTOM_LEFT, BLUE, 10, 160, 1.0f,
 					   "TeQuBrFoJuOvThLaDo? /j");
 
-	render_box(CYAN, 1440 - (880 / 2), 85 - (60 / 2), 880, 60);
+	render_box(CYAN, 1440 - (880 / 2), 85 - (72 / 2), 880, 72);
 	render_line(MAGENTA, 1440 - (880 / 2), 85, 1440 + (880 / 2), 85);
-	render_line(MAGENTA, 1440, 85 - (60 / 2), 1440, 85 + (60 / 2));
+	render_line(MAGENTA, 1440, 85 - (72 / 2), 1440, 85 + (72 / 2));
 	text_render_printf(TRL_CENTER, MAGENTA, 1440, 85, 1.0f,
-					   "TeQuBrFoJuOvThLaDo? /j");
+					   "TeQuBrFoJuOvThLaD♠? /j");
 
-	render_line(BLACK, 0, 200, WIDTH, 200);
-	text_render_debug(1, 200, 1.0f);
+	// render_line(BLACK, 0, 200, WIDTH, 200);
+	// text_render_debug(1, 200, 1.0f);
 
-	render_box(RED, 9, 1000 - (44 / 2), 932, 44);
+	render_box(RED, 9, 1000 - (54 / 2), 932, 54);
 	render_line(GRAY, 9 - 1, 1000, (9 - 1) + 932 + 3, 1000);
 	text_render_printf(TRL_CENTER_LEFT, BLACK, 10, 1000, 0.75f, "%s",
 					   input.buf);

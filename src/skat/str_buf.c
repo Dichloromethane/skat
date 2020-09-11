@@ -1,5 +1,6 @@
 #include "skat/str_buf.h"
 #include "skat/util.h"
+#include <skat/utf8.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -69,6 +70,12 @@ str_buf_empty(str_buf *sb) {
   sb->buf[0] = '\0';
 }
 
+size_t
+str_buf_utf8_length(const str_buf *sb) {
+  return utf8_length(sb->buf);
+}
+
+/*
 void
 str_buf_set(str_buf *sb, const char *str) {
   str_buf_n_set(sb, str, strlen(str));
@@ -107,6 +114,7 @@ str_buf_n_replace(str_buf *sb, const char *str, size_t len, size_t index) {
   strncpy(&sb->buf[index], str, len);
   sb->buf[sb->len] = '\0';
 }
+*/
 
 void
 str_buf_append(str_buf *sb_existing, const str_buf *str_buf_new) {
@@ -131,17 +139,29 @@ str_buf_append_n_str(str_buf *sb_existing, const char *str, size_t len) {
 
   strncpy(&sb_existing->buf[sb_existing->len], str, len);
 
-  sb_existing->len += len;
+  size_t i;
+  for (i = 0; i < len && str[i] != '\0'; i++)
+	sb_existing->buf[sb_existing->len + i] = str[i];
+
+  sb_existing->len += i;
   sb_existing->buf[sb_existing->len] = '\0';
 }
 
 void
 str_buf_remove(str_buf *sb, size_t amount) {
-  if (amount > sb->len) {
-	DERROR_PRINTF("Cannot remove more than buffer length");
-	exit(EXIT_FAILURE);
-  }
+  for (size_t i = 0; i < amount; i++) {
+	unsigned int j;
+	for (j = 1; j <= 4; j++) {
+	  if (utf8_valid(&sb->buf[sb->len - j]))
+		break;
+	}
 
-  sb->len -= amount;
-  sb->buf[sb->len] = '\0';
+	if (j > sb->len) {
+	  DERROR_PRINTF("Cannot remove more than buffer length");
+	  exit(EXIT_FAILURE);
+	}
+
+	sb->len -= j;
+	sb->buf[sb->len] = '\0';
+  }
 }
