@@ -76,21 +76,21 @@ utf8_convert_unicode_codepoint(unicode_codepoint_t cp, char *out_utf8_cp) {
   } else if ((cp & 0xffe00000u) != 0) {// >21 bits, invalid
 	DERROR_PRINTF("Given codepoint is invalid");
 	exit(1);
-  } else if ((cp & 0x001f0000u) != 0) {// >16 bits, 4 bytes
+  } else if ((cp & 0x001f0000u) != 0) {// 17-21 bits, 4 bytes
 	out_utf8_cp[0] = (char) (0b11110000u | ((cp >> 18u) & 0b00000111u));
 	out_utf8_cp[1] = (char) (0b10000000u | ((cp >> 12u) & 0b00111111u));
 	out_utf8_cp[2] = (char) (0b10000000u | ((cp >> 6u) & 0b00111111u));
 	out_utf8_cp[3] = (char) (0b10000000u | (cp & 0b00111111u));
-  } else if ((cp & 0x0000f800u) != 0) {// >11 bits, 3 bytes
+  } else if ((cp & 0x0000f800u) != 0) {// 12-16 bits, 3 bytes
 	out_utf8_cp[0] = (char) (0b11100000u | ((cp >> 12u) & 0b00001111u));
 	out_utf8_cp[1] = (char) (0b10000000u | ((cp >> 6u) & 0b00111111u));
 	out_utf8_cp[2] = (char) (0b10000000u | (cp & 0b00111111u));
 	out_utf8_cp[3] = '\0';
-  } else if ((cp & 0x00000e80u) != 0) {// >7 bits, 2 bytes
+  } else if ((cp & 0x00000e80u) != 0) {// 8-11 bits, 2 bytes
 	out_utf8_cp[0] = (char) (0b11000000u | ((cp >> 6u) & 0b00011111u));
 	out_utf8_cp[1] = (char) (0b10000000u | (cp & 0b00111111u));
 	out_utf8_cp[2] = out_utf8_cp[3] = '\0';
-  } else {// 1 byte
+  } else {// 0-7 bits, 1 byte
 	out_utf8_cp[0] = (char) (0b00000000u | (cp & 0b01111111u));
 	out_utf8_cp[1] = out_utf8_cp[2] = out_utf8_cp[3] = '\0';
   }
