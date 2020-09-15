@@ -1,9 +1,12 @@
 #pragma once
 
+#include <inttypes.h>
 #include <stddef.h>
-#include <stdint.h>
 
 typedef uint32_t unicode_codepoint_t;
+#define PRIUNICODE PRIu32
+#define PRIxUNICODE PRIx32
+#define PRIXUNICODE PRIX32
 
 int utf8_valid(const char *utf8_str);
 const char *utf8_codepoint(const char *utf8_str, unicode_codepoint_t *out_cp);

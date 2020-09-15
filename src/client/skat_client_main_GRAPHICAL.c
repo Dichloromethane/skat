@@ -264,6 +264,10 @@ start_GRAPHICAL(int fullscreen) {
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
+  GLint maxTextureSize;
+  glGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxTextureSize);
+  DEBUG_PRINTF("Max Texture Size is %dx%d", maxTextureSize, maxTextureSize);
+
   str_buf_new_from_char(&input, "\1TQuBroJuOpThLgDq0123456789 /j\1");
   line_render_init();
   text_render_init();
@@ -295,6 +299,21 @@ start_GRAPHICAL(int fullscreen) {
 	render_line(MAGENTA, 1440, 85 - (72 / 2), 1440, 85 + (72 / 2));
 	text_render_printf(TRL_CENTER, MAGENTA, 1440, 85, 1.0f,
 					   "TeQuBrFoJuOvThLaD♠? /j");
+
+	float symbol_width = text_render_string_width(1.0f, "\u2660");
+	text_render_printf(TRL_BOTTOM_LEFT, BLACK, 10, 310, 1.0f, "\u2660");
+	text_render_printf(TRL_BOTTOM_LEFT, RED, 10 + symbol_width, 310, 1.0f,
+					   "\u2665");
+	text_render_printf(TRL_BOTTOM_LEFT, RED, 10 + 2 * symbol_width, 310, 1.0f,
+					   "\u2666");
+	text_render_printf(TRL_BOTTOM_LEFT, BLACK, 10 + 3 * symbol_width, 310, 1.0f,
+					   "\u2663");
+
+	/*
+	char buf1[4];
+	utf8_convert_unicode_codepoint(0x1F0A1, buf1);
+	text_render_printf(TRL_BOTTOM_LEFT, BLACK, 10, 460, 1.0f, "%.4s", buf1);
+	 */
 
 	// render_line(BLACK, 0, 200, WIDTH, 200);
 	// text_render_debug(1, 200, 1.0f);

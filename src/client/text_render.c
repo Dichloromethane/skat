@@ -238,8 +238,8 @@ text_render_string_width(float size, const char *fmt, ...) {
   float curX = 0;
   unicode_codepoint_t cp;
   for (const char *next = text; *next;) {
-    next = utf8_codepoint(next, &cp);
-    character_data *c = &ts.char_data[cp];
+	next = utf8_codepoint(next, &cp);
+	character_data *c = &ts.char_data[cp];
 	curX += c->adv_x;
   }
 
@@ -308,7 +308,11 @@ text_render_printf(text_render_loc trl, color col, float x, float y, float size,
   float curX = 0, curY = 0;
   unicode_codepoint_t cp;
   for (const char *next = text; *next;) {
-    next = utf8_codepoint(next, &cp);
+	next = utf8_codepoint(next, &cp);
+	if (cp >= CHARACTER_COUNT) {
+	  DERROR_PRINTF("character U+%" PRIXUNICODE " out of bounds", cp);
+	  exit(1);
+	}
 	character_data *c = &ts.char_data[cp];
 
 	float x2 = curX + (float) c->bm_l + offX;
