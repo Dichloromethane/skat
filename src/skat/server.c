@@ -4,18 +4,21 @@
 #include "skat/util.h"
 #include <errno.h>
 #include <netinet/in.h>
+#include <signal.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/ioctl.h>
 #include <unistd.h>
 
 #define FOR_EACH_ACTIVE(s, var, block) \
-  for (int var = 0; var < 4; var++) { \
-	if (!server_is_player_active(s, var)) \
-	  continue; \
-	else \
-	  block \
-  }
+  do { \
+	for (int var = 0; var < 4; var++) { \
+	  if (!server_is_player_active(s, var)) \
+		continue; \
+	  else \
+		block \
+	} \
+  } while (0)
 
 int
 server_is_player_active(server *s, int gupid) {
@@ -144,25 +147,27 @@ server_tick(server *s) {
 
   server_acquire_state_lock(s);
 
-  action a;
-  event err_ev;
-  FOR_EACH_ACTIVE(s, i, {
-	if (!s->conns[i].c.active)
-	  continue;
+  if (!s->exit) {
+	action a;
+	event err_ev;
+	FOR_EACH_ACTIVE(s, i, {
+	  if (!s->conns[i].c.active)
+		continue;
 
-	while (conn_dequeue_action(&s->conns[i].c, &a)) {
-	  if (!skat_server_state_apply(&s->ss, &a, s->ps[i], s)) {
-		DEBUG_PRINTF("Received illegal action of type %s from player %s with "
-					 "id %ld, rejecting",
-					 action_name_table[a.type], s->ps[i]->name.name, a.id);
-		err_ev.type = EVENT_ILLEGAL_ACTION;
-		err_ev.answer_to = a.id;
-		copy_player_name(&err_ev.player, &s->ps[i]->name);
-		conn_enqueue_event(&s->conns[i].c, &err_ev);
+	  while (conn_dequeue_action(&s->conns[i].c, &a)) {
+		if (!skat_server_state_apply(&s->ss, &a, s->ps[i], s)) {
+		  DEBUG_PRINTF("Received illegal action of type %s from player %s with "
+					   "id %ld, rejecting",
+					   action_name_table[a.type], s->ps[i]->name.name, a.id);
+		  err_ev.type = EVENT_ILLEGAL_ACTION;
+		  err_ev.answer_to = a.id;
+		  copy_player_name(&err_ev.player, &s->ps[i]->name);
+		  conn_enqueue_event(&s->conns[i].c, &err_ev);
+		}
 	  }
-	}
-	skat_server_state_tick(&s->ss, s);
-  });
+	  skat_server_state_tick(&s->ss, s);
+	});
+  }
 
   server_release_state_lock(s);
 }
@@ -206,28 +211,29 @@ server_handler(void *args) {
   }
 }
 
-typedef struct {
-  server *s;
-  int socket_fd;
-  struct sockaddr_in addr;
-} server_listener_args;
-
 _Noreturn static void *
 server_listener(void *args) {
-  server_listener_args *largs = args;
+  server *s = args;
+  server_listener_args *largs = &s->listener;
   server_handler_args *hargs;
   pthread_t h;
   size_t addrlen = sizeof(struct sockaddr_in);
   int conn_fd;
   long iMode = 0;
+
+  listen(largs->socket_fd, 3);
+  DEBUG_PRINTF("Listening for connections");
   for (;;) {
-	listen(largs->socket_fd, 3);
-	DEBUG_PRINTF("Listening for connections");
 	conn_fd = accept(largs->socket_fd, (struct sockaddr *) &largs->addr,
 					 (socklen_t *) &addrlen);
+	if (conn_fd == -1) {
+	  DERROR_PRINTF("Error while accepting connection: %s", strerror(errno));
+	  exit(EXIT_FAILURE);
+	}
+
 	ioctl(conn_fd, FIONBIO, &iMode);
 	hargs = malloc(sizeof(server_handler_args));
-	hargs->s = largs->s;
+	hargs->s = s;
 	hargs->conn_fd = conn_fd;
 	DEBUG_PRINTF("Received connection %d", conn_fd);
 	pthread_create(&h, NULL, server_handler, hargs);
@@ -236,23 +242,83 @@ server_listener(void *args) {
 
 static void
 server_start_conn_listener(server *s, int p) {
-  server_listener_args *args;
   // int opt = 1;
   DEBUG_PRINTF("Starting connection listener");
-  args = malloc(sizeof(server_listener_args));
-  args->s = s;
-  args->socket_fd = socket(AF_INET, SOCK_STREAM, 0);
-  /*setsockopt(args->socket_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt,
-			 sizeof(opt));*/
-  args->addr.sin_family = AF_INET;
-  args->addr.sin_addr.s_addr = INADDR_ANY;
-  args->addr.sin_port = htons(p);
-  if (bind(args->socket_fd, (struct sockaddr *) &args->addr, sizeof(args->addr))
+
+  s->listener.socket_fd = socket(AF_INET, SOCK_STREAM, 0);
+  /*setsockopt(s->listener.socket_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT,
+	&opt, sizeof(opt));*/
+  s->listener.addr.sin_family = AF_INET;
+  s->listener.addr.sin_addr.s_addr = INADDR_ANY;
+  s->listener.addr.sin_port = htons(p);
+  if (bind(s->listener.socket_fd, (struct sockaddr *) &s->listener.addr,
+		   sizeof(s->listener.addr))
 	  == -1) {
-	DERROR_PRINTF("bind: %s", strerror(errno));
+	DERROR_PRINTF("Error while binding socket address: %s", strerror(errno));
 	exit(EXIT_FAILURE);
   }
-  pthread_create(&s->conn_listener, NULL, server_listener, args);
+
+  pthread_create(&s->conn_listener, NULL, server_listener, s);
+}
+
+static void server_start_interrupt_handler_thread(server *s);
+
+static void *
+server_signal_handler(void *args) {
+  server *s = args;
+
+  DEBUG_PRINTF("Starting interrupt signal handler thread");
+
+  sigset_t set;
+  sigemptyset(&set);
+  sigaddset(&set, SIGINT);
+  sigaddset(&set, SIGHUP);
+  sigaddset(&set, SIGTERM);
+
+  int sig;
+  int error = sigwait(&set, &sig);
+  if (error) {
+	DERROR_PRINTF("Error while waiting for interrupt signal: %s",
+				  strerror(error));
+	exit(EXIT_FAILURE);
+  }
+
+  if (!sigismember(&set, sig)) {
+	DERROR_PRINTF("Ignoring unexpected signal %s (%d)", strsignal(sig), sig);
+	server_start_interrupt_handler_thread(s);
+	return NULL;
+  }
+
+  DEBUG_PRINTF("Received signal %s (%d)", strsignal(sig), sig);
+
+  server_acquire_state_lock(s);
+  s->exit = 1;
+
+  DEBUG_PRINTF("Closing open connections and socket");
+  FOR_EACH_ACTIVE(s, i, { close(s->conns[i].c.fd); });
+  close(s->listener.socket_fd);
+
+  server_release_state_lock(s);
+
+  DEBUG_PRINTF("Exiting...");
+  exit(128 + sig);
+}
+
+static void
+server_start_interrupt_handler_thread(server *s) {
+  sigset_t set;
+  sigemptyset(&set);
+  sigaddset(&set, SIGINT);
+  sigaddset(&set, SIGHUP);
+  sigaddset(&set, SIGTERM);
+
+  int error = pthread_sigmask(SIG_BLOCK, &set, NULL);
+  if (error) {
+	DERROR_PRINTF("Could not set signal mask in main thread: %s",
+				  strerror(error));
+  }
+
+  pthread_create(&s->signal_listener, NULL, server_signal_handler, s);
 }
 
 void
@@ -261,6 +327,7 @@ server_init(server *s, int port) {
   memset(s, '\0', sizeof(server));
   pthread_mutex_init(&s->lock, NULL);
   s->port = port;
+  server_start_interrupt_handler_thread(s);
   skat_state_init(&s->ss);
 }
 
@@ -271,9 +338,7 @@ server_tick_wrap(void *s) {
 
 _Noreturn void
 server_run(server *s) {
-  ctimer t;
-
-  ctimer_create(&t, s, server_tick_wrap,
+  ctimer_create(&s->tick_timer, s, server_tick_wrap,
 				(1000 * 1000 * 1000) / SERVER_REFRESH_RATE);// in Hz
 
   server_acquire_state_lock(s);
@@ -282,7 +347,8 @@ server_run(server *s) {
 
   DEBUG_PRINTF("Running server");
 
-  ctimer_run(&t);
+  ctimer_run(&s->tick_timer);
+
   pause();
   DERROR_PRINTF("How did we get here? This is illegal");
   __builtin_unreachable();

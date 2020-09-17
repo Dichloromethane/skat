@@ -1,14 +1,25 @@
 #pragma once
 
 #include "skat/connection.h"
+#include "skat/ctimer.h"
 #include "skat/player.h"
 #include "skat/skat.h"
+#include <netinet/in.h>
 #include <pthread.h>
 
+typedef struct {
+  int socket_fd;
+  struct sockaddr_in addr;
+} server_listener_args;
+
 typedef struct server {
+  int exit;
   pthread_mutex_t lock;
   skat_server_state ss;
+  ctimer tick_timer;
+  pthread_t signal_listener;
   pthread_t conn_listener;
+  server_listener_args listener;
   int port;
   int ncons;
   connection_s2c conns[4];
