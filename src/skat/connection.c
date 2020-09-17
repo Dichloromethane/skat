@@ -387,8 +387,6 @@ conn_resync_player(server *s, connection_s2c *c) {
   p.payload_size = sizeof(payload_resync);
   p.payload.pl_rs = &pl_rs;
 
-  // FIXME: valgrind "Syscall param socketcall.sendto(msg) points to
-  // uninitialised byte(s)"
   send_package(&c->c, &p);
 
   package_clean(&p);
@@ -493,8 +491,12 @@ conn_notify_join(connection_s2c *c, player *pl) {
   size_t pl_nj_size =
 		  sizeof(payload_notify_join) + player_name_extra_size(&pl->name);
   payload_notify_join *pl_nj = malloc(pl_nj_size);
+
+  pl_nj->gupid = pl->index;
+
   pl_nj->pname.length = pl->name.length;
   copy_player_name(&pl_nj->pname, &pl->name);
+
   p.payload_size = pl_nj_size;
   p.payload.pl_nj = pl_nj;
 

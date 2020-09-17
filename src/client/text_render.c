@@ -311,7 +311,7 @@ text_render_printf(text_render_loc trl, color col, float x, float y, float size,
 	next = utf8_codepoint(next, &cp);
 	if (cp >= CHARACTER_COUNT) {
 	  DERROR_PRINTF("character U+%" PRIXUNICODE " out of bounds", cp);
-	  exit(1);
+	  exit(EXIT_FAILURE);
 	}
 	character_data *c = &ts.char_data[cp];
 

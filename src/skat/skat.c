@@ -376,7 +376,7 @@ skat_client_state_tick(skat_client_state *cs, client *c) {}
 
 void
 skat_resync_player(skat_server_state *ss, skat_client_state *cs, player *pl) {
-  memset(cs, 0, sizeof(skat_client_state));
+  memset(cs, '\0', sizeof(skat_client_state));
 
   cs->sgs = ss->sgs;
   cs->my_index = pl->index;

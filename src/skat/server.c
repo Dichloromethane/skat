@@ -134,7 +134,7 @@ server_release_state_lock(server *s) {
 
 void
 server_resync_player(server *s, player *pl, skat_client_state *cs) {
-  DEBUG_PRINTF("Resync requested by %s", pl->name.name);
+  DEBUG_PRINTF("Resync requested by player '%s'", pl->name.name);
   skat_resync_player(&s->ss, cs, pl);
 }
 
@@ -258,11 +258,9 @@ server_start_conn_listener(server *s, int p) {
 void
 server_init(server *s, int port) {
   DEBUG_PRINTF("Initializing server on port '%d'", port);
+  memset(s, '\0', sizeof(server));
   pthread_mutex_init(&s->lock, NULL);
-  s->ncons = 0;
   s->port = port;
-  s->playermask = 0;
-  memset(s->ps, '\0', sizeof(s->ps));
   skat_state_init(&s->ss);
 }
 
