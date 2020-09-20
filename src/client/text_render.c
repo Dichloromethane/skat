@@ -68,7 +68,7 @@ text_render_init() {
   }
 
   // err = FT_Set_Pixel_Sizes(font_face, 0, 256);
-  err = FT_Set_Char_Size(font_face, 0, 16 * 64, 300, 300);
+  err = FT_Set_Char_Size(font_face, 0, 16 * 64, 219, 219);
   if (err != FT_Err_Ok) {
 	const char *message = get_ft_error_message(err);
 	printf("Error: Could not set pixel sizes: %s (0x%02x)\n", message, err);
@@ -139,7 +139,7 @@ text_render_init() {
 	unsigned int h = cd->bm_h + 1;
 
 	if (w >= ts.width || height >= ts.height) {
-	  printf("ERROR: font atlas too small\n");
+	  DERROR_PRINTF("Font Texture Atlas too small @ %lu/%lu", c, CHARACTER_COUNT);
 	  FT_Done_FreeType(ft_library);
 	  exit(EXIT_FAILURE);
 	}

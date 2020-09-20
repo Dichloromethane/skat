@@ -12,7 +12,7 @@
 
 #define FONT_TEXTURE_ATLAS_WIDTH  (8192)
 #define FONT_TEXTURE_ATLAS_HEIGHT (8192)
-#define CHARACTER_COUNT           (32768)
+#define CHARACTER_COUNT           (65536u)
 
 typedef struct {
   float adv_x;
