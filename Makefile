@@ -1,3 +1,6 @@
+# sooooo beautiful
+# ahhhh
+
 CC=gcc
 
 WARNINGS=-Wall -Wextra -Wno-unused-parameter -Wno-unused-function -Wno-unused-but-set-variable \
@@ -66,7 +69,6 @@ skat_client: $(SKAT_OBJ) $(CLIENT_OBJ)
 	$(CC) $(CFLAGS) $(LDFLAGS) $^ $(LDLIBS_CLIENT) -o $@
 
 $(OBJ): $(BUILDDIR)%.o: $(SOURCEDIR)%.c Makefile | $(BUILDDIRS)
-	echo $$($(CC) --version)
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(WARNINGS) -o $@ -c $<
 
 $(BUILDDIRS):

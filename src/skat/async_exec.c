@@ -45,50 +45,10 @@ static void *async_ready2(void *data) {
   }
 }
 
+*/
+
 // on io thread (for console based):
-
-static void *async_ready(void *data) {
-  client *c = data;
-  if (client_is_in_readyable_state(c)) {
-	client_ready(c);
-  } else {
-
-	show_error("Client not readyable");
-  }
-}
-
-static void execute_ready(){
-  async_callback acb;
-
-  acb.do_stuff = async_ready;
-  acb.data = c;
-
-  exec_async(c->q, &acb);
-}
-
-_Noreturn void
-run2() {
-  for(;;) {
-	char *command;
-	scanf("%ms", &command);
-	// read command (first word)
-
-	// read rest according to the command
-	// ready
-	if (strncmp(command, "ready", sizeof("ready")))
-	  execute_ready();
-	// play <card index>
-	else if (strncmp(command, "play", sizeof("play"))) {
-		int card_index;
-		scanf("%d", &card_index);
-		execute_play(card_index);
-	}
-	// ...
-
-
-	// enqueue command exec on async
-  }
-}
+/*
 
 static void *
 foo(void *data) {

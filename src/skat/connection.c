@@ -457,7 +457,9 @@ conn_handle_events_server(connection_s2c *c) {
   p.payload_size = sizeof(payload_event);
   p.payload.pl_ev = &pl_ev;
 
-  while (conn_dequeue_event(&c->c, &pl_ev.ev)) {
+  for (;;) {
+    conn_dequeue_event_blocking(&c->c, &pl_ev.ev);
+	DEBUG_PRINTF("Sending new event to server");
 	send_package(&c->c, &p);
   }
 }
@@ -472,7 +474,10 @@ conn_handle_actions_client(connection_c2s *conn) {
   p.payload_size = sizeof(payload_action);
   p.payload.pl_a = &pl_a;
 
-  while (conn_dequeue_action(&conn->c, &pl_a.ac)) {
+
+  for (;;) {
+    conn_dequeue_action_blocking(&conn->c, &pl_a.ac);
+    DEBUG_PRINTF("Sending new action to server");
 	send_package(&conn->c, &p);
   }
 }
@@ -542,6 +547,11 @@ conn_dequeue_action(connection *c, action *a) {
 }
 
 void
+conn_dequeue_action_blocking(connection *c, action *a) {
+  dequeue_action_blocking(&c->aq, a);
+}
+
+void
 conn_enqueue_event(connection *c, event *e) {
   enqueue_event(&c->eq, e);
 }
@@ -554,4 +564,9 @@ conn_enqueue_action(connection *c, action *a) {
 int
 conn_dequeue_event(connection *c, event *e) {
   return dequeue_event(&c->eq, e);
+}
+
+void
+conn_dequeue_event_blocking(connection *c, event *e) {
+  dequeue_event_blocking(&c->eq, e);
 }

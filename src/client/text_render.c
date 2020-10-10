@@ -374,7 +374,7 @@ text_render_printf(text_render_loc trl, color col, float x, float y, float size,
 
 void
 text_render_debug(float x, float y, unsigned int layer, float size) {
-  if (layer < 0 || layer >= ts.texture_layers)
+  if (layer >= ts.texture_layers)
 	return;
 
   float w = (float) ts.width;

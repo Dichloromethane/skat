@@ -77,6 +77,7 @@ void
 server_add_player_for_connection(server *s, player *pl, int n) {
   s->ps[n] = pl;
   pl->index = n;
+  s->ncons++;
 }
 
 connection_s2c *
@@ -114,6 +115,7 @@ server_disconnect_connection(server *s, connection_s2c *c) {
 	if (!player_equals_by_name(pl, s->ps[i]))
 	  conn_notify_disconnect(&s->conns[i], pl);
   });
+  s->ncons--;
   conn_disable_conn(&c->c);
 }
 
@@ -189,9 +191,21 @@ typedef struct {
 } server_handler_args;
 
 static void *
+server_conn_event_sender(void *args) {
+  connection_s2c *conn = args;
+
+  DEBUG_PRINTF("Starting server event sender thread");
+
+  conn_handle_events_server(conn);
+
+  return NULL;
+}
+
+static void *
 server_handler(void *args) {
   connection_s2c *conn;
   server_handler_args *hargs = args;
+  pthread_t event_sender;
   DEBUG_PRINTF("Handler started, establishing connection with %d",
 			   hargs->conn_fd);
   conn = establish_connection_server(hargs->s, hargs->conn_fd, pthread_self());
@@ -202,12 +216,14 @@ server_handler(void *args) {
   }
   DEBUG_PRINTF("Connection with %d established, commencing normal operations",
 			   hargs->conn_fd);
+
+  pthread_create(&event_sender, NULL, server_conn_event_sender, conn);
+
   for (;;) {
 	if (!conn_handle_incoming_packages_server(hargs->s, conn)) {
 	  DEBUG_PRINTF("Connection with %d closed", hargs->conn_fd);
 	  return NULL;
 	}
-	conn_handle_events_server(conn);
   }
 }
 

@@ -99,7 +99,7 @@ card_collection_fill(card_collection *const col) {
 }
 
 int
-card_collection_draw_random(const card_collection *const col,
+card_collection_draw_random(card_collection const *const col,
 							card_id *const cid) {
   int count;
   if (card_collection_get_card_count(col, &count) || count == 0)

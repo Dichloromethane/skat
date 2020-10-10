@@ -100,9 +100,11 @@ void conn_notify_disconnect(connection_s2c *, player *);
 void conn_disable_conn(connection *);
 
 int conn_dequeue_action(connection *, action *);
+void conn_dequeue_action_blocking(connection *, action *);
 void conn_enqueue_event(connection *, event *);
 void conn_enqueue_action(connection *, action *);
 int conn_dequeue_event(connection *, event *);
+void conn_dequeue_event_blocking(connection *, event *);
 
 #endif
 #endif

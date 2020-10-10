@@ -2,7 +2,7 @@
 
 typedef struct async_callback {
   union {
-	void *(*do_stuff)(void *);
+	void (*do_stuff)(void *);
   };
   void *data;
 } async_callback;

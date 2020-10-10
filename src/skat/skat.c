@@ -46,18 +46,21 @@ distribute_cards(skat_server_state *ss) {
 	for (int j = 0; j < 3; j++) {
 	  card_collection_draw_random(&draw_pile, &cid);
 	  card_collection_add_card(&ss->player_hands[i], &cid);
+	  card_collection_remove_card(&draw_pile, &cid);
 	}
   }
 
   for (int i = 0; i < 2; i++) {
 	card_collection_draw_random(&draw_pile, &cid);
 	ss->skat[i] = cid;
+	card_collection_remove_card(&draw_pile, &cid);
   }
 
   for (int i = 0; i < 3; i++) {
 	for (int j = 0; j < 4; j++) {
 	  card_collection_draw_random(&draw_pile, &cid);
 	  card_collection_add_card(&ss->player_hands[i], &cid);
+	  card_collection_remove_card(&draw_pile, &cid);
 	}
   }
 
@@ -65,6 +68,7 @@ distribute_cards(skat_server_state *ss) {
 	for (int j = 0; j < 3; j++) {
 	  card_collection_draw_random(&draw_pile, &cid);
 	  card_collection_add_card(&ss->player_hands[i], &cid);
+	  card_collection_remove_card(&draw_pile, &cid);
 	}
   }
 
@@ -78,8 +82,11 @@ apply_action_setup(skat_server_state *ss, action *a, player *pl, server *s) {
   e.player = pl->name;
   switch (a->type) {
 	case ACTION_READY:
-	  if (s->ncons < 3)
+	  if (s->ncons < 3) {
+	    DEBUG_PRINTF("Rejecting action ACTION_READY with id %ld by player %s because "
+			 		 "s->ncons = %d < 3", a->id, pl->name.name, s->ncons);
 		return GAME_PHASE_INVALID;
+	  }
 
 	  e.type = EVENT_START_GAME;
 	  server_distribute_event(s, &e, NULL);
@@ -100,8 +107,13 @@ apply_action_between_rounds(skat_server_state *ss, action *a, player *pl,
   e.player = pl->name;
   switch (a->type) {
 	case ACTION_READY:
-	  if (s->ncons < 3)
+	  if (s->ncons < 3) {
+
+	    DEBUG_PRINTF("Rejecting action ACTION_READY with id %ld by player %s because "
+			 		 "s->ncons = %d < 3", a->id, pl->name.name, s->ncons);
+
 		return GAME_PHASE_INVALID;
+	  }
 
 	  e.answer_to = -1;
 	  e.type = EVENT_START_ROUND;
@@ -136,6 +148,9 @@ apply_action_between_rounds(skat_server_state *ss, action *a, player *pl,
 	  card_collection_empty(&ss->stiche_buf[2]);
 
 	  distribute_cards(ss);
+
+      DEBUG_PRINTF("Player hands: %#x, %#x, %#x", ss->player_hands[0],
+			 	   ss->player_hands[1], ss->player_hands[2]);
 
 	  e.type = EVENT_DISTRIBUTE_CARDS;
 
@@ -359,7 +374,21 @@ skat_server_state_tick(skat_server_state *ss, server *s) {}
 
 int
 skat_client_state_apply(skat_client_state *cs, event *e, client *c) {
-  DTODO_PRINTF("Trying to apply event %s", event_name_table[e->type]);
+  DTODO_PRINTF("Insert sanity checks.");
+  switch(e->type) {
+	case EVENT_START_GAME:
+	  cs->sgs.cgphase = GAME_PHASE_BETWEEN_ROUNDS;
+	  return 1;	
+	case EVENT_START_ROUND:
+	  cs->sgs.cgphase = GAME_PHASE_PLAY_STICH_C1;
+	  return 1;	
+	case EVENT_DISTRIBUTE_CARDS:
+	  cs->my_hand = e->hand;
+	  return 1;
+	default:
+      DERROR_PRINTF("Trying to apply event %s, but it isn't implement or illegal", event_name_table[e->type]);
+	  return 0;
+  }
   return 0;
   /*
   game_phase new;

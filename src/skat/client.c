@@ -1,6 +1,13 @@
 #include "skat/client.h"
 #include "skat/connection.h"
 #include "skat/util.h"
+
+#if defined(CONSOLE_INPUT) && CONSOLE_INPUT
+#include "skat/console_input.h"
+#else
+#error "Not yet supported, use the console implementation instead"
+#endif
+
 #include <netdb.h>
 #include <netinet/in.h>
 #include <skat/ctimer.h>
@@ -36,9 +43,22 @@ typedef struct {
 } client_conn_args;
 
 static void *
+client_conn_action_sender(void *args) {
+  connection_c2s *conn = args;
+
+  DEBUG_PRINTF("Starting client action sender thread");
+
+  conn_handle_actions_client(conn);
+
+  return NULL;
+}
+
+
+static void *
 client_conn_thread(void *args) {
   connection_c2s *conn;
   client_conn_args *cargs = args;
+  pthread_t action_sender;
   conn = establish_connection_client(cargs->c, cargs->socket_fd, pthread_self(),
 									 cargs->resume);
   if (!conn) {
@@ -47,12 +67,16 @@ client_conn_thread(void *args) {
 	exit(EXIT_FAILURE);
   }
 
+  pthread_create(&action_sender, NULL, client_conn_action_sender, conn);
+
   for (;;) {
 	if (!conn_handle_incoming_packages_client(cargs->c, conn)) {
-	  return NULL;
+	  goto ret;
 	}
-	conn_handle_actions_client(conn);
   }
+ ret:
+  DERROR_PRINTF("Returning from function it shouldn't be possible to return from. Damn");
+  return NULL;
 }
 
 static void
@@ -129,21 +153,9 @@ start_exec_async_thread(client *c) {
   pthread_create(&c->exec_async_handler, NULL, client_exec_async_handler, c);
 }
 
-_Noreturn static void *
-client_io_handler(void *args) {
-  client *c = args;
-
-  DEBUG_PRINTF("Starting IO Thread");
-
-  async_callback acb;
-  for (;; dequeue_async_callback_blocking(&c->acq, &acb)) {
-	// printf("IO\n");
-  }
-}
-
 static void
 start_io_thread(client *c) {
-  pthread_create(&c->io_handler, NULL, client_io_handler, c);
+  pthread_create(&c->io_handler, NULL, handle_console_input, c);
 }
 
 void
@@ -169,6 +181,18 @@ client_tick(client *c) {
   skat_client_state_tick(&c->cs, c);
 
   client_release_state_lock(c);
+}
+
+void
+client_ready(client *c) {
+  action a;
+
+  a.type = ACTION_READY;
+  a.id = -1;
+  DTODO_PRINTF("Actually use the action id properly");
+  DEBUG_PRINTF("Enqueueing ready action");
+  conn_enqueue_action(&c->c2s.c, &a);
+
 }
 
 void
