@@ -32,6 +32,7 @@ text_render_init() {
   shader_use(ts.shd);
 
   ts.attribute_coord = shader_get_attrib_location(ts.shd, "coord");
+  ts.attribute_texpos = shader_get_attrib_location(ts.shd, "texpos");
   ts.uniform_tex = shader_get_uniform_location(ts.shd, "tex");
 #ifndef RAINBOW_TEXT
   ts.uniform_color = shader_get_uniform_location(ts.shd, "color");
@@ -59,7 +60,10 @@ text_render_init() {
 
   FT_Face font_face;
   // FIXME: calculate path
-  err = FT_New_Face(ft_library, "./font/freefont/FreeMono.otf", 0, &font_face);
+  //const char *font_path = "./font/freefont/FreeMono.otf";
+  //const char *font_path = "./font/LiberationSerif-Regular.ttf";
+  const char *font_path = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf";
+  err = FT_New_Face(ft_library, font_path, 0, &font_face);
   if (err != FT_Err_Ok) {
 	const char *message = get_ft_error_message(err);
 	printf("Error: Could not load font file: %s (0x%02x)\n", message, err);
@@ -68,7 +72,7 @@ text_render_init() {
   }
 
   // err = FT_Set_Pixel_Sizes(font_face, 0, 256);
-  err = FT_Set_Char_Size(font_face, 0, 16 * 64, 217, 217);
+  err = FT_Set_Char_Size(font_face, 0, 16 * 64, 300, 300);
   if (err != FT_Err_Ok) {
 	const char *message = get_ft_error_message(err);
 	printf("Error: Could not set char size: %s (0x%02x)\n", message, err);
@@ -81,31 +85,12 @@ text_render_init() {
   ts.width = FONT_TEXTURE_ATLAS_WIDTH;
   ts.height = FONT_TEXTURE_ATLAS_HEIGHT;
 
-  // generate texture
-  glActiveTexture(GL_TEXTURE0);
-  glGenTextures(1, &ts.texture_id);
-  glBindTexture(GL_TEXTURE_2D, ts.texture_id);
-  glUniform1i(ts.uniform_tex, 0);
-
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, ts.width, ts.height, 0, GL_RED,
-			   GL_UNSIGNED_BYTE, NULL);
-
-  /* We require 1 byte alignment when uploading texture data */
-  glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-
-  /* Clamping to edges is important to prevent artifacts when scaling */
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
-  /* Linear filtering usually looks best for text */
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
   ts.max_row_height = 0;
   ts.max_glyph_bottom_height = 0;
   ts.max_glyph_top_height = 0;
   ts.max_glyph_height = 0;
 
+  unsigned int layer = 0;
   unsigned int height = 0;
   unsigned int row_width = 0;
   unsigned int row_height = 0;
@@ -120,6 +105,24 @@ text_render_init() {
 	}
 
 	character_data *cd = &ts.char_data[c];
+
+	unsigned int w = g->bitmap.width + 1;
+	unsigned int h = g->bitmap.rows + 1;
+
+	if (w >= ts.width) {
+	  DERROR_PRINTF("Font Texture Atlas too small @ %lu/%u", c,
+					CHARACTER_COUNT);
+	  FT_Done_FreeType(ft_library);
+	  exit(EXIT_FAILURE);
+	} else if ((height + h) >= ts.height) {
+	  layer++;
+
+	  height = 0;
+	  row_width = 0;
+	  row_height = 0;
+	  row_start = c;
+	}
+
 	cd->adv_x = (float) g->advance.x / 64.0f;
 	cd->adv_y = (float) g->advance.y / 64.0f;
 	cd->bm_w = g->bitmap.width;
@@ -134,16 +137,7 @@ text_render_init() {
 	cd->tex_h = (float) g->bitmap.rows / (float) ts.height;
 	cd->off_x = 0;
 	cd->off_y = 0;
-
-	unsigned int w = cd->bm_w + 1;
-	unsigned int h = cd->bm_h + 1;
-
-	if (w >= ts.width || (height + h) >= ts.height) {
-	  DERROR_PRINTF("Font Texture Atlas too small @ %lu/%u", c,
-					CHARACTER_COUNT);
-	  FT_Done_FreeType(ft_library);
-	  exit(EXIT_FAILURE);
-	}
+	cd->tex_layer = layer;
 
 	if (row_width + w >= ts.width) {
 	  /*
@@ -197,11 +191,32 @@ text_render_init() {
   }
 
   ts.max_glyph_height = ts.max_glyph_bottom_height + ts.max_glyph_top_height;
+  ts.texture_layers = layer + 1;
 
   /*for (unsigned char c = 0; c < CHARACTER_COUNT; c++) {
 	character_data *cd = &ts.char_data[c];
 	printf("%3d: %d,%d\n", c, cd->tex_x, cd->tex_y);
   }*/
+
+  // generate texture
+  glActiveTexture(GL_TEXTURE0);
+  glGenTextures(1, &ts.texture_id);
+  glBindTexture(GL_TEXTURE_2D_ARRAY, ts.texture_id);
+  glUniform1i(ts.uniform_tex, 0);
+
+  glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RED, ts.width, ts.height,
+			   ts.texture_layers, 0, GL_RED, GL_UNSIGNED_BYTE, NULL);
+
+  /* We require 1 byte alignment when uploading texture data */
+  glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+
+  /* Clamping to edges is important to prevent artifacts when scaling */
+  glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+  glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+  /* Linear filtering usually looks best for text */
+  glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
   for (FT_ULong c = 0; c < CHARACTER_COUNT; c++) {
 	err = FT_Load_Char(font_face, c, FT_LOAD_RENDER);
@@ -212,8 +227,9 @@ text_render_init() {
 	}
 
 	character_data *cd = &ts.char_data[c];
-	glTexSubImage2D(GL_TEXTURE_2D, 0, cd->tex_x, cd->tex_y, cd->bm_w, cd->bm_h,
-					GL_RED, GL_UNSIGNED_BYTE, g->bitmap.buffer);
+	glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, cd->tex_x, cd->tex_y, cd->tex_layer,
+					cd->bm_w, cd->bm_h, 1, GL_RED, GL_UNSIGNED_BYTE,
+					g->bitmap.buffer);
 
 	/*
 	if (ts.max_glyph_top_height == cd->bm_t) {
@@ -259,7 +275,7 @@ text_render_printf(text_render_loc trl, color col, float x, float y, float size,
   va_end(ap);
 
   shader_use(ts.shd);
-  glBindTexture(GL_TEXTURE_2D, ts.texture_id);
+  glBindTexture(GL_TEXTURE_2D_ARRAY, ts.texture_id);
   glUniform1i(ts.uniform_tex, 0);
 
   mat4x4 model;
@@ -268,9 +284,16 @@ text_render_printf(text_render_loc trl, color col, float x, float y, float size,
   mat4x4_scale_aniso(model, model, size, size, 1);
   glUniformMatrix4fv(ts.uniform_model, 1, GL_FALSE, (const GLfloat *) model);
 
-  glEnableVertexAttribArray(ts.attribute_coord);
   glBindBuffer(GL_ARRAY_BUFFER, ts.vbo);
-  glVertexAttribPointer(ts.attribute_coord, 4, GL_FLOAT, GL_FALSE, 0, 0);
+
+  glEnableVertexAttribArray(ts.attribute_coord);
+  glVertexAttribPointer(ts.attribute_coord, 2, GL_FLOAT, GL_FALSE,
+						5 * sizeof(GLfloat), 0);
+
+  glEnableVertexAttribArray(ts.attribute_texpos);
+  glVertexAttribPointer(ts.attribute_texpos, 3, GL_FLOAT, GL_FALSE,
+						5 * sizeof(GLfloat),
+						(const void *) (2 * sizeof(GLfloat)));
 
 #ifndef RAINBOW_TEXT
   GLfloat rgba[4];
@@ -303,7 +326,7 @@ text_render_printf(text_render_loc trl, color col, float x, float y, float size,
   }
 
   size_t coords_len = 6 * strlen(text);
-  vertex2f_st *coords = malloc(coords_len * sizeof(vertex2f_st));
+  vertex2f_stl *coords = malloc(coords_len * sizeof(vertex2f_stl));
   unsigned int idx = 0;
 
   float curX = 0, curY = 0;
@@ -329,17 +352,19 @@ text_render_printf(text_render_loc trl, color col, float x, float y, float size,
 	  continue;
 	}
 
-	coords[idx++] = (vertex2f_st){x2, y2, c->off_x, c->off_y};
-	coords[idx++] = (vertex2f_st){x2, y2 + h, c->off_x, c->off_y + c->tex_h};
-	coords[idx++] = (vertex2f_st){x2 + w, y2 + h, c->off_x + c->tex_w,
-								  c->off_y + c->tex_h};
-	coords[idx++] = (vertex2f_st){x2 + w, y2 + h, c->off_x + c->tex_w,
-								  c->off_y + c->tex_h};
-	coords[idx++] = (vertex2f_st){x2 + w, y2, c->off_x + c->tex_w, c->off_y};
-	coords[idx++] = (vertex2f_st){x2, y2, c->off_x, c->off_y};
+	coords[idx++] = (vertex2f_stl){x2, y2, c->off_x, c->off_y, c->tex_layer};
+	coords[idx++] = (vertex2f_stl){x2, y2 + h, c->off_x, c->off_y + c->tex_h,
+								   c->tex_layer};
+	coords[idx++] = (vertex2f_stl){x2 + w, y2 + h, c->off_x + c->tex_w,
+								   c->off_y + c->tex_h, c->tex_layer};
+	coords[idx++] = (vertex2f_stl){x2 + w, y2 + h, c->off_x + c->tex_w,
+								   c->off_y + c->tex_h, c->tex_layer};
+	coords[idx++] = (vertex2f_stl){x2 + w, y2, c->off_x + c->tex_w, c->off_y,
+								   c->tex_layer};
+	coords[idx++] = (vertex2f_stl){x2, y2, c->off_x, c->off_y, c->tex_layer};
   }
 
-  glBufferData(GL_ARRAY_BUFFER, coords_len * sizeof(vertex2f_st), coords,
+  glBufferData(GL_ARRAY_BUFFER, coords_len * sizeof(vertex2f_stl), coords,
 			   GL_DYNAMIC_DRAW);
   glDrawArrays(GL_TRIANGLES, 0, idx);
 
@@ -348,12 +373,15 @@ text_render_printf(text_render_loc trl, color col, float x, float y, float size,
 }
 
 void
-text_render_debug(float x, float y, float size) {
+text_render_debug(float x, float y, unsigned int layer, float size) {
+  if (layer < 0 || layer >= ts.texture_layers)
+	return;
+
   float w = (float) ts.width;
   float h = (float) ts.height;
 
   shader_use(ts.shd);
-  glBindTexture(GL_TEXTURE_2D, ts.texture_id);
+  glBindTexture(GL_TEXTURE_2D_ARRAY, ts.texture_id);
   glUniform1i(ts.uniform_tex, 0);
 
 #ifndef RAINBOW_TEXT
@@ -368,18 +396,25 @@ text_render_debug(float x, float y, float size) {
   mat4x4_scale_aniso(model, model, size, size, 1);
   glUniformMatrix4fv(ts.uniform_model, 1, GL_FALSE, (const GLfloat *) model);
 
-  glEnableVertexAttribArray(ts.attribute_coord);
   glBindBuffer(GL_ARRAY_BUFFER, ts.vbo);
-  glVertexAttribPointer(ts.attribute_coord, 4, GL_FLOAT, GL_FALSE, 0, 0);
 
-  vertex2f_st coords[6];
+  glEnableVertexAttribArray(ts.attribute_coord);
+  glVertexAttribPointer(ts.attribute_coord, 2, GL_FLOAT, GL_FALSE,
+						5 * sizeof(GLfloat), 0);
+
+  glEnableVertexAttribArray(ts.attribute_texpos);
+  glVertexAttribPointer(ts.attribute_texpos, 3, GL_FLOAT, GL_FALSE,
+						5 * sizeof(GLfloat),
+						(const void *) (2 * sizeof(GLfloat)));
+
+  vertex2f_stl coords[6];
   unsigned int idx = 0;
-  coords[idx++] = (vertex2f_st){0, 0, 0, 0};
-  coords[idx++] = (vertex2f_st){0, h, 0, 1};
-  coords[idx++] = (vertex2f_st){w, h, 1, 1};
-  coords[idx++] = (vertex2f_st){w, h, 1, 1};
-  coords[idx++] = (vertex2f_st){w, 0, 1, 0};
-  coords[idx++] = (vertex2f_st){0, 0, 0, 0};
+  coords[idx++] = (vertex2f_stl){0, 0, 0, 0, layer};
+  coords[idx++] = (vertex2f_stl){0, h, 0, 1, layer};
+  coords[idx++] = (vertex2f_stl){w, h, 1, 1, layer};
+  coords[idx++] = (vertex2f_stl){w, h, 1, 1, layer};
+  coords[idx++] = (vertex2f_stl){w, 0, 1, 0, layer};
+  coords[idx++] = (vertex2f_stl){0, 0, 0, 0, layer};
 
   glBufferData(GL_ARRAY_BUFFER, sizeof(coords), coords, GL_DYNAMIC_DRAW);
   glDrawArrays(GL_TRIANGLES, 0, idx);

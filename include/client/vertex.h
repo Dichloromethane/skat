@@ -17,6 +17,14 @@ typedef struct {
 typedef struct {
   GLfloat x;
   GLfloat y;
+  GLfloat s;
+  GLfloat t;
+  GLfloat l;// texture layer
+} vertex2f_stl;
+
+typedef struct {
+  GLfloat x;
+  GLfloat y;
   GLfloat r;
   GLfloat g;
   GLfloat b;

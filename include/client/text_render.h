@@ -10,9 +10,9 @@
 
 #include <glad/glad.h>
 
-#define FONT_TEXTURE_ATLAS_WIDTH  (8192)
-#define FONT_TEXTURE_ATLAS_HEIGHT (8192)
-#define CHARACTER_COUNT           (65536u)
+#define FONT_TEXTURE_ATLAS_WIDTH  (2048)
+#define FONT_TEXTURE_ATLAS_HEIGHT (2048)
+#define CHARACTER_COUNT           (143859u)
 
 typedef struct {
   float adv_x;
@@ -30,6 +30,7 @@ typedef struct {
   float tex_h;
   float off_x;
   float off_y;
+  unsigned int tex_layer;
 } character_data;
 
 typedef struct {
@@ -42,6 +43,7 @@ typedef struct {
   unsigned int max_glyph_height;
   shader *shd;
   GLint attribute_coord;
+  GLint attribute_texpos;
   GLint uniform_tex;
 #ifndef RAINBOW_TEXT
   GLint uniform_color;
@@ -49,6 +51,7 @@ typedef struct {
   GLint uniform_projection;
   GLint uniform_model;
   GLuint vbo;
+  unsigned int texture_layers;
   character_data char_data[CHARACTER_COUNT];
 } text_state;
 
@@ -63,4 +66,4 @@ void text_render_init(void);
 float text_render_string_width(float size, const char *fmt, ...);
 void text_render_printf(text_render_loc trl, color col, float x, float y,
 						float size, const char *fmt, ...);
-void text_render_debug(float x, float y, float size);
+void text_render_debug(float x, float y, unsigned int layer, float size);

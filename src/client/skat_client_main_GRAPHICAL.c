@@ -19,6 +19,7 @@
 float screen_width = WIDTH;
 float screen_height = HEIGHT;
 static str_buf input;
+static int text_debug_layer = -1;
 
 static int fullscreen_window, old_window_x, old_window_y, old_window_width,
 		old_window_height;
@@ -118,6 +119,11 @@ key_callback(GLFWwindow *window, int key, int scancode, int action, int mods) {
 	  str_buf_remove(&input, 1);
   } else if (key == GLFW_KEY_ENTER && action == GLFW_PRESS)
 	str_buf_empty(&input);
+  else if (key == GLFW_KEY_LEFT && action == GLFW_PRESS
+		   && text_debug_layer >= 0)
+	text_debug_layer--;
+  else if (key == GLFW_KEY_RIGHT && action == GLFW_PRESS)
+	text_debug_layer++;
 }
 
 static void
@@ -266,7 +272,11 @@ start_GRAPHICAL(int fullscreen) {
 
   GLint maxTextureSize;
   glGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxTextureSize);
-  DEBUG_PRINTF("Max Texture Size is %dx%d", maxTextureSize, maxTextureSize);
+  DEBUG_PRINTF("Max Texture Size: %dx%d", maxTextureSize, maxTextureSize);
+
+  GLint maxArrayTextureLayers;
+  glGetIntegerv(GL_MAX_ARRAY_TEXTURE_LAYERS, &maxArrayTextureLayers);
+  DEBUG_PRINTF("Max Array Texture Layers: %d", maxArrayTextureLayers);
 
   str_buf_new_from_char(&input, "\1TQuBroJuOpThLgDq0123456789 /j\1");
   line_render_init();
@@ -277,51 +287,55 @@ start_GRAPHICAL(int fullscreen) {
 	glClearColor(1, 1, 1, 1);
 	glClear(GL_COLOR_BUFFER_BIT);
 
-	draw_cross();
-
-	draw_triangle();
-
-	render_line(RED, 1, 0, 1, HEIGHT);
-	render_line(RED, WIDTH, 0, WIDTH, HEIGHT);
-	render_line(RED, 0, 0, WIDTH, 0);
-	render_line(RED, 0, HEIGHT - 2, WIDTH, HEIGHT - 2);
-
-	render_line(GREEN, 10, 10, 900, 10);
-	text_render_printf(TRL_TOP_LEFT, GREEN, 10, 10, 1.0f,
-					   "TeQuBrFoJuOvThLaDo! /j");
-
-	render_line(BLUE, 10, 160, 900, 160);
-	text_render_printf(TRL_BOTTOM_LEFT, BLUE, 10, 160, 1.0f,
-					   "TeQuBrFoJuOvThLaDo? /j");
-
-	render_box(CYAN, 1440 - (880 / 2), 85 - (72 / 2), 880, 72);
-	render_line(MAGENTA, 1440 - (880 / 2), 85, 1440 + (880 / 2), 85);
-	render_line(MAGENTA, 1440, 85 - (72 / 2), 1440, 85 + (72 / 2));
-	text_render_printf(TRL_CENTER, MAGENTA, 1440, 85, 1.0f,
-					   "TeQuBrFoJuOvThLaD♠? /j");
-
-	float symbol_width = text_render_string_width(1.0f, "\u2660");
-	text_render_printf(TRL_BOTTOM_LEFT, BLACK, 10, 310, 1.0f, "\u2660");
-	text_render_printf(TRL_BOTTOM_LEFT, RED, 10 + symbol_width, 310, 1.0f,
-					   "\u2665");
-	text_render_printf(TRL_BOTTOM_LEFT, RED, 10 + 2 * symbol_width, 310, 1.0f,
-					   "\u2666");
-	text_render_printf(TRL_BOTTOM_LEFT, BLACK, 10 + 3 * symbol_width, 310, 1.0f,
-					   "\u2663");
-
-	/*
-	char buf1[4];
-	utf8_convert_unicode_codepoint(0x1F0A1, buf1);
-	text_render_printf(TRL_BOTTOM_LEFT, BLACK, 10, 460, 1.0f, "%.4s", buf1);
-	 */
-
 	// render_line(BLACK, 0, 200, WIDTH, 200);
-	// text_render_debug(1, 200, 1.0f);
+	if (text_debug_layer >= 0) {
+	  text_render_debug(1, 1, text_debug_layer, 0.5f);
+	  text_render_printf(TRL_BOTTOM_LEFT, BLACK, 10, 1079, 0.8f,
+						 "text debug render layer: %d", text_debug_layer);
+	} else {
+	  draw_cross();
 
-	render_box(RED, 9, 1000 - (54 / 2), 932, 54);
-	render_line(GRAY, 9 - 1, 1000, (9 - 1) + 932 + 3, 1000);
-	text_render_printf(TRL_CENTER_LEFT, BLACK, 10, 1000, 0.75f, "%s",
-					   input.buf);
+	  draw_triangle();
+
+	  render_line(RED, 1, 0, 1, HEIGHT);
+	  render_line(RED, WIDTH, 0, WIDTH, HEIGHT);
+	  render_line(RED, 0, 0, WIDTH, 0);
+	  render_line(RED, 0, HEIGHT - 2, WIDTH, HEIGHT - 2);
+
+	  render_line(GREEN, 10, 10, 900, 10);
+	  text_render_printf(TRL_TOP_LEFT, GREEN, 10, 10, 1.0f,
+						 "TeQuBrFoJuOvThLaDo! /j");
+
+	  render_line(BLUE, 10, 160, 900, 160);
+	  text_render_printf(TRL_BOTTOM_LEFT, BLUE, 10, 160, 1.0f,
+						 "TeQuBrFoJuOvThLaDo? /j");
+
+	  render_box(CYAN, 1440 - (880 / 2), 85 - (72 / 2), 880, 72);
+	  render_line(MAGENTA, 1440 - (880 / 2), 85, 1440 + (880 / 2), 85);
+	  render_line(MAGENTA, 1440, 85 - (72 / 2), 1440, 85 + (72 / 2));
+	  text_render_printf(TRL_CENTER, MAGENTA, 1440, 85, 1.0f,
+						 "TeQuBrFoJuOvThLaD♠? /j");
+
+	  float symbol_width = text_render_string_width(1.0f, "\u2660");
+	  text_render_printf(TRL_BOTTOM_LEFT, BLACK, 10, 310, 1.0f, "\u2660");
+	  text_render_printf(TRL_BOTTOM_LEFT, RED, 10 + symbol_width, 310, 1.0f,
+						 "\u2665");
+	  text_render_printf(TRL_BOTTOM_LEFT, RED, 10 + 2 * symbol_width, 310, 1.0f,
+						 "\u2666");
+	  text_render_printf(TRL_BOTTOM_LEFT, BLACK, 10 + 3 * symbol_width, 310,
+						 1.0f, "\u2663");
+
+	  /*
+	  char buf1[4];
+	  utf8_convert_unicode_codepoint(0x1F0A1, buf1);
+	  text_render_printf(TRL_BOTTOM_LEFT, BLACK, 10, 460, 1.0f, "%.4s", buf1);
+	   */
+
+	  render_box(RED, 9, 1000 - (54 / 2), 932, 54);
+	  render_line(GRAY, 9 - 1, 1000, (9 - 1) + 932 + 3, 1000);
+	  text_render_printf(TRL_CENTER_LEFT, BLACK, 10, 1000, 0.75f, "%s",
+						 input.buf);
+	}
 
 	glfwSwapBuffers(window);
 	glfwPollEvents();
