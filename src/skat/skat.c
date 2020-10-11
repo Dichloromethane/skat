@@ -83,8 +83,10 @@ apply_action_setup(skat_server_state *ss, action *a, player *pl, server *s) {
   switch (a->type) {
 	case ACTION_READY:
 	  if (s->ncons < 3) {
-	    DEBUG_PRINTF("Rejecting action ACTION_READY with id %ld by player %s because "
-			 		 "s->ncons = %d < 3", a->id, pl->name.name, s->ncons);
+		DEBUG_PRINTF("Rejecting action ACTION_READY with id %ld by player %s "
+					 "because "
+					 "s->ncons = %d < 3",
+					 a->id, pl->name.name, s->ncons);
 		return GAME_PHASE_INVALID;
 	  }
 
@@ -108,9 +110,10 @@ apply_action_between_rounds(skat_server_state *ss, action *a, player *pl,
   switch (a->type) {
 	case ACTION_READY:
 	  if (s->ncons < 3) {
-
-	    DEBUG_PRINTF("Rejecting action ACTION_READY with id %ld by player %s because "
-			 		 "s->ncons = %d < 3", a->id, pl->name.name, s->ncons);
+		DEBUG_PRINTF("Rejecting action ACTION_READY with id %ld by player %s "
+					 "because "
+					 "s->ncons = %d < 3",
+					 a->id, pl->name.name, s->ncons);
 
 		return GAME_PHASE_INVALID;
 	  }
@@ -149,8 +152,8 @@ apply_action_between_rounds(skat_server_state *ss, action *a, player *pl,
 
 	  distribute_cards(ss);
 
-      DEBUG_PRINTF("Player hands: %#x, %#x, %#x", ss->player_hands[0],
-			 	   ss->player_hands[1], ss->player_hands[2]);
+	  DEBUG_PRINTF("Player hands: %#x, %#x, %#x", ss->player_hands[0],
+				   ss->player_hands[1], ss->player_hands[2]);
 
 	  e.type = EVENT_DISTRIBUTE_CARDS;
 
@@ -375,18 +378,20 @@ skat_server_state_tick(skat_server_state *ss, server *s) {}
 int
 skat_client_state_apply(skat_client_state *cs, event *e, client *c) {
   DTODO_PRINTF("Insert sanity checks.");
-  switch(e->type) {
+  switch (e->type) {
 	case EVENT_START_GAME:
 	  cs->sgs.cgphase = GAME_PHASE_BETWEEN_ROUNDS;
-	  return 1;	
+	  return 1;
 	case EVENT_START_ROUND:
 	  cs->sgs.cgphase = GAME_PHASE_PLAY_STICH_C1;
-	  return 1;	
+	  return 1;
 	case EVENT_DISTRIBUTE_CARDS:
 	  cs->my_hand = e->hand;
 	  return 1;
 	default:
-      DERROR_PRINTF("Trying to apply event %s, but it isn't implement or illegal", event_name_table[e->type]);
+	  DERROR_PRINTF(
+			  "Trying to apply event %s, but it isn't implement or illegal",
+			  event_name_table[e->type]);
 	  return 0;
   }
   return 0;

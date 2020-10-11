@@ -11,7 +11,7 @@
 #define MIN(a, b) (a < b ? a : b)
 #define MAX(a, b) (a > b ? a : b)
 
-int util_rand_int(int min, int max);
+size_t util_rand_int(size_t min, size_t max);
 size_t round_to_next_pow2(size_t n);
 void perm(int *, int, int);
 

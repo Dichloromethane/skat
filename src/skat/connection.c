@@ -458,7 +458,7 @@ conn_handle_events_server(connection_s2c *c) {
   p.payload.pl_ev = &pl_ev;
 
   for (;;) {
-    conn_dequeue_event_blocking(&c->c, &pl_ev.ev);
+	conn_dequeue_event_blocking(&c->c, &pl_ev.ev);
 	DEBUG_PRINTF("Sending new event to server");
 	send_package(&c->c, &p);
   }
@@ -476,8 +476,8 @@ conn_handle_actions_client(connection_c2s *conn) {
 
 
   for (;;) {
-    conn_dequeue_action_blocking(&conn->c, &pl_a.ac);
-    DEBUG_PRINTF("Sending new action to server");
+	conn_dequeue_action_blocking(&conn->c, &pl_a.ac);
+	DEBUG_PRINTF("Sending new action to server");
 	send_package(&conn->c, &p);
   }
 }

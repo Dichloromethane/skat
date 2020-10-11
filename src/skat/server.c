@@ -7,7 +7,6 @@
 #include <signal.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/ioctl.h>
 #include <unistd.h>
 
 #define FOR_EACH_ACTIVE(s, var, block) \
@@ -247,7 +246,7 @@ server_listener(void *args) {
 	  exit(EXIT_FAILURE);
 	}
 
-	ioctl(conn_fd, FIONBIO, &iMode);
+	// ioctl(conn_fd, FIONBIO, &iMode);
 	hargs = malloc(sizeof(server_handler_args));
 	hargs->s = s;
 	hargs->conn_fd = conn_fd;
@@ -311,8 +310,13 @@ server_signal_handler(void *args) {
   s->exit = 1;
 
   DEBUG_PRINTF("Closing open connections and socket");
-  FOR_EACH_ACTIVE(s, i, { close(s->conns[i].c.fd); });
-  close(s->listener.socket_fd);
+  FOR_EACH_ACTIVE(s, i, {
+	if (close(s->conns[i].c.fd))
+	  DERROR_PRINTF("Error while closing connection socket to client %d: %s", i,
+					strerror(errno));
+  });
+  if (close(s->listener.socket_fd))
+	DERROR_PRINTF("Error while listener socket: %s", strerror(errno));
 
   server_release_state_lock(s);
 

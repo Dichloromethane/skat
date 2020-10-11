@@ -5,26 +5,21 @@
 #define AQ_MERGE(x, y) MERGE_(x, y)
 #endif
 
-#define ATOMIC_QUEUE_HEADER(type) \
-  typedef struct AQ_MERGE(type, _queue_node) { \
-	type content; \
-	struct AQ_MERGE(type, _queue_node) * next; \
-  } AQ_MERGE(type, _queue_node); \
-\
-  typedef struct AQ_MERGE(type, _queue) { \
-	pthread_mutex_t lock; \
-	pthread_cond_t not_empty; \
-	AQ_MERGE(type, _queue_node) * head; \
-	AQ_MERGE(type, _queue_node) * tail; \
-  } AQ_MERGE(type, _queue); \
-\
-  void AQ_MERGE(init_, AQ_MERGE(type, _queue))(AQ_MERGE(type, _queue) * q); \
-  void AQ_MERGE(enqueue_, type)(AQ_MERGE(type, _queue) * q, type * content); \
-  int AQ_MERGE(dequeue_, type)(AQ_MERGE(type, _queue) * q, type * content); \
-  void AQ_MERGE(dequeue_, AQ_MERGE(type, _blocking))( \
-		  AQ_MERGE(type, _queue) * q, type * content); \
-  void AQ_MERGE(clear_, AQ_MERGE(type, _queue))(AQ_MERGE(type, _queue) * q);
+typedef struct AQ_MERGE(type, _queue_node) {
+  TYPE content;
+  struct AQ_MERGE(type, _queue_node) * next;
+} AQ_MERGE(type, _queue_node);
 
-ATOMIC_QUEUE_HEADER(TYPE)
+typedef struct AQ_MERGE(type, _queue) {
+  pthread_mutex_t lock;
+  pthread_cond_t not_empty;
+  AQ_MERGE(type, _queue_node) * head;
+  AQ_MERGE(type, _queue_node) * tail;
+} AQ_MERGE(type, _queue);
 
-#undef ATOMIC_QUEUE_HEADER
+void AQ_MERGE(init_, AQ_MERGE(type, _queue))(AQ_MERGE(type, _queue) * q);
+void AQ_MERGE(enqueue_, type)(AQ_MERGE(type, _queue) * q, TYPE *content);
+int AQ_MERGE(dequeue_, type)(AQ_MERGE(type, _queue) * q, TYPE *content);
+void AQ_MERGE(dequeue_, AQ_MERGE(type, _blocking))(AQ_MERGE(type, _queue) * q,
+												   TYPE *content);
+void AQ_MERGE(clear_, AQ_MERGE(type, _queue))(AQ_MERGE(type, _queue) * q);

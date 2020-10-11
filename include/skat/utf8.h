@@ -4,7 +4,7 @@
 #include <stddef.h>
 
 typedef uint32_t unicode_codepoint_t;
-#define PRIUNICODE PRIu32
+#define PRIUNICODE  PRIu32
 #define PRIxUNICODE PRIx32
 #define PRIXUNICODE PRIX32
 

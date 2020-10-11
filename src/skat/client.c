@@ -8,6 +8,7 @@
 #error "Not yet supported, use the console implementation instead"
 #endif
 
+#include <errno.h>
 #include <netdb.h>
 #include <netinet/in.h>
 #include <skat/ctimer.h>
@@ -74,8 +75,9 @@ client_conn_thread(void *args) {
 	  goto ret;
 	}
   }
- ret:
-  DERROR_PRINTF("Returning from function it shouldn't be possible to return from. Damn");
+ret:
+  DERROR_PRINTF("Returning from function it shouldn't be possible to return "
+				"from. Damn");
   return NULL;
 }
 
@@ -192,12 +194,14 @@ client_ready(client *c) {
   DTODO_PRINTF("Actually use the action id properly");
   DEBUG_PRINTF("Enqueueing ready action");
   conn_enqueue_action(&c->c2s.c, &a);
-
 }
 
 void
 client_disconnect_connection(client *c, connection_c2s *conn) {
   DERROR_PRINTF("Lost connection to server");
+  if (close(conn->c.fd))
+	DERROR_PRINTF("Error while closing connection socket to server: %s",
+				  strerror(errno));
   exit(EXIT_FAILURE);
 }
 

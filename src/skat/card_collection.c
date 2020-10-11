@@ -102,12 +102,18 @@ int
 card_collection_draw_random(card_collection const *const col,
 							card_id *const cid) {
   int count;
-  if (card_collection_get_card_count(col, &count) || count == 0)
+  if (card_collection_get_card_count(col, &count) || count == 0) {
+	DERROR_PRINTF("Could not draw random card: card collection is empty");
 	return 1;
+  }
 
   int i = util_rand_int(0, count);
-  if (card_collection_get_card(col, i, cid))
+  if (card_collection_get_card(col, i, cid)) {
+	DERROR_PRINTF("Could not draw random card: randomly selected index %d does "
+				  "not exist; count=%d, collection=%#x",
+				  i, count, *col);
 	return 1;
+  }
 
   return 0;
 }

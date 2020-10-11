@@ -60,8 +60,8 @@ text_render_init() {
 
   FT_Face font_face;
   // FIXME: calculate path
-  //const char *font_path = "./font/freefont/FreeMono.otf";
-  //const char *font_path = "./font/LiberationSerif-Regular.ttf";
+  // const char *font_path = "./font/freefont/FreeMono.otf";
+  // const char *font_path = "./font/LiberationSerif-Regular.ttf";
   const char *font_path = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf";
   err = FT_New_Face(ft_library, font_path, 0, &font_face);
   if (err != FT_Err_Ok) {
