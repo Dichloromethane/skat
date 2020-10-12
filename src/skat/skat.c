@@ -1,6 +1,7 @@
 #include "skat/skat.h"
 #include "skat/server.h"
 #include "skat/util.h"
+#include <skat/client.h>
 #include <string.h>
 
 #undef SKAT_HDR
@@ -225,7 +226,8 @@ apply_action_stich(skat_server_state *ss, action *a, player *pl, server *s,
 
 	  e.type = EVENT_PLAY_CARD;
 	  e.answer_to = a->id;
-	  e.player = pl->name;
+	  // FIXME: player name is a variable length struct, use gupid instead?
+	  copy_player_name(&e.player, &pl->name);
 	  e.card = a->card;
 	  server_distribute_event(s, &e, NULL);
 
@@ -271,69 +273,6 @@ apply_action_stich(skat_server_state *ss, action *a, player *pl, server *s,
 	  return GAME_PHASE_INVALID;
   }
 }
-/*
-static game_phase
-apply_action_stich(skat_state *ss, action *a, player *pl, server *s, int card) {
-  event e;
-  e.answer_to = a->id;
-  e.player = pl->id;
-  int cpi, result;
-  switch (a->type) {
-	case ACTION_PLAY_CARD:
-	  cpi = (ss->sgs.curr_stich.vorhand + card) % 3;
-	  if (!player_name_equals(&pl->id, &ss->sgs.active_players[cpi]))
-		return GAME_PHASE_INVALID;
-	  if (stich_card_legal(&ss->sgs.gr, ss->sgs.curr_stich.cs, &card, &a->card,
-						   &ss->player_hands[cpi], &result)
-		  || !result)
-		return GAME_PHASE_INVALID;
-	  ss->sgs.curr_stich.cs[card] = a->card;
-
-	  e.type = EVENT_PLAY_CARD;
-	  e.card = a->card;
-
-	  server_distribute_event(s, &e, NULL);
-
-	  if (!card)
-		return GAME_PHASE_PLAY_STICH_C2;
-	  if (card == 1)
-		return GAME_PHASE_PLAY_STICH_C3;
-
-	  stich_get_winner(&ss->sgs.gr, &ss->sgs.curr_stich,
-					   &ss->sgs.curr_stich.winner);
-
-	  card_collection_add_card_array(ss->stiche[ss->sgs.curr_stich.winner],
-									 ss->sgs.curr_stich.cs, 3);
-
-	  e.answer_to = -1;
-	  e.type = EVENT_STICH_DONE;
-	  e.stich_winner = ss->sgs.active_players[ss->sgs.curr_stich.winner];
-	  server_distribute_event(s, &e, NULL);
-
-	  ss->sgs.last_stich = ss->sgs.curr_stich;
-	  ss->sgs.curr_stich =
-			  (stich){.vorhand = ss->sgs.last_stich.winner, .winner = -1};
-
-	  if (ss->sgs.stich_num++ < 9)
-		return GAME_PHASE_PLAY_STICH_C1;
-
-	  // game finished
-	  skat_calculate_game_result(ss, e.score_round);
-
-	  for (int i = 0; i < 3; i++)
-		ss->sgs.total_score[(ss->sgs.last_active_player_index + i)
-							% s->ncons] += e.score_round[i];
-
-	  e.answer_to = -1;
-	  e.type = EVENT_ROUND_DONE;
-	  server_distribute_event(s, &e, NULL);
-
-	  return GAME_PHASE_BETWEEN_ROUNDS;
-	default:
-	  return GAME_PHASE_INVALID;
-  }
-}
-*/
 
 static game_phase
 apply_action(skat_server_state *ss, action *a, player *pl, server *s) {
@@ -378,6 +317,7 @@ skat_server_state_tick(skat_server_state *ss, server *s) {}
 int
 skat_client_state_apply(skat_client_state *cs, event *e, client *c) {
   DTODO_PRINTF("Insert sanity checks.");
+  char card_name[4];
   switch (e->type) {
 	case EVENT_START_GAME:
 	  cs->sgs.cgphase = GAME_PHASE_BETWEEN_ROUNDS;
@@ -388,9 +328,16 @@ skat_client_state_apply(skat_client_state *cs, event *e, client *c) {
 	case EVENT_DISTRIBUTE_CARDS:
 	  cs->my_hand = e->hand;
 	  return 1;
+	case EVENT_PLAY_CARD:
+	  card_get_name(&e->card, card_name);
+	  DEBUG_PRINTF("%s played card %s", e->player.name, card_name);
+	  if (strcmp(c->name, e->player.name) == 0) {
+		card_collection_remove_card(&cs->my_hand, &e->card);
+	  }
+	  return 1;
 	default:
 	  DERROR_PRINTF(
-			  "Trying to apply event %s, but it isn't implement or illegal",
+			  "Trying to apply event %s, but it isn't implemented or illegal",
 			  event_name_table[e->type]);
 	  return 0;
   }

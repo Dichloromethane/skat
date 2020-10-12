@@ -30,6 +30,18 @@ print_hand_exec(void *p) {
   client_release_state_lock(c);
 }
 
+struct client_play_card_args {
+  client *c;
+  unsigned int card_index;
+};
+
+static void
+client_play_card_wrapper(void *v) {
+  struct client_play_card_args *args = v;
+  client_play_card(args->c, args->card_index);
+  free(args);
+}
+
 static void
 execute_print_hand(client *c) {
   async_callback acb;
@@ -50,6 +62,19 @@ execute_ready(client *c) {
   exec_async(&c->acq, &acb);
 }
 
+static void
+execute_play_card(client *c, unsigned int card_index) {
+  async_callback acb;
+
+  struct client_play_card_args *args =
+		  malloc(sizeof(struct client_play_card_args));
+  args->c = c;
+  args->card_index = card_index;
+
+  acb = (async_callback){.do_stuff = client_play_card_wrapper, .data = args};
+
+  exec_async(&c->acq, &acb);
+}
 
 #define MATCH_COMMAND(c, s) if (!strncmp(c, s, sizeof(s)))
 
@@ -71,18 +96,19 @@ handle_console_input(void *cc) {
 	scanf("%ms", &command);
 
 	// ready
-	MATCH_COMMAND(command, "ready") {
-	  execute_ready(c);
-	  // play <card index>
-	}
+	MATCH_COMMAND(command, "ready") { execute_ready(c); }
+
+	// play <card index>
 	else MATCH_COMMAND(command, "play") {
 	  scanf("%d", &card_index);
-	  // execute_play(card_index);
-	  DTODO_PRINTF("Play card not yet implemented");
+	  execute_play_card(c, card_index);
 	}
+
+	// list
 	else MATCH_COMMAND(command, "list") {
 	  execute_print_hand(c);
 	}
+
 	else {
 	  printf("Invalid command: %s\n", command);
 	}

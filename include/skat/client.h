@@ -31,7 +31,8 @@ void client_handle_resync(client *c, payload_resync *pl);
 void client_notify_join(client *, payload_notify_join *);
 void client_notify_leave(client *, payload_notify_leave *);
 
-void client_ready(client *);
+void client_ready(client *c);
+void client_play_card(client *c, unsigned int card_index);
 
 void client_init(client *c, char *host, int port, char *name);
 _Noreturn void client_run(client *c, int resume);

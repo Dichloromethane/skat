@@ -204,10 +204,31 @@ void
 client_ready(client *c) {
   action a;
 
+  memset(&a, '\0', sizeof(a));
+
   a.type = ACTION_READY;
   a.id = -1;
   DTODO_PRINTF("Actually use the action id properly");
   DEBUG_PRINTF("Enqueueing ready action");
+  conn_enqueue_action(&c->c2s.c, &a);
+}
+
+void
+client_play_card(client *c, unsigned int card_index) {
+  action a;
+
+  memset(&a, '\0', sizeof(a));
+
+  a.type = ACTION_PLAY_CARD;
+  a.id = -1;
+  DTODO_PRINTF("Actually use the action id properly");
+  if (card_collection_get_card(&c->cs.my_hand, card_index, &a.card)) {
+	DERROR_PRINTF("Could not play the given card index %d, out of range",
+				  card_index);
+	return;
+  }
+
+  DEBUG_PRINTF("Enqueueing play card action");
   conn_enqueue_action(&c->c2s.c, &a);
 }
 

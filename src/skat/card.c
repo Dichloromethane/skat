@@ -33,7 +33,7 @@ card_get_name(const card_id *const cid, char *const str) {
   str[0] = CARD_COLOR_NAMES[2 * (c.cc - 1)];
   str[1] = CARD_COLOR_NAMES[(2 * (c.cc - 1)) + 1];
   str[2] = CARD_TYPE_NAMES[c.ct - 1];
-  str[3] = 0;
+  str[3] = '\0';
 
   return 0;
 }
