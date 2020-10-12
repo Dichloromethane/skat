@@ -9,11 +9,13 @@
 
 typedef struct client {
   pthread_mutex_t lock;
+  pthread_t signal_listener;
   pthread_t conn_thread;
   pthread_t exec_async_handler;
   pthread_t io_handler;
   async_callback_queue acq;
   connection_c2s c2s;
+  int exit;
   int port;
   char *host;
   char *name;

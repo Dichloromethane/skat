@@ -117,7 +117,8 @@ void skat_client_state_tick(skat_client_state *cs, client *c);
 
 void skat_resync_player(skat_server_state *, skat_client_state *, player *);
 
-void skat_state_init(skat_server_state *);
+void server_skat_state_init(skat_server_state *ss);
+void client_skat_state_init(skat_client_state *cs);
 
 #endif
 #endif

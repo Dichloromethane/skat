@@ -11,6 +11,7 @@
 #include <errno.h>
 #include <netdb.h>
 #include <netinet/in.h>
+#include <signal.h>
 #include <skat/ctimer.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -18,6 +19,20 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
+
+static void
+client_close_all_connections(client *c) {
+  DEBUG_PRINTF("Closing open connection to server");
+  if (close(c->c2s.c.fd) == -1)
+	DERROR_PRINTF("Error while closing connection socket to server: %s",
+				  strerror(errno));
+}
+
+static void
+client_prepare_exit(client *c) {
+  c->exit = 1;
+  client_close_all_connections(c);
+}
 
 void
 client_acquire_state_lock(client *c) {
@@ -98,7 +113,7 @@ start_client_conn(client *c, const char *host, int p, int resume) {
   struct addrinfo *result;
   int error = getaddrinfo(host, port_str, &hints, &result);
   if (error != 0) {
-	fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(error));
+	DERROR_PRINTF("Error while getting address info: %s", gai_strerror(error));
 	exit(EXIT_FAILURE);
   }
 
@@ -123,7 +138,7 @@ start_client_conn(client *c, const char *host, int p, int resume) {
   }
 
   if (rp == NULL) { /* No address succeeded */
-	fprintf(stderr, "Could not connect\n");
+	DERROR_PRINTF("Could not connect to server");
 	exit(EXIT_FAILURE);
   }
 
@@ -199,7 +214,7 @@ client_ready(client *c) {
 void
 client_disconnect_connection(client *c, connection_c2s *conn) {
   DERROR_PRINTF("Lost connection to server");
-  if (close(conn->c.fd))
+  if (close(conn->c.fd) == -1)
 	DERROR_PRINTF("Error while closing connection socket to server: %s",
 				  strerror(errno));
   exit(EXIT_FAILURE);
@@ -223,15 +238,72 @@ client_notify_leave(client *c, payload_notify_leave *pl_nl) {
   client_skat_state_notify_leave(&c->cs, pl_nl);
 }
 
+static void client_start_interrupt_handler_thread(client *c);
+
+static void *
+client_signal_handler(void *args) {
+  client *c = args;
+
+  DEBUG_PRINTF("Starting interrupt signal handler thread");
+
+  sigset_t set;
+  sigemptyset(&set);
+  sigaddset(&set, SIGINT);
+  sigaddset(&set, SIGHUP);
+  sigaddset(&set, SIGTERM);
+  sigaddset(&set, SIGQUIT);
+
+  int sig;
+  int error = sigwait(&set, &sig);
+  if (error) {
+	DERROR_PRINTF("Error while waiting for interrupt signal: %s",
+				  strerror(error));
+	exit(EXIT_FAILURE);
+  }
+
+  if (!sigismember(&set, sig)) {
+	DERROR_PRINTF("Ignoring unexpected signal %s (%d)", strsignal(sig), sig);
+	client_start_interrupt_handler_thread(c);
+	return NULL;
+  }
+
+  DEBUG_PRINTF("Received signal %s (%d)", strsignal(sig), sig);
+
+  client_prepare_exit(c);
+
+  DEBUG_PRINTF("Exiting...");
+  exit(128 + sig);
+}
+
+static void
+client_start_interrupt_handler_thread(client *c) {
+  sigset_t set;
+  sigemptyset(&set);
+  sigaddset(&set, SIGINT);
+  sigaddset(&set, SIGHUP);
+  sigaddset(&set, SIGTERM);
+  sigaddset(&set, SIGQUIT);
+
+  int error = pthread_sigmask(SIG_BLOCK, &set, NULL);
+  if (error) {
+	DERROR_PRINTF("Could not set signal mask in main thread: %s",
+				  strerror(error));
+  }
+
+  pthread_create(&c->signal_listener, NULL, client_signal_handler, c);
+}
+
 void
 client_init(client *c, char *host, int port, char *name) {
   DEBUG_PRINTF("Initializing client '%s' for server '%s:%d'", name, host, port);
+  memset(c, '\0', sizeof(client));
   pthread_mutex_init(&c->lock, NULL);
   init_async_callback_queue(&c->acq);
   c->host = host;
   c->port = port;
   c->name = name;
-  memset(c->pls, '\0', sizeof(c->pls));
+  client_skat_state_init(&c->cs);
+  client_start_interrupt_handler_thread(c);
 }
 
 static void

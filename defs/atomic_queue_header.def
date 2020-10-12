@@ -5,21 +5,21 @@
 #define AQ_MERGE(x, y) MERGE_(x, y)
 #endif
 
-typedef struct AQ_MERGE(type, _queue_node) {
+typedef struct AQ_MERGE(TYPE, _queue_node) {
   TYPE content;
-  struct AQ_MERGE(type, _queue_node) * next;
-} AQ_MERGE(type, _queue_node);
+  struct AQ_MERGE(TYPE, _queue_node) * next;
+} AQ_MERGE(TYPE, _queue_node);
 
-typedef struct AQ_MERGE(type, _queue) {
+typedef struct AQ_MERGE(TYPE, _queue) {
   pthread_mutex_t lock;
   pthread_cond_t not_empty;
-  AQ_MERGE(type, _queue_node) * head;
-  AQ_MERGE(type, _queue_node) * tail;
-} AQ_MERGE(type, _queue);
+  AQ_MERGE(TYPE, _queue_node) * head;
+  AQ_MERGE(TYPE, _queue_node) * tail;
+} AQ_MERGE(TYPE, _queue);
 
-void AQ_MERGE(init_, AQ_MERGE(type, _queue))(AQ_MERGE(type, _queue) * q);
-void AQ_MERGE(enqueue_, type)(AQ_MERGE(type, _queue) * q, TYPE *content);
-int AQ_MERGE(dequeue_, type)(AQ_MERGE(type, _queue) * q, TYPE *content);
-void AQ_MERGE(dequeue_, AQ_MERGE(type, _blocking))(AQ_MERGE(type, _queue) * q,
+void AQ_MERGE(init_, AQ_MERGE(TYPE, _queue))(AQ_MERGE(TYPE, _queue) * q);
+void AQ_MERGE(enqueue_, TYPE)(AQ_MERGE(TYPE, _queue) * q, TYPE *content);
+int AQ_MERGE(dequeue_, TYPE)(AQ_MERGE(TYPE, _queue) * q, TYPE *content);
+void AQ_MERGE(dequeue_, AQ_MERGE(TYPE, _blocking))(AQ_MERGE(TYPE, _queue) * q,
 												   TYPE *content);
-void AQ_MERGE(clear_, AQ_MERGE(type, _queue))(AQ_MERGE(type, _queue) * q);
+void AQ_MERGE(clear_, AQ_MERGE(TYPE, _queue))(AQ_MERGE(TYPE, _queue) * q);

@@ -423,10 +423,17 @@ skat_resync_player(skat_server_state *ss, skat_client_state *cs, player *pl) {
 }
 
 void
-skat_state_init(skat_server_state *ss) {
+server_skat_state_init(skat_server_state *ss) {
   ss->sgs.cgphase = GAME_PHASE_SETUP;
   memset(ss->sgs.score, 0, sizeof(ss->sgs.score));
   memset(ss->sgs.active_players, -1, 3 * sizeof(int));
+}
+
+void
+client_skat_state_init(skat_client_state *cs) {
+  cs->sgs.cgphase = GAME_PHASE_SETUP;
+  memset(cs->sgs.score, '\0', sizeof(cs->sgs.score));
+  memset(cs->sgs.active_players, -1, sizeof(cs->sgs.active_players));
 }
 
 void

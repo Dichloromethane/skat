@@ -19,6 +19,24 @@
 	} \
   } while (0)
 
+static void
+server_close_all_connections(server *s) {
+  DEBUG_PRINTF("Closing open connection sockets to clients and listener socket");
+  FOR_EACH_ACTIVE(s, i, {
+	if (close(s->conns[i].c.fd) == -1)
+	  DERROR_PRINTF("Error while closing connection socket to client %d: %s", i,
+					strerror(errno));
+  });
+  if (close(s->listener.socket_fd) == -1)
+	DERROR_PRINTF("Error while closing listener socket: %s", strerror(errno));
+}
+
+static void
+server_prepare_exit(server *s) {
+  s->exit = 1;
+  server_close_all_connections(s);
+}
+
 int
 server_is_player_active(server *s, int gupid) {
   return (s->playermask >> gupid) & 1;
@@ -115,6 +133,7 @@ server_disconnect_connection(server *s, connection_s2c *c) {
 	  conn_notify_disconnect(&s->conns[i], pl);
   });
   s->ncons--;
+  s->playermask &= ~(1 << c->gupid);
   conn_disable_conn(&c->c);
 }
 
@@ -231,38 +250,36 @@ server_listener(void *args) {
   server *s = args;
   server_listener_args *largs = &s->listener;
   server_handler_args *hargs;
-  pthread_t h;
-  size_t addrlen = sizeof(struct sockaddr_in);
-  int conn_fd;
-  long iMode = 0;
+  pthread_t handler_thread;
 
-  listen(largs->socket_fd, 3);
+  struct sockaddr_in addr;
+  socklen_t addr_len = sizeof(struct sockaddr_in);
+
+  int conn_fd;
+
+  listen(largs->socket_fd, 0);
   DEBUG_PRINTF("Listening for connections");
   for (;;) {
-	conn_fd = accept(largs->socket_fd, (struct sockaddr *) &largs->addr,
-					 (socklen_t *) &addrlen);
+	conn_fd = accept(largs->socket_fd, (struct sockaddr *) &addr, &addr_len);
 	if (conn_fd == -1) {
 	  DERROR_PRINTF("Error while accepting connection: %s", strerror(errno));
+	  server_prepare_exit(s);
 	  exit(EXIT_FAILURE);
 	}
 
-	// ioctl(conn_fd, FIONBIO, &iMode);
 	hargs = malloc(sizeof(server_handler_args));
 	hargs->s = s;
 	hargs->conn_fd = conn_fd;
 	DEBUG_PRINTF("Received connection %d", conn_fd);
-	pthread_create(&h, NULL, server_handler, hargs);
+	pthread_create(&handler_thread, NULL, server_handler, hargs);
   }
 }
 
 static void
 server_start_conn_listener(server *s, int p) {
-  // int opt = 1;
   DEBUG_PRINTF("Starting connection listener");
 
   s->listener.socket_fd = socket(AF_INET, SOCK_STREAM, 0);
-  /*setsockopt(s->listener.socket_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT,
-	&opt, sizeof(opt));*/
   s->listener.addr.sin_family = AF_INET;
   s->listener.addr.sin_addr.s_addr = INADDR_ANY;
   s->listener.addr.sin_port = htons(p);
@@ -270,6 +287,7 @@ server_start_conn_listener(server *s, int p) {
 		   sizeof(s->listener.addr))
 	  == -1) {
 	DERROR_PRINTF("Error while binding socket address: %s", strerror(errno));
+	server_prepare_exit(s);
 	exit(EXIT_FAILURE);
   }
 
@@ -289,6 +307,7 @@ server_signal_handler(void *args) {
   sigaddset(&set, SIGINT);
   sigaddset(&set, SIGHUP);
   sigaddset(&set, SIGTERM);
+  sigaddset(&set, SIGQUIT);
 
   int sig;
   int error = sigwait(&set, &sig);
@@ -306,19 +325,7 @@ server_signal_handler(void *args) {
 
   DEBUG_PRINTF("Received signal %s (%d)", strsignal(sig), sig);
 
-  server_acquire_state_lock(s);
-  s->exit = 1;
-
-  DEBUG_PRINTF("Closing open connections and socket");
-  FOR_EACH_ACTIVE(s, i, {
-	if (close(s->conns[i].c.fd))
-	  DERROR_PRINTF("Error while closing connection socket to client %d: %s", i,
-					strerror(errno));
-  });
-  if (close(s->listener.socket_fd))
-	DERROR_PRINTF("Error while listener socket: %s", strerror(errno));
-
-  server_release_state_lock(s);
+  server_prepare_exit(s);
 
   DEBUG_PRINTF("Exiting...");
   exit(128 + sig);
@@ -331,6 +338,7 @@ server_start_interrupt_handler_thread(server *s) {
   sigaddset(&set, SIGINT);
   sigaddset(&set, SIGHUP);
   sigaddset(&set, SIGTERM);
+  sigaddset(&set, SIGQUIT);
 
   int error = pthread_sigmask(SIG_BLOCK, &set, NULL);
   if (error) {
@@ -347,8 +355,8 @@ server_init(server *s, int port) {
   memset(s, '\0', sizeof(server));
   pthread_mutex_init(&s->lock, NULL);
   s->port = port;
+  server_skat_state_init(&s->ss);
   server_start_interrupt_handler_thread(s);
-  skat_state_init(&s->ss);
 }
 
 static void
