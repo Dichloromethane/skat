@@ -21,12 +21,16 @@
 
 static void
 server_close_all_connections(server *s) {
-  DEBUG_PRINTF("Closing open connection sockets to clients and listener socket");
+  DEBUG_PRINTF(
+		  "Closing open connection sockets to clients and listener socket");
   FOR_EACH_ACTIVE(s, i, {
+	DEBUG_PRINTF("Closing connection socket with id %d", i);
 	if (close(s->conns[i].c.fd) == -1)
 	  DERROR_PRINTF("Error while closing connection socket to client %d: %s", i,
 					strerror(errno));
   });
+
+  DEBUG_PRINTF("Closing listener socket");
   if (close(s->listener.socket_fd) == -1)
 	DERROR_PRINTF("Error while closing listener socket: %s", strerror(errno));
 }
@@ -126,6 +130,8 @@ void
 server_disconnect_connection(server *s, connection_s2c *c) {
   player *pl;
   pl = server_get_player_by_gupid(s, c->gupid);
+
+  DEBUG_PRINTF("Lost connection to client %s (%d)", pl->name.name, c->gupid);
 
   skat_state_notify_disconnect(&s->ss, pl, s);
   FOR_EACH_ACTIVE(s, i, {
@@ -283,6 +289,17 @@ server_start_conn_listener(server *s, int p) {
   s->listener.addr.sin_family = AF_INET;
   s->listener.addr.sin_addr.s_addr = INADDR_ANY;
   s->listener.addr.sin_port = htons(p);
+
+  int reuse_addr = 1;
+  if (setsockopt(s->listener.socket_fd, SOL_SOCKET, SO_REUSEADDR, &reuse_addr,
+				 sizeof(reuse_addr))
+	  == -1) {
+	DERROR_PRINTF("Could not set SO_REUSEADDR on listener socket: %s",
+				  strerror(errno));
+	server_prepare_exit(s);
+	exit(EXIT_FAILURE);
+  }
+
   if (bind(s->listener.socket_fd, (struct sockaddr *) &s->listener.addr,
 		   sizeof(s->listener.addr))
 	  == -1) {

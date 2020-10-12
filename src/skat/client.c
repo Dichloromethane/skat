@@ -214,9 +214,7 @@ client_ready(client *c) {
 void
 client_disconnect_connection(client *c, connection_c2s *conn) {
   DERROR_PRINTF("Lost connection to server");
-  if (close(conn->c.fd) == -1)
-	DERROR_PRINTF("Error while closing connection socket to server: %s",
-				  strerror(errno));
+  conn_disable_conn(&conn->c);
   exit(EXIT_FAILURE);
 }
 

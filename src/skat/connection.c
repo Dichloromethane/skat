@@ -3,7 +3,9 @@
 #include "skat/package.h"
 #include "skat/server.h"
 #include "skat/util.h"
+#include <errno.h>
 #include <stddef.h>
+#include <string.h>
 #include <sys/socket.h>
 #include <unistd.h>
 
@@ -447,7 +449,7 @@ conn_handle_incoming_packages_server(server *s, connection_s2c *c) {
   return result;
 }
 
-void
+_Noreturn void
 conn_handle_events_server(connection_s2c *c) {
   payload_event pl_ev;
   package p;
@@ -464,7 +466,7 @@ conn_handle_events_server(connection_s2c *c) {
   }
 }
 
-void
+_Noreturn void
 conn_handle_actions_client(connection_c2s *conn) {
   payload_action pl_a;
   package p;
@@ -535,7 +537,8 @@ conn_notify_disconnect(connection_s2c *c, player *pl) {
 
 void
 conn_disable_conn(connection *c) {
-  close(c->fd);
+  if (close(c->fd) == -1)
+	DERROR_PRINTF("Error while closing connection : %s", strerror(errno));
   c->active = 0;
   clear_action_queue(&c->aq);
   clear_event_queue(&c->eq);
