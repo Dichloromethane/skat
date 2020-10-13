@@ -383,15 +383,15 @@ conn_resync_player(server *s, connection_s2c *c) {
 
   player *pl = server_get_player_by_gupid(s, c->gupid);
 
-  payload_resync pl_rs;
-  server_resync_player(s, pl, &pl_rs.scs);
+  payload_resync *pl_rs;
+  size_t payload_size = server_resync_player(s, pl, &pl_rs);
 
-  p.payload_size = sizeof(payload_resync);
-  p.payload.pl_rs = &pl_rs;
+  p.payload_size = payload_size;
+  p.payload.pl_rs = pl_rs;
 
   send_package(&c->c, &p);
 
-  package_clean(&p);
+  package_free(&p);
 
   // TODO: deal with PACKAGE_ERROR ?
   int still_connected =
@@ -522,26 +522,27 @@ conn_notify_disconnect(connection_s2c *c, player *pl) {
   package_clean(&p);
   p.type = PACKAGE_NOTIFY_LEAVE;
 
-  size_t pl_nj_size =
-		  sizeof(payload_notify_leave) + player_name_extra_size(&pl->name);
-  payload_notify_leave *pl_nl = malloc(pl_nj_size);
-  pl_nl->pname.length = pl->name.length;
-  copy_player_name(&pl_nl->pname, &pl->name);
-  p.payload_size = pl_nj_size;
-  p.payload.pl_nl = pl_nl;
+  size_t pl_nl_size = sizeof(payload_notify_leave);
+  payload_notify_leave pl_nl;
+  memset(&pl_nl, '\0', pl_nl_size);
+  pl_nl.gupid = pl->index;
+
+  p.payload_size = pl_nl_size;
+  p.payload.pl_nl = &pl_nl;
 
   send_package(&c->c, &p);
 
-  package_free(&p);
+  package_clean(&p);
 }
 
 void
 conn_disable_conn(connection *c) {
+  c->active = 0;
+  // FIXME: this causes a deadlock
+  // clear_action_queue(&c->aq);
+  // clear_event_queue(&c->eq);
   if (close(c->fd) == -1)
 	DERROR_PRINTF("Error while closing connection : %s", strerror(errno));
-  c->active = 0;
-  clear_action_queue(&c->aq);
-  clear_event_queue(&c->eq);
 }
 
 int

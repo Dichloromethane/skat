@@ -49,14 +49,13 @@ EVENT_HDR_TABLE_END
 typedef struct {
   event_type type;
   action_id answer_to;
-  player_name player;
+  int acting_player;
   union {
-	player_name ready_player;
 	int current_active_players[3];// indexed by ap, contains gupid
 	card_collection hand;
 	card_id card;
-	player_name stich_winner;
 	int score_round[3];// indexed by ap
+	int stich_winner;
   };
 } event;
 

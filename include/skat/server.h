@@ -2,6 +2,7 @@
 
 #include "skat/connection.h"
 #include "skat/ctimer.h"
+#include "skat/package.h"
 #include "skat/player.h"
 #include "skat/skat.h"
 #include <netinet/in.h>
@@ -37,7 +38,7 @@ player *server_get_player_by_pname(server *s, player_name *pname);
 player *server_get_player_by_gupid(server *, int);
 void server_add_player_for_connection(server *, player *, int);
 void server_notify_join(server *, int gupid);
-void server_resync_player(server *, player *, skat_client_state *);
+size_t server_resync_player(server *, player *, payload_resync **);
 
 void server_acquire_state_lock(server *);
 void server_release_state_lock(server *);

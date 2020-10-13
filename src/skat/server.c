@@ -161,10 +161,40 @@ server_release_state_lock(server *s) {
 			   gettid());
 }
 
-void
-server_resync_player(server *s, player *pl, skat_client_state *cs) {
+size_t
+server_resync_player(server *s, player *pl, payload_resync **pl_rs) {
   DEBUG_PRINTF("Resync requested by player '%s'", pl->name.name);
-  skat_resync_player(&s->ss, cs, pl);
+  size_t player_name_lengths[4];
+  for (int i = 0; i < 4; i++) {
+	if (server_is_player_active(s, i)) {
+	  player_name_lengths[i] = s->ps[i]->name.length;
+	} else {
+	  player_name_lengths[i] = 0;
+	}
+  }
+
+  size_t player_names_length = 0;
+  for (int i = 0; i < 4; i++) {
+	player_names_length += player_name_lengths[i];
+  }
+
+  size_t payload_size = sizeof(payload_resync) + player_names_length;
+  *pl_rs = malloc(payload_size);
+
+  skat_resync_player(&s->ss, &(*pl_rs)->scs, pl);
+
+  memcpy((*pl_rs)->player_name_lengths, player_name_lengths,
+		 sizeof(player_name_lengths));
+  size_t offset = 0;
+  for (int i = 0; i < 4; i++) {
+	if (player_name_lengths[i] > 0) {
+	  memcpy((*pl_rs)->player_names + offset, s->ps[i]->name.name,
+			 player_name_lengths[i] * sizeof(char));
+	  offset += player_name_lengths[i];
+	}
+  }
+
+  return payload_size;
 }
 
 void
@@ -187,7 +217,7 @@ server_tick(server *s) {
 					   action_name_table[a.type], s->ps[i]->name.name, a.id);
 		  err_ev.type = EVENT_ILLEGAL_ACTION;
 		  err_ev.answer_to = a.id;
-		  copy_player_name(&err_ev.player, &s->ps[i]->name);
+		  err_ev.acting_player = i;
 		  conn_enqueue_event(&s->conns[i].c, &err_ev);
 		}
 	  }

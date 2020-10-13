@@ -65,7 +65,9 @@ typedef struct payload_notify_join {
   player_name pname;
 } payload_notify_join;
 
-typedef payload_notify_join payload_notify_leave;
+typedef struct payload_notify_leave {
+  int gupid;
+} payload_notify_leave;
 
 typedef struct {
   int gupid;
@@ -75,6 +77,8 @@ typedef payload_confirm_join payload_confirm_resume;
 
 typedef struct {
   skat_client_state scs;
+  size_t player_name_lengths[4];
+  char player_names[];
 } payload_resync;
 
 typedef struct {

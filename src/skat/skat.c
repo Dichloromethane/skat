@@ -80,7 +80,7 @@ static game_phase
 apply_action_setup(skat_server_state *ss, action *a, player *pl, server *s) {
   event e;
   e.answer_to = a->id;
-  e.player = pl->name;
+  e.acting_player = pl->index;
   switch (a->type) {
 	case ACTION_READY:
 	  if (s->ncons < 3) {
@@ -107,7 +107,7 @@ apply_action_between_rounds(skat_server_state *ss, action *a, player *pl,
   int pm, ix;
   event e;
   e.answer_to = a->id;
-  e.player = pl->name;
+  e.acting_player = pl->index;
   switch (a->type) {
 	case ACTION_READY:
 	  if (s->ncons < 3) {
@@ -192,7 +192,7 @@ apply_action_reizen_begin(skat_server_state *ss, action *a, player *pl,
   // remember to initialize stiche!
   event e;
   e.answer_to = a->id;
-  e.player = pl->name;
+  e.acting_player = pl->index;
   DTODO_PRINTF("TODO: implement reizen");// TODO: implement reizen
   switch (a->type) {
 	default:
@@ -226,8 +226,7 @@ apply_action_stich(skat_server_state *ss, action *a, player *pl, server *s,
 
 	  e.type = EVENT_PLAY_CARD;
 	  e.answer_to = a->id;
-	  // FIXME: player name is a variable length struct, use gupid instead?
-	  copy_player_name(&e.player, &pl->name);
+	  e.acting_player = pl->index;
 	  e.card = a->card;
 	  server_distribute_event(s, &e, NULL);
 
@@ -249,7 +248,8 @@ apply_action_stich(skat_server_state *ss, action *a, player *pl, server *s,
 
 	  e.type = EVENT_STICH_DONE;
 	  e.answer_to = -1;
-	  e.stich_winner = s->ps[ss->sgs.active_players[winner]]->name;
+	  e.acting_player = -1;
+	  e.stich_winner = s->ps[ss->sgs.active_players[winner]]->index;
 	  server_distribute_event(s, &e, NULL);
 
 	  ss->sgs.last_stich = ss->sgs.curr_stich;
@@ -330,8 +330,10 @@ skat_client_state_apply(skat_client_state *cs, event *e, client *c) {
 	  return 1;
 	case EVENT_PLAY_CARD:
 	  card_get_name(&e->card, card_name);
-	  DEBUG_PRINTF("%s played card %s", e->player.name, card_name);
-	  if (strcmp(c->name, e->player.name) == 0) {
+	  DEBUG_PRINTF("%s (%d) played card %s",
+				   c->cs.pls[e->acting_player]->name.name, e->acting_player,
+				   card_name);
+	  if (c->cs.my_index == e->acting_player) {
 		card_collection_remove_card(&cs->my_hand, &e->card);
 	  }
 	  return 1;
@@ -341,15 +343,6 @@ skat_client_state_apply(skat_client_state *cs, event *e, client *c) {
 			  event_name_table[e->type]);
 	  return 0;
   }
-  return 0;
-  /*
-  game_phase new;
-  new = apply_action(ss, a, pl, s);
-  if (new == GAME_PHASE_INVALID)
-	return 0;
-  ss->sgs.cgphase = new;
-  return 1;
-   */
 }
 
 void
@@ -362,6 +355,7 @@ skat_resync_player(skat_server_state *ss, skat_client_state *cs, player *pl) {
   cs->sgs = ss->sgs;
   cs->my_index = pl->index;
   get_player_hand(ss, pl, &cs->my_hand);
+
   if (ss->sgs.cgphase == GAME_PHASE_SKAT_AUFNEHMEN
 	  && pl->index == ss->sgs.alleinspieler) {
 	cs->skat[0] = ss->skat[0];
@@ -386,11 +380,13 @@ client_skat_state_init(skat_client_state *cs) {
 void
 client_skat_state_notify_join(skat_client_state *cs,
 							  payload_notify_join *pl_nj) {
-  DTODO_PRINTF("We don't yet know what to do here");// TODO: this
+  // FIXME: memory leak when overwriting gupid
+  cs->pls[pl_nj->gupid] = create_player(pl_nj->gupid, &pl_nj->pname);
 }
 
 void
 client_skat_state_notify_leave(skat_client_state *cs,
 							   payload_notify_leave *pl_nl) {
-  DTODO_PRINTF("... Neither do we here");// TODO: this
+  free(cs->pls[pl_nl->gupid]);
+  cs->pls[pl_nl->gupid] = NULL;
 }

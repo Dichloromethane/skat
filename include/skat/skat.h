@@ -86,6 +86,7 @@ typedef struct {
   union {
 	card_id skat[2];
   };
+  player *pls[4];
 } skat_client_state;
 
 typedef struct {
@@ -104,7 +105,8 @@ void skat_state_notify_join(skat_server_state *, player *, server *);
 struct payload_notify_join;
 typedef struct payload_notify_join payload_notify_join;
 void client_skat_state_notify_join(skat_client_state *, payload_notify_join *);
-typedef payload_notify_join payload_notify_leave;
+
+typedef struct payload_notify_leave payload_notify_leave;
 void client_skat_state_notify_leave(skat_client_state *,
 									payload_notify_leave *);
 
