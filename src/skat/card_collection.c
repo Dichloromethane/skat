@@ -50,7 +50,7 @@ card_collection_get_card_count(const card_collection *const col,
   return 0;
 }
 
-// XXX:
+// XXX: very inefficient
 int
 card_collection_get_card(const card_collection *const col,
 						 const unsigned int idx, card_id *const cid) {

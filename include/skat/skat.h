@@ -82,19 +82,19 @@ typedef struct {
 typedef struct {
   shared_game_state sgs;
   card_collection my_hand;
+  card_collection my_stiche;
   int my_index;// gupid
-  union {
-	card_id skat[2];
-  };
-  player *pls[4];
+  card_id skat[2];
 } skat_client_state;
 
 typedef struct {
   shared_game_state sgs;
   card_collection player_hands[3];// indexed by active player
   card_id skat[2];
-  card_collection *stiche[3];   // indexed by active player
-								// Has to be initialzied after reizen
+
+  // indexed by active player, has to be initialized after reizen
+  card_collection *stiche[3];
+
   card_collection stiche_buf[3];// indexed via *stiche (3 weil ramschen)
   int spielwert;
 } skat_server_state;

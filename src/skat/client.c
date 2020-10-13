@@ -246,19 +246,21 @@ client_handle_resync(client *c, payload_resync *pl) {
 
   size_t offset = 0;
   for (int i = 0; i < 4; i++) {
+	if (c->pls[i])
+	  free(c->pls[i]);
+
 	size_t len = pl->player_name_lengths[i];
 	if (len > 0) {
-	  // FIXME: memory leak when overwriting gupid
-	  c->cs.pls[i] = malloc(sizeof(player) + len + 1);
-	  c->cs.pls[i]->index = i;
-	  c->cs.pls[i]->name.length = len;
+	  c->pls[i] = malloc(sizeof(player) + len + 1);
+	  c->pls[i]->index = i;
+	  c->pls[i]->name.length = len;
 
-	  memcpy(c->cs.pls[i]->name.name, pl->player_names + offset,
+	  memcpy(c->pls[i]->name.name, pl->player_names + offset,
 			 len * sizeof(char));
-	  c->cs.pls[i]->name.name[len] = '\0';
+	  c->pls[i]->name.name[len] = '\0';
 	  offset += len;
 	} else {
-	  c->cs.pls[i] = NULL;
+	  c->pls[i] = NULL;
 	}
   }
 }
@@ -266,12 +268,21 @@ client_handle_resync(client *c, payload_resync *pl) {
 void
 client_notify_join(client *c, payload_notify_join *pl_nj) {
   DEBUG_PRINTF("%s has joined the game", pl_nj->pname.name);
+
+  if (c->pls[pl_nj->gupid])
+	free(c->pls[pl_nj->gupid]);
+  c->pls[pl_nj->gupid] = create_player(pl_nj->gupid, &pl_nj->pname);
+
   client_skat_state_notify_join(&c->cs, pl_nj);
 }
 
 void
 client_notify_leave(client *c, payload_notify_leave *pl_nl) {
-  DEBUG_PRINTF("%s has left the game", c->cs.pls[pl_nl->gupid]->name.name);
+  DEBUG_PRINTF("%s has left the game", c->pls[pl_nl->gupid]->name.name);
+
+  free(c->pls[pl_nl->gupid]);
+  c->pls[pl_nl->gupid] = NULL;
+
   client_skat_state_notify_leave(&c->cs, pl_nl);
 }
 

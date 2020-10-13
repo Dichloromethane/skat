@@ -331,7 +331,7 @@ skat_client_state_apply(skat_client_state *cs, event *e, client *c) {
 	case EVENT_PLAY_CARD:
 	  card_get_name(&e->card, card_name);
 	  DEBUG_PRINTF("%s (%d) played card %s",
-				   c->cs.pls[e->acting_player]->name.name, e->acting_player,
+				   c->pls[e->acting_player]->name.name, e->acting_player,
 				   card_name);
 	  if (c->cs.my_index == e->acting_player) {
 		card_collection_remove_card(&cs->my_hand, &e->card);
@@ -356,6 +356,8 @@ skat_resync_player(skat_server_state *ss, skat_client_state *cs, player *pl) {
   cs->my_index = pl->index;
   get_player_hand(ss, pl, &cs->my_hand);
 
+  // TODO: my_stiche
+
   if (ss->sgs.cgphase == GAME_PHASE_SKAT_AUFNEHMEN
 	  && pl->index == ss->sgs.alleinspieler) {
 	cs->skat[0] = ss->skat[0];
@@ -379,14 +381,8 @@ client_skat_state_init(skat_client_state *cs) {
 
 void
 client_skat_state_notify_join(skat_client_state *cs,
-							  payload_notify_join *pl_nj) {
-  // FIXME: memory leak when overwriting gupid
-  cs->pls[pl_nj->gupid] = create_player(pl_nj->gupid, &pl_nj->pname);
-}
+							  payload_notify_join *pl_nj) {}
 
 void
 client_skat_state_notify_leave(skat_client_state *cs,
-							   payload_notify_leave *pl_nl) {
-  free(cs->pls[pl_nl->gupid]);
-  cs->pls[pl_nl->gupid] = NULL;
-}
+							   payload_notify_leave *pl_nl) {}

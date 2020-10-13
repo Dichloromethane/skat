@@ -494,7 +494,6 @@ conn_notify_join(connection_s2c *c, player *pl) {
   package_clean(&p);
   p.type = PACKAGE_NOTIFY_JOIN;
 
-  // TODO: send other player data as well, if this is a resuming player?
   size_t pl_nj_size =
 		  sizeof(payload_notify_join) + player_name_extra_size(&pl->name);
   payload_notify_join *pl_nj = malloc(pl_nj_size);

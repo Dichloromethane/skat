@@ -20,6 +20,7 @@ typedef struct client {
   char *host;
   char *name;
   skat_client_state cs;
+  player *pls[4];
 } client;
 
 void client_acquire_state_lock(client *c);
