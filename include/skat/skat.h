@@ -42,6 +42,8 @@ GAME_PHASE_HDR_TABLE_BEGIN
   GAME_PHASE(PLAY_STICH_C1),
   GAME_PHASE(PLAY_STICH_C2),
   GAME_PHASE(PLAY_STICH_C3),
+  GAME_PHASE(CLIENT_WAIT_STICH_DONE),
+  GAME_PHASE(CLIENT_WAIT_ROUND_DONE),
   GAME_PHASE(END)
 GAME_PHASE_HDR_TABLE_END
 
@@ -83,7 +85,10 @@ typedef struct {
   shared_game_state sgs;
   card_collection my_hand;
   card_collection my_stiche;
-  int my_index;// gupid
+  int my_index;              // gupid
+  int my_active_player_index;// active_player
+  int my_partner;            // active_player
+  int ist_alleinspieler;
   card_id skat[2];
 } skat_client_state;
 

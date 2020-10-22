@@ -6,8 +6,9 @@
 
 typedef struct stich {
   card_id cs[3];// indexed index by vorhand + active player
-  int vorhand;  // indexed active player
-  int winner;   // indexed active player
+  int played_cards;
+  int vorhand;// indexed active player
+  int winner; // indexed active player
 } stich;
 
 int stich_get_winner(const game_rules *, const stich *, int *);

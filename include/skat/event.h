@@ -37,6 +37,7 @@ EVENT_HDR_TABLE_BEGIN
   EVENT(START_ROUND),
   EVENT(PLAYER_READY),
   EVENT(DISTRIBUTE_CARDS),
+  EVENT(TEMP_REIZEN_DONE),
   EVENT(PLAY_CARD),
   EVENT(STICH_DONE),
   EVENT(ROUND_DONE)
@@ -49,13 +50,14 @@ EVENT_HDR_TABLE_END
 typedef struct {
   event_type type;
   action_id answer_to;
-  int acting_player;
+  int acting_player;// gupid
   union {
 	int current_active_players[3];// indexed by ap, contains gupid
 	card_collection hand;
+	card_id skat[2];
 	card_id card;
 	int score_round[3];// indexed by ap
-	int stich_winner;
+	int stich_winner;  // gupid
   };
 } event;
 

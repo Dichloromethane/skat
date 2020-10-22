@@ -11,10 +11,16 @@ card_collection_contains(const card_collection *const col,
 int
 card_collection_add_card(card_collection *const col, const card_id *const cid) {
   int result;
-  if (card_collection_contains(col, cid, &result))
+  if (card_collection_contains(col, cid, &result)) {
+	DERROR_PRINTF("Error while trying to check if %u is contained in %#x", *cid,
+				  *col);
 	return 1;
-  if (result)
+  } else if (result) {
+	DERROR_PRINTF("Error while adding %u to %#x, as it is already exists in "
+				  "the collection",
+				  *cid, *col);
 	return 2;
+  }
 
   *col |= 0b1u << *cid;
   return 0;
@@ -25,8 +31,10 @@ card_collection_add_card_array(card_collection *col,
 							   const card_id *const cid_array,
 							   const int array_size) {
   for (int i = 0; i < array_size; i++)
-	if (!card_collection_add_card(col, cid_array + i))
+	if (card_collection_add_card(col, &cid_array[i])) {
+	  DERROR_PRINTF("Error while trying to add %u to %#x", cid_array[i], *col);
 	  return 1;
+	}
 
   return 0;
 }

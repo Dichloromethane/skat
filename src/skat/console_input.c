@@ -7,7 +7,7 @@
 #include <string.h>
 
 static void
-print_hand_exec(void *p) {
+print_info_exec(void *p) {
   client *c = p;
 
   client_acquire_state_lock(c);
@@ -15,16 +15,54 @@ print_hand_exec(void *p) {
   int result;
   char a[4];
 
-  printf("Your hand (%#x): ", c->cs.my_hand);
+  stich *stich = &c->cs.sgs.curr_stich;
+  card_collection *hand = &c->cs.my_hand;
+  card_collection *won_stiche = &c->cs.my_stiche;
 
+  printf("You are %s (gupid=%d, active_player=%d)\n",
+		 c->pls[c->cs.my_index]->name.name, c->cs.my_index,
+		 c->cs.my_active_player_index);
+
+  printf("Game Type: %d, Trumpf: %d\n", c->cs.sgs.gr.type, c->cs.sgs.gr.trumpf);
+
+  if (c->cs.ist_alleinspieler) {
+	printf("You are playing alone, the skat was: ");
+	for (int i = 0; i < 2; i++) {
+	  card_get_name(&c->cs.skat[i], a);
+	  printf("%s ", a);
+	}
+	printf("\n");
+  } else {
+	printf("You are playing with %s\n",
+		   c->pls[c->cs.sgs.active_players[c->cs.my_partner]]->name.name);
+  }
+
+  printf("Current Stich (Vorhand=%s): ",
+		 c->pls[c->cs.sgs.active_players[stich->vorhand]]->name.name);
+  for (int i = 0; i < stich->played_cards; i++) {
+	card_get_name(&stich->cs[i], a);
+	printf("%s ", a);
+  }
+  printf("\n");
+
+  printf("Your hand (%#x): ", *hand);
   for (card_id cur = 0; cur < 32; cur++) {
-	card_collection_contains(&c->cs.my_hand, &cur, &result);
+	card_collection_contains(hand, &cur, &result);
 	if (result) {
 	  card_get_name(&cur, a);
 	  printf("%s ", a);
 	}
   }
+  printf("\n");
 
+  printf("Your stiche (%#x): ", *won_stiche);
+  for (card_id cur = 0; cur < 32; cur++) {
+	card_collection_contains(won_stiche, &cur, &result);
+	if (result) {
+	  card_get_name(&cur, a);
+	  printf("%s ", a);
+	}
+  }
   printf("\n");
 
   client_release_state_lock(c);
@@ -43,10 +81,10 @@ client_play_card_wrapper(void *v) {
 }
 
 static void
-execute_print_hand(client *c) {
+execute_print_info(client *c) {
   async_callback acb;
 
-  acb = (async_callback){.do_stuff = print_hand_exec, .data = c};
+  acb = (async_callback){.do_stuff = print_info_exec, .data = c};
 
   exec_async(&c->acq, &acb);
 }
@@ -104,9 +142,9 @@ handle_console_input(void *cc) {
 	  execute_play_card(c, card_index);
 	}
 
-	// list
-	else MATCH_COMMAND(command, "list") {
-	  execute_print_hand(c);
+	// info
+	else MATCH_COMMAND(command, "info") {
+	  execute_print_info(c);
 	}
 
 	else {
