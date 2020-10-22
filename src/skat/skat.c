@@ -578,7 +578,9 @@ skat_resync_player(skat_server_state *ss, skat_client_state *cs, player *pl) {
   }
 
   if (cs->my_active_player_index != 0) {
-	cs->my_stiche = *ss->stiche[cs->my_active_player_index];
+	card_collection *stichp = ss->stiche[cs->my_active_player_index];
+	if (stichp != NULL)
+	  cs->my_stiche = *stichp;
   }
 
   if (cs->my_active_player_index == -1) {
