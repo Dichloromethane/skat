@@ -199,9 +199,9 @@ apply_action_between_rounds(skat_server_state *ss, action *a, player *pl,
 	  card_collection_empty(&ss->stiche_buf[1]);
 	  card_collection_empty(&ss->stiche_buf[2]);
 
-	  // distribute_cards(ss);
+	  distribute_cards(ss);
 	  // distributing manually for debugging:
-	  debug_distribute_cards(ss);
+	  // debug_distribute_cards(ss);
 
 	  DEBUG_PRINTF("Player hands: %#x, %#x, %#x", ss->player_hands[0],
 				   ss->player_hands[1], ss->player_hands[2]);
