@@ -1,7 +1,7 @@
 #include "skat/card.h"
 
 const char *CARD_TYPE_NAMES = "789BDK0A";
-const char CARD_SCORES[] = {0, 0, 0, 2, 3, 4, 10, 11};
+const uint8_t CARD_SCORES[] = {0, 0, 0, 2, 3, 4, 10, 11};
 const char *CARD_COLOR_NAMES = "KaHePiKr";
 
 int

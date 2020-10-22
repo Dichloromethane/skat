@@ -52,7 +52,7 @@ stich_get_winner(const game_rules *const gr, const stich *const stich,
   return 0;
 }
 
-static unsigned int
+static int
 stich_is_trumpf(const game_rules *const gr, const card_id *const cid) {
   if (gr->type == GAME_TYPE_NULL)
 	return 0;
@@ -67,8 +67,12 @@ stich_is_trumpf(const game_rules *const gr, const card_id *const cid) {
 static int
 stich_bekennt(const game_rules *const gr, const card_id *const first_id,
 			  const card_id *const cid) {
-  if (stich_is_trumpf(gr, first_id) && stich_is_trumpf(gr, cid))
+  int first_trumpf = stich_is_trumpf(gr, first_id);
+  int trumpf = stich_is_trumpf(gr, cid);
+  if (first_trumpf && trumpf)
 	return 1;
+  else if (first_trumpf || trumpf)
+	return 0;
 
   card first, c;
   card_get(first_id, &first);
