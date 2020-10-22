@@ -23,8 +23,8 @@ typedef enum {
 } card_type;
 
 typedef struct {
-  card_color cc;
-  card_type ct;
+  card_color cc;// color
+  card_type ct; // type
 } card;
 
 typedef uint8_t card_id;

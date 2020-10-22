@@ -96,15 +96,19 @@ stich_card_legal(const game_rules *const gr, const card_id *const played_cards,
 				 const card_collection *const hand, int *const result) {
   int result_, contains;
   if (card_collection_contains(hand, new_card, &contains))
-	return 1;
+	return 1;// error while checking contains
   else if (!contains)
-	result_ = 0;
-  else if (!played_cards_size || stich_bekennt(gr, &played_cards[0], new_card))
-	result_ = 1;
+	result_ = 0;// cannot play card that you do not own
+  else if (!played_cards_size)
+	result_ = 1;// first card can be anything
+  else if (stich_bekennt(gr, &played_cards[0], new_card))
+	result_ = 1;// later cards have to be of the same color (or also a trumpf
+				// card)
   else if (stich_bekennt_any(gr, &played_cards[0], hand))
-	result_ = 0;
+	result_ = 0;// you *have* to play a card with matching color
   else
-	result_ = 1;
+	result_ = 1;// you can play anything if you cannot play a card with matching
+				// color
 
   *result = result_;
   return 0;
