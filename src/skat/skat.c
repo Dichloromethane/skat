@@ -75,6 +75,51 @@ distribute_cards(skat_server_state *ss) {
 
   return 0;
 }
+static int
+debug_distribute_cards(skat_server_state *ss) {
+  card_get_id(&(card){.cc = COLOR_KARO, .ct = CARD_TYPE_7}, &ss->skat[0]);
+  card_get_id(&(card){.cc = COLOR_KARO, .ct = CARD_TYPE_8}, &ss->skat[1]);
+
+  card_id hand[10];
+
+  card_get_id(&(card){.cc = COLOR_KARO, .ct = CARD_TYPE_9}, &hand[0]);
+  card_get_id(&(card){.cc = COLOR_KARO, .ct = CARD_TYPE_D}, &hand[1]);
+  card_get_id(&(card){.cc = COLOR_KARO, .ct = CARD_TYPE_K}, &hand[2]);
+  card_get_id(&(card){.cc = COLOR_KARO, .ct = CARD_TYPE_10}, &hand[3]);
+  card_get_id(&(card){.cc = COLOR_KARO, .ct = CARD_TYPE_A}, &hand[4]);
+  card_get_id(&(card){.cc = COLOR_HERZ, .ct = CARD_TYPE_7}, &hand[5]);
+  card_get_id(&(card){.cc = COLOR_HERZ, .ct = CARD_TYPE_8}, &hand[6]);
+  card_get_id(&(card){.cc = COLOR_HERZ, .ct = CARD_TYPE_9}, &hand[7]);
+  card_get_id(&(card){.cc = COLOR_HERZ, .ct = CARD_TYPE_D}, &hand[8]);
+  card_get_id(&(card){.cc = COLOR_HERZ, .ct = CARD_TYPE_K}, &hand[9]);
+  card_collection_add_card_array(&ss->player_hands[0], hand, 10);
+
+  card_get_id(&(card){.cc = COLOR_HERZ, .ct = CARD_TYPE_10}, &hand[0]);
+  card_get_id(&(card){.cc = COLOR_HERZ, .ct = CARD_TYPE_A}, &hand[1]);
+  card_get_id(&(card){.cc = COLOR_PIK, .ct = CARD_TYPE_7}, &hand[2]);
+  card_get_id(&(card){.cc = COLOR_PIK, .ct = CARD_TYPE_8}, &hand[3]);
+  card_get_id(&(card){.cc = COLOR_PIK, .ct = CARD_TYPE_9}, &hand[4]);
+  card_get_id(&(card){.cc = COLOR_PIK, .ct = CARD_TYPE_D}, &hand[5]);
+  card_get_id(&(card){.cc = COLOR_PIK, .ct = CARD_TYPE_K}, &hand[6]);
+  card_get_id(&(card){.cc = COLOR_PIK, .ct = CARD_TYPE_10}, &hand[7]);
+  card_get_id(&(card){.cc = COLOR_PIK, .ct = CARD_TYPE_A}, &hand[8]);
+  card_get_id(&(card){.cc = COLOR_KREUZ, .ct = CARD_TYPE_7}, &hand[9]);
+  card_collection_add_card_array(&ss->player_hands[1], hand, 10);
+
+  card_get_id(&(card){.cc = COLOR_KREUZ, .ct = CARD_TYPE_8}, &hand[0]);
+  card_get_id(&(card){.cc = COLOR_KREUZ, .ct = CARD_TYPE_9}, &hand[1]);
+  card_get_id(&(card){.cc = COLOR_KREUZ, .ct = CARD_TYPE_D}, &hand[2]);
+  card_get_id(&(card){.cc = COLOR_KREUZ, .ct = CARD_TYPE_K}, &hand[3]);
+  card_get_id(&(card){.cc = COLOR_KREUZ, .ct = CARD_TYPE_10}, &hand[4]);
+  card_get_id(&(card){.cc = COLOR_KREUZ, .ct = CARD_TYPE_A}, &hand[5]);
+  card_get_id(&(card){.cc = COLOR_KARO, .ct = CARD_TYPE_B}, &hand[6]);
+  card_get_id(&(card){.cc = COLOR_HERZ, .ct = CARD_TYPE_B}, &hand[7]);
+  card_get_id(&(card){.cc = COLOR_PIK, .ct = CARD_TYPE_B}, &hand[8]);
+  card_get_id(&(card){.cc = COLOR_KREUZ, .ct = CARD_TYPE_B}, &hand[9]);
+  card_collection_add_card_array(&ss->player_hands[2], hand, 10);
+
+  return 0;
+}
 
 static game_phase
 apply_action_setup(skat_server_state *ss, action *a, player *pl, server *s) {
@@ -154,7 +199,9 @@ apply_action_between_rounds(skat_server_state *ss, action *a, player *pl,
 	  card_collection_empty(&ss->stiche_buf[1]);
 	  card_collection_empty(&ss->stiche_buf[2]);
 
-	  distribute_cards(ss);
+	  // distribute_cards(ss);
+	  // distributing manually for debugging:
+	  debug_distribute_cards(ss);
 
 	  DEBUG_PRINTF("Player hands: %#x, %#x, %#x", ss->player_hands[0],
 				   ss->player_hands[1], ss->player_hands[2]);
