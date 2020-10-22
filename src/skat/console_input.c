@@ -15,55 +15,97 @@ print_info_exec(void *p) {
   int result;
   char a[4];
 
+  game_phase phase = c->cs.sgs.cgphase;
+  stich *last_stich = &c->cs.sgs.last_stich;
   stich *stich = &c->cs.sgs.curr_stich;
   card_collection *hand = &c->cs.my_hand;
   card_collection *won_stiche = &c->cs.my_stiche;
 
-  printf("You are %s (gupid=%d, active_player=%d)\n",
+  printf("You are %s[gupid=%d, active_player=%d]\n",
 		 c->pls[c->cs.my_index]->name.name, c->cs.my_index,
 		 c->cs.my_active_player_index);
 
-  printf("Game Type: %d, Trumpf: %d\n", c->cs.sgs.gr.type, c->cs.sgs.gr.trumpf);
+  printf("You are playing with:");
+  for (int i = 0; i < 4; i++) {
+	player *pl = c->pls[i];
+	if (pl == NULL)
+	  continue;
 
-  if (c->cs.ist_alleinspieler) {
-	printf("You are playing alone, the skat was: ");
-	for (int i = 0; i < 2; i++) {
-	  card_get_name(&c->cs.skat[i], a);
-	  printf("%s ", a);
+	int ap = -1;
+	for (int j = 0; j < 3; j++) {
+	  if (c->cs.sgs.active_players[j] == pl->index) {
+		ap = j;
+		break;
+	  }
+	}
+	printf(" %s[gupid=%d, active_player=%d]", pl->name.name, pl->index, ap);
+  }
+  printf("\n");
+
+  printf("Game Phase: %s, Type: %d, Trumpf: %d\n", game_phase_name_table[phase],
+		 c->cs.sgs.gr.type, c->cs.sgs.gr.trumpf);
+
+  if (phase != GAME_PHASE_INVALID && phase != GAME_PHASE_SETUP
+	  && phase != GAME_PHASE_BETWEEN_ROUNDS) {
+	if (c->cs.ist_alleinspieler) {
+	  printf("You are playing alone, the skat was:");
+	  for (int i = 0; i < 2; i++) {
+		card_get_name(&c->cs.skat[i], a);
+		printf(" %s", a);
+	  }
+	  printf("\n");
+	} else {
+	  printf("You are playing with %s\n",
+			 c->pls[c->cs.sgs.active_players[c->cs.my_partner]]->name.name);
+	}
+
+	if (c->cs.sgs.stich_num > 0) {
+	  printf("Last Stich (num=%d, vorhand=%s, winner=%s):", c->cs.sgs.stich_num,
+			 c->pls[c->cs.sgs.active_players[last_stich->vorhand]]->name.name,
+			 c->pls[c->cs.sgs.active_players[last_stich->winner]]->name.name);
+	  for (int i = 0; i < last_stich->played_cards; i++) {
+		card_get_name(&last_stich->cs[i], a);
+		printf(" %s", a);
+	  }
+	  printf("\n");
+	}
+	printf("Current Stich (num=%d, vorhand=%s):", c->cs.sgs.stich_num,
+		   c->pls[c->cs.sgs.active_players[stich->vorhand]]->name.name);
+	for (int i = 0; i < stich->played_cards; i++) {
+	  card_get_name(&stich->cs[i], a);
+	  printf(" %s", a);
 	}
 	printf("\n");
-  } else {
-	printf("You are playing with %s\n",
-		   c->pls[c->cs.sgs.active_players[c->cs.my_partner]]->name.name);
-  }
 
-  printf("Current Stich (Vorhand=%s): ",
-		 c->pls[c->cs.sgs.active_players[stich->vorhand]]->name.name);
-  for (int i = 0; i < stich->played_cards; i++) {
-	card_get_name(&stich->cs[i], a);
-	printf("%s ", a);
-  }
-  printf("\n");
-
-  printf("Your hand (%#x): ", *hand);
-  for (card_id cur = 0; cur < 32; cur++) {
-	card_collection_contains(hand, &cur, &result);
-	if (result) {
-	  card_get_name(&cur, a);
-	  printf("%s ", a);
+	int player_turn =
+			c->cs.sgs
+					.active_players[(stich->vorhand + stich->played_cards) % 3];
+	if (c->cs.my_index == player_turn) {
+	  printf("It is YOUR turn\n");
+	} else {
+	  printf("it is %s's turn\n", c->pls[player_turn]->name.name);
 	}
-  }
-  printf("\n");
 
-  printf("Your stiche (%#x): ", *won_stiche);
-  for (card_id cur = 0; cur < 32; cur++) {
-	card_collection_contains(won_stiche, &cur, &result);
-	if (result) {
-	  card_get_name(&cur, a);
-	  printf("%s ", a);
+	printf("Your hand (%#x):", *hand);
+	for (card_id cur = 0; cur < 32; cur++) {
+	  card_collection_contains(hand, &cur, &result);
+	  if (result) {
+		card_get_name(&cur, a);
+		printf(" %s", a);
+	  }
 	}
+	printf("\n");
+
+	printf("Your stiche (%#x):", *won_stiche);
+	for (card_id cur = 0; cur < 32; cur++) {
+	  card_collection_contains(won_stiche, &cur, &result);
+	  if (result) {
+		card_get_name(&cur, a);
+		printf(" %s", a);
+	  }
+	}
+	printf("\n");
   }
-  printf("\n");
 
   client_release_state_lock(c);
 }

@@ -564,15 +564,48 @@ skat_resync_player(skat_server_state *ss, skat_client_state *cs, player *pl) {
   memset(cs, '\0', sizeof(skat_client_state));
 
   cs->sgs = ss->sgs;
-  cs->my_index = pl->index;
+
   get_player_hand(ss, pl, &cs->my_hand);
 
-  // TODO: my_stiche
+  cs->my_index = pl->index;
 
-  if (ss->sgs.cgphase == GAME_PHASE_SKAT_AUFNEHMEN
-	  && pl->index == ss->sgs.alleinspieler) {
-	cs->skat[0] = ss->skat[0];
-	cs->skat[1] = ss->skat[1];
+  cs->my_active_player_index = -1;
+  for (int i = 0; i < 3; i++) {
+	if (cs->sgs.active_players[i] == cs->my_index) {
+	  cs->my_active_player_index = i;
+	  break;
+	}
+  }
+
+  if (cs->my_active_player_index != 0) {
+	cs->my_stiche = *ss->stiche[cs->my_active_player_index];
+  }
+
+  if (cs->my_active_player_index == -1) {
+	cs->ist_alleinspieler = -1;
+	cs->my_partner = -1;
+  } else if (cs->my_active_player_index == cs->sgs.alleinspieler
+			 || cs->sgs.gr.type == GAME_TYPE_RAMSCH) {
+	cs->ist_alleinspieler = 1;
+	cs->my_partner = cs->my_active_player_index;
+  } else {
+	cs->ist_alleinspieler = 0;
+
+	// 0,1 | 1,0, sum=1 -> 2
+	// 0,2 | 2,0, sum=2 -> 1
+	// 1,2 | 2,1, sum=3 -> 3
+
+	int sum = cs->my_active_player_index + cs->sgs.alleinspieler;
+	if (sum == 1)
+	  cs->my_partner = 2;
+	else if (sum == 2)
+	  cs->my_partner = 1;
+	else
+	  cs->my_partner = 3;
+  }
+
+  if (cs->ist_alleinspieler == 1 && cs->sgs.gr.type != GAME_TYPE_RAMSCH) {
+	memcpy(cs->skat, ss->skat, sizeof(cs->skat));
   }
 }
 
@@ -580,7 +613,7 @@ void
 server_skat_state_init(skat_server_state *ss) {
   ss->sgs.cgphase = GAME_PHASE_SETUP;
   memset(ss->sgs.score, 0, sizeof(ss->sgs.score));
-  memset(ss->sgs.active_players, -1, 3 * sizeof(int));
+  memset(ss->sgs.active_players, -1, sizeof(ss->sgs.active_players));
 }
 
 void
@@ -588,6 +621,8 @@ client_skat_state_init(skat_client_state *cs) {
   cs->sgs.cgphase = GAME_PHASE_SETUP;
   memset(cs->sgs.score, '\0', sizeof(cs->sgs.score));
   memset(cs->sgs.active_players, -1, sizeof(cs->sgs.active_players));
+
+  cs->my_partner = cs->my_active_player_index = -1;
 }
 
 void
