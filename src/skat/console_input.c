@@ -85,10 +85,10 @@ print_info_exec(void *p) {
 	if (c->cs.my_index == player_turn) {
 	  printf("It is YOUR turn\n");
 	} else {
-	  printf("it is %s's turn\n", c->pls[player_turn]->name.name);
+	  printf("It is %s's turn\n", c->pls[player_turn]->name.name);
 	}
 
-    int ix = 0;
+	int ix = 0;
 	printf("Your hand (%#x):", *hand);
 	for (card_id cur = 0; cur < 32; cur++) {
 	  card_collection_contains(hand, &cur, &result);
@@ -124,26 +124,28 @@ static void
 client_ready_callback(void *v) {
   client_ready_callback_args *args = v;
   if (args->hdr.e.type == EVENT_ILLEGAL_ACTION)
-	printf("--\nBig unluck! You tried to ready yourself, but that was illegal\n> ");
+	printf("--\nBig unluck! You tried to ready yourself, but that was "
+		   "illegal\n> ");
   else
-	printf("--\nReady for battle. We are now in %s\n> ", game_phase_name_table[args->hdr.c->cs.sgs.cgphase]);
+	printf("--\nReady for battle. We are now in %s\n> ",
+		   game_phase_name_table[args->hdr.c->cs.sgs.cgphase]);
   fflush(stdout);
   free(args);
 }
 
 static void
 print_current_stich(client *c) {
-  char buf[4]; 
+  char buf[4];
 
   printf("Cards currently on table:");
 
   for (int i = 0; i < c->cs.sgs.curr_stich.played_cards; i++) {
-    card_get_name(&c->cs.sgs.curr_stich.cs[i], buf);
-    printf(" %s", buf);
+	card_get_name(&c->cs.sgs.curr_stich.cs[i], buf);
+	printf(" %s", buf);
   }
 }
 
-static void 
+static void
 execute_ready_wrapper(void *v) {
   client *c = v;
   client_action_callback cac;
@@ -157,8 +159,7 @@ static void
 execute_ready(client *c) {
   async_callback acb;
 
-  acb = (async_callback){.do_stuff = execute_ready_wrapper,
-						 .data = c};
+  acb = (async_callback){.do_stuff = execute_ready_wrapper, .data = c};
 
   exec_async(&c->acq, &acb);
 }
@@ -178,19 +179,22 @@ client_play_card_callback(void *v) {
   __label__ end;
   client_play_card_callback_args *args = v;
 
-  client_acquire_state_lock(args->hdr.c); 
+  client_acquire_state_lock(args->hdr.c);
 
   printf("--\n");
 
   if (args->hdr.e.type == EVENT_ILLEGAL_ACTION) {
-	printf("Big unluck! You tried to play a card, but it -sadly- was the wrong card");
+	printf("Big unluck! You tried to play a card, but it -sadly- was the wrong "
+		   "card");
 	goto end;
   }
 
-  printf("Successfully played card.");
+  char buf[4];
+  card_get_name(&args->hdr.e.card, buf);
+  printf("Successfully played card %s. ", buf);
   print_current_stich(args->hdr.c);
 
- end:
+end:
   printf("\n> ");
   fflush(stdout);
   client_release_state_lock(args->hdr.c);
@@ -202,7 +206,8 @@ client_play_card_wrapper(void *v) {
   struct client_play_card_args *args = v;
   client_action_callback cac;
 
-  client_play_card_callback_args *cach = malloc(sizeof(client_play_card_callback_args));
+  client_play_card_callback_args *cach =
+		  malloc(sizeof(client_play_card_callback_args));
   cac.args = cach;
   cac.f = client_play_card_callback;
   client_play_card(args->c, args->card_index, &cac);
@@ -243,51 +248,54 @@ io_handle_event(client *c, event *e) {
   switch (e->type) {
 	case EVENT_TEMP_REIZEN_DONE:
 	  if (c->cs.ist_alleinspieler)
-	    printf("You are alleinspieler");
+		printf("You are alleinspieler");
 	  else
-	    printf("You are playing with %s", c->pls[c->cs.sgs.active_players[c->cs.my_partner]]->name.name);
+		printf("You are playing with %s",
+			   c->pls[c->cs.sgs.active_players[c->cs.my_partner]]->name.name);
 	  break;
 	case EVENT_DISTRIBUTE_CARDS:
 	  printf("Your cards: ");
 	  ix = 0;
 	  for (card_id cur = 0; cur < 32; cur++) {
-	    card_collection_contains(&c->cs.my_hand, &cur, &result);
-	    if (result) {
+		card_collection_contains(&c->cs.my_hand, &cur, &result);
+		if (result) {
 		  card_get_name(&cur, buf);
 		  printf(" %s(%d)", buf, ix++);
-	    }
+		}
 	  }
 	  printf("\n");
 	  goto print_print_turn;
 	case EVENT_STICH_DONE:
 	  if (e->stich_winner == c->cs.my_index) {
-	    printf("You won the Stich! \\o/");
-	  } else if (!c->cs.ist_alleinspieler && e->stich_winner == c->cs.sgs.active_players[c->cs.my_partner]) {
+		printf("You won the Stich! \\o/");
+	  } else if (!c->cs.ist_alleinspieler
+				 && e->stich_winner
+							== c->cs.sgs.active_players[c->cs.my_partner]) {
 		printf("Your partner won the Stich! \\o/");
 	  } else {
 		printf("You lost the Stich. Gid good.");
 	  }
 	  break;
-    case EVENT_PLAY_CARD:
+	case EVENT_PLAY_CARD:
 	  card_get_name(&e->card, buf);
 	  printf("Card %s played. ", buf);
-      print_current_stich(c);
+	  print_current_stich(c);
 	  printf("\n");
 	  goto print_print_turn;
-    default:
-      printf("Something (%s) happened", event_name_table[e->type]);
+	default:
+	  printf("Something (%s) happened", event_name_table[e->type]);
   }
   goto skip;
- print_print_turn:
-  player_turn =
-    	  c->cs.sgs
-    			.active_players[(c->cs.sgs.curr_stich.vorhand + c->cs.sgs.curr_stich.played_cards) % 3];
+print_print_turn:
+  player_turn = c->cs.sgs.active_players[(c->cs.sgs.curr_stich.vorhand
+										  + c->cs.sgs.curr_stich.played_cards)
+										 % 3];
   if (c->cs.my_index == player_turn) {
-    printf("It is YOUR turn\n");
+	printf("It is YOUR turn\n");
   } else {
-    printf("it is %s's turn\n", c->pls[player_turn]->name.name);
+	printf("It is %s's turn\n", c->pls[player_turn]->name.name);
   }
- skip:
+skip:
   printf("\n> ");
   fflush(stdout);
 }

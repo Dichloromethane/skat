@@ -20,10 +20,10 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#define TYPE client_action_callback
+#define TYPE   client_action_callback
 #define HEADER 0
 #define ATOMIC 1
-#include"fast_ll.def"
+#include "fast_ll.def"
 #undef ATOMIC
 #undef HEADER
 #undef TYPE
@@ -190,13 +190,13 @@ client_release_action_id(client *c, event *e) {
 
   if (e->answer_to == -1 || e->acting_player != c->cs.my_index)
 	return 0;
-  
+
   ll_client_action_callback_remove(&c->ll_cac, &ac, e->answer_to);
-  
+
   args = ac.args;
   args->c = c;
   args->e = *e;
-  exec_async(&c->acq, &(async_callback) {.do_stuff = ac.f, .data = ac.args});
+  exec_async(&c->acq, &(async_callback){.do_stuff = ac.f, .data = ac.args});
   return 1;
 }
 
@@ -215,12 +215,14 @@ client_call_general_io_handler_wrapper(void *v) {
 static void
 client_call_general_io_handler(client *c, event *e) {
   io_handle_event_args *ioargs;
- 
+
   ioargs = malloc(sizeof(*ioargs));
   ioargs->c = c;
   ioargs->e = *e;
-  exec_async(&c->acq, &(async_callback) {.do_stuff = client_call_general_io_handler_wrapper,
-  										 .data = ioargs});
+  exec_async(
+		  &c->acq,
+		  &(async_callback){.do_stuff = client_call_general_io_handler_wrapper,
+							.data = ioargs});
 }
 
 void
@@ -242,9 +244,8 @@ client_tick(client *c) {
 	  conn_enqueue_event(&s->conns[i].c, &err_ev);
 	   */
 	}
-	if(!client_release_action_id(c, &e))
-	  client_call_general_io_handler(c, &e); 
-
+	if (!client_release_action_id(c, &e))
+	  client_call_general_io_handler(c, &e);
   }
   skat_client_state_tick(&c->cs, c);
 
@@ -264,7 +265,8 @@ client_ready(client *c, client_action_callback *cac) {
 }
 
 void
-client_play_card(client *c, unsigned int card_index, client_action_callback *cac) {
+client_play_card(client *c, unsigned int card_index,
+				 client_action_callback *cac) {
   action a;
 
   memset(&a, '\0', sizeof(a));
