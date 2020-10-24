@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <sys/syscall.h>
 #include <unistd.h>
+#include <assert.h>
 
 #define MIN(a, b) (a < b ? a : b)
 #define MAX(a, b) (a > b ? a : b)
@@ -56,16 +57,22 @@ extern pthread_mutex_t debug_printf_lock;
 #define DEBUG_PRINTF_LABEL(label, fmt, ...)
 #endif
 
-#ifdef HAS_DEBUG_LOCK_PRINTF
+#if defined(HAS_DEBUG_LOCK_PRINTF) && HAS_DEBUG_LOCK_PRINTF
 #define DEBUG_LOCK 1
 #else
 #define DEBUG_LOCK 0
 #endif
 
-#ifdef HAS_DEBUG_TICK_PRINTF
+#if defined(HAS_DEBUG_TICK_PRINTF) && HAS_DEBUG_TICK_PRINTF
 #define DEBUG_TICK 1
 #else
 #define DEBUG_TICK 0
+#endif
+
+#if defined(HAS_DEBUG_PACKAGE_PRINTF) && (HAS_DEBUG_PACKAGE_PRINTF)
+#define DEBUG_PACKAGE 1
+#else
+#define DEBUG_PACKAGE 0
 #endif
 
 #define ERRNO_CHECK_STR(stmt, str) \

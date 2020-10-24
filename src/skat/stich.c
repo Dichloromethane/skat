@@ -44,11 +44,11 @@ stich_get_winner(const game_rules *const gr, const stich *const stich,
   if (t1 > t0) {
 	winner = 1;
   }
-  if (t2 > t0 || t2 > t1) {
+  if (t2 > t0 && t2 > t1) {
 	winner = 2;
   }
 
-  *result = (stich->vorhand + winner) % 3;
+  *result = winner;
   return 0;
 }
 

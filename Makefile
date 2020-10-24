@@ -58,7 +58,7 @@ DEP=$(OBJ:.o=.d)
  
 .PHONY: default all png clean distclean
 
-default: all
+default: all 
 
 all: skat_server skat_client
 
@@ -83,6 +83,9 @@ clean:
 
 format: $(SOURCE) $(HEADER) $(XMACROS)
 	clang-format -i $^
+
+ctags: $(SOURCE) $(HEADER) $(XMACROS)
+	ctags --extra=+f --c-kinds=+p --tag-relative=yes -o .tags -R $^
 
 png:
 	./$(TOOLSDIR)dep_graph.sh -o dep_graph.png -s $(SOURCEDIR) -s $(INCLUDEDIR)

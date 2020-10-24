@@ -21,6 +21,8 @@ print_info_exec(void *p) {
   card_collection *hand = &c->cs.my_hand;
   card_collection *won_stiche = &c->cs.my_stiche;
 
+  printf("--\n\n--------------------------\n");
+
   printf("You are %s[gupid=%d, active_player=%d]\n",
 		 c->pls[c->cs.my_index]->name.name, c->cs.my_index,
 		 c->cs.my_active_player_index);
@@ -86,12 +88,13 @@ print_info_exec(void *p) {
 	  printf("it is %s's turn\n", c->pls[player_turn]->name.name);
 	}
 
+    int ix = 0;
 	printf("Your hand (%#x):", *hand);
 	for (card_id cur = 0; cur < 32; cur++) {
 	  card_collection_contains(hand, &cur, &result);
 	  if (result) {
 		card_get_name(&cur, a);
-		printf(" %s", a);
+		printf(" %s(%d)", a, ix++);
 	  }
 	}
 	printf("\n");
@@ -107,18 +110,102 @@ print_info_exec(void *p) {
 	printf("\n");
   }
 
+  printf("--------------------------\n\n> ");
+  fflush(stdout);
+
   client_release_state_lock(c);
 }
+
+typedef struct {
+  client_action_callback_hdr hdr;
+} client_ready_callback_args;
+
+static void
+client_ready_callback(void *v) {
+  client_ready_callback_args *args = v;
+  if (args->hdr.e.type == EVENT_ILLEGAL_ACTION)
+	printf("--\nBig unluck! You tried to ready yourself, but that was illegal\n> ");
+  else
+	printf("--\nReady for battle. We are now in %s\n> ", game_phase_name_table[args->hdr.c->cs.sgs.cgphase]);
+  fflush(stdout);
+  free(args);
+}
+
+static void
+print_current_stich(client *c) {
+  char buf[4]; 
+
+  printf("Cards currently on table:");
+
+  for (int i = 0; i < c->cs.sgs.curr_stich.played_cards; i++) {
+    card_get_name(&c->cs.sgs.curr_stich.cs[i], buf);
+    printf(" %s", buf);
+  }
+}
+
+static void 
+execute_ready_wrapper(void *v) {
+  client *c = v;
+  client_action_callback cac;
+  client_ready_callback_args *cach = malloc(sizeof(client_ready_callback_args));
+  cac.args = cach;
+  cac.f = client_ready_callback;
+  client_ready(c, &cac);
+}
+
+static void
+execute_ready(client *c) {
+  async_callback acb;
+
+  acb = (async_callback){.do_stuff = execute_ready_wrapper,
+						 .data = c};
+
+  exec_async(&c->acq, &acb);
+}
+
 
 struct client_play_card_args {
   client *c;
   unsigned int card_index;
 };
 
+typedef struct {
+  client_action_callback_hdr hdr;
+} client_play_card_callback_args;
+
+static void
+client_play_card_callback(void *v) {
+  __label__ end;
+  client_play_card_callback_args *args = v;
+
+  client_acquire_state_lock(args->hdr.c); 
+
+  printf("--\n");
+
+  if (args->hdr.e.type == EVENT_ILLEGAL_ACTION) {
+	printf("Big unluck! You tried to play a card, but it -sadly- was the wrong card");
+	goto end;
+  }
+
+  printf("Successfully played card.");
+  print_current_stich(args->hdr.c);
+
+ end:
+  printf("\n> ");
+  fflush(stdout);
+  client_release_state_lock(args->hdr.c);
+  free(args);
+}
+
 static void
 client_play_card_wrapper(void *v) {
   struct client_play_card_args *args = v;
-  client_play_card(args->c, args->card_index);
+  client_action_callback cac;
+
+  client_play_card_callback_args *cach = malloc(sizeof(client_play_card_callback_args));
+  cac.args = cach;
+  cac.f = client_play_card_callback;
+  client_play_card(args->c, args->card_index, &cac);
   free(args);
 }
 
@@ -127,17 +214,6 @@ execute_print_info(client *c) {
   async_callback acb;
 
   acb = (async_callback){.do_stuff = print_info_exec, .data = c};
-
-  exec_async(&c->acq, &acb);
-}
-
-static void
-execute_ready(client *c) {
-  async_callback acb;
-
-  // STFU
-  acb = (async_callback){.do_stuff = (void (*)(void *)) client_ready,
-						 .data = c};
 
   exec_async(&c->acq, &acb);
 }
@@ -156,6 +232,66 @@ execute_play_card(client *c, unsigned int card_index) {
   exec_async(&c->acq, &acb);
 }
 
+void
+io_handle_event(client *c, event *e) {
+  char buf[4];
+  int result;
+  int ix;
+  int player_turn;
+
+  printf("--\n");
+  switch (e->type) {
+	case EVENT_TEMP_REIZEN_DONE:
+	  if (c->cs.ist_alleinspieler)
+	    printf("You are alleinspieler");
+	  else
+	    printf("You are playing with %s", c->pls[c->cs.sgs.active_players[c->cs.my_partner]]->name.name);
+	  break;
+	case EVENT_DISTRIBUTE_CARDS:
+	  printf("Your cards: ");
+	  ix = 0;
+	  for (card_id cur = 0; cur < 32; cur++) {
+	    card_collection_contains(&c->cs.my_hand, &cur, &result);
+	    if (result) {
+		  card_get_name(&cur, buf);
+		  printf(" %s(%d)", buf, ix++);
+	    }
+	  }
+	  printf("\n");
+	  goto print_print_turn;
+	case EVENT_STICH_DONE:
+	  if (e->stich_winner == c->cs.my_index) {
+	    printf("You won the Stich! \\o/");
+	  } else if (!c->cs.ist_alleinspieler && e->stich_winner == c->cs.sgs.active_players[c->cs.my_partner]) {
+		printf("Your partner won the Stich! \\o/");
+	  } else {
+		printf("You lost the Stich. Gid good.");
+	  }
+	  break;
+    case EVENT_PLAY_CARD:
+	  card_get_name(&e->card, buf);
+	  printf("Card %s played. ", buf);
+      print_current_stich(c);
+	  printf("\n");
+	  goto print_print_turn;
+    default:
+      printf("Something (%s) happened", event_name_table[e->type]);
+  }
+  goto skip;
+ print_print_turn:
+  player_turn =
+    	  c->cs.sgs
+    			.active_players[(c->cs.sgs.curr_stich.vorhand + c->cs.sgs.curr_stich.played_cards) % 3];
+  if (c->cs.my_index == player_turn) {
+    printf("It is YOUR turn\n");
+  } else {
+    printf("it is %s's turn\n", c->pls[player_turn]->name.name);
+  }
+ skip:
+  printf("\n> ");
+  fflush(stdout);
+}
+
 #define MATCH_COMMAND(c, s) if (!strncmp(c, s, sizeof(s)))
 
 // This is an exceedingly safe scanf-based parser
@@ -172,7 +308,7 @@ handle_console_input(void *cc) {
 
   for (;;) {
 	// read command (first word)
-	printf("Awaiting your command: ");
+	printf("> ");
 	scanf("%ms", &command);
 
 	// ready

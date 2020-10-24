@@ -20,6 +20,14 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#define TYPE client_action_callback
+#define HEADER 0
+#define ATOMIC 1
+#include"fast_ll.def"
+#undef ATOMIC
+#undef HEADER
+#undef TYPE
+
 static void
 client_close_all_connections(client *c) {
   DEBUG_PRINTF("Closing open connection to server");
@@ -175,6 +183,46 @@ start_io_thread(client *c) {
   pthread_create(&c->io_handler, NULL, handle_console_input, c);
 }
 
+static int
+client_release_action_id(client *c, event *e) {
+  client_action_callback ac;
+  client_action_callback_hdr *args;
+
+  if (e->answer_to == -1 || e->acting_player != c->cs.my_index)
+	return 0;
+  
+  ll_client_action_callback_remove(&c->ll_cac, &ac, e->answer_to);
+  
+  args = ac.args;
+  args->c = c;
+  args->e = *e;
+  exec_async(&c->acq, &(async_callback) {.do_stuff = ac.f, .data = ac.args});
+  return 1;
+}
+
+typedef struct {
+  client *c;
+  event e;
+} io_handle_event_args;
+
+static void
+client_call_general_io_handler_wrapper(void *v) {
+  io_handle_event_args *args = v;
+  io_handle_event(args->c, &args->e);
+  free(v);
+}
+
+static void
+client_call_general_io_handler(client *c, event *e) {
+  io_handle_event_args *ioargs;
+ 
+  ioargs = malloc(sizeof(*ioargs));
+  ioargs->c = c;
+  ioargs->e = *e;
+  exec_async(&c->acq, &(async_callback) {.do_stuff = client_call_general_io_handler_wrapper,
+  										 .data = ioargs});
+}
+
 void
 client_tick(client *c) {
   DPRINTF_COND(DEBUG_TICK, "Client tick");
@@ -194,6 +242,9 @@ client_tick(client *c) {
 	  conn_enqueue_event(&s->conns[i].c, &err_ev);
 	   */
 	}
+	if(!client_release_action_id(c, &e))
+	  client_call_general_io_handler(c, &e); 
+
   }
   skat_client_state_tick(&c->cs, c);
 
@@ -201,32 +252,30 @@ client_tick(client *c) {
 }
 
 void
-client_ready(client *c) {
+client_ready(client *c, client_action_callback *cac) {
   action a;
 
   memset(&a, '\0', sizeof(a));
 
   a.type = ACTION_READY;
-  a.id = -1;
-  DTODO_PRINTF("Actually use the action id properly");
+  a.id = ll_client_action_callback_insert(&c->ll_cac, cac);
   DEBUG_PRINTF("Enqueueing ready action");
   conn_enqueue_action(&c->c2s.c, &a);
 }
 
 void
-client_play_card(client *c, unsigned int card_index) {
+client_play_card(client *c, unsigned int card_index, client_action_callback *cac) {
   action a;
 
   memset(&a, '\0', sizeof(a));
 
-  a.type = ACTION_PLAY_CARD;
-  a.id = -1;
-  DTODO_PRINTF("Actually use the action id properly");
   if (card_collection_get_card(&c->cs.my_hand, card_index, &a.card)) {
 	DERROR_PRINTF("Could not play the given card index %d, out of range",
 				  card_index);
 	return;
   }
+  a.type = ACTION_PLAY_CARD;
+  a.id = ll_client_action_callback_insert(&c->ll_cac, cac);
 
   DEBUG_PRINTF("Enqueueing play card action");
   conn_enqueue_action(&c->c2s.c, &a);
@@ -347,6 +396,7 @@ client_init(client *c, char *host, int port, char *name) {
   memset(c, '\0', sizeof(client));
   pthread_mutex_init(&c->lock, NULL);
   init_async_callback_queue(&c->acq);
+  ll_client_action_callback_create(&c->ll_cac);
   c->host = host;
   c->port = port;
   c->name = name;

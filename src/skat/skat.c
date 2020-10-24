@@ -130,8 +130,7 @@ apply_action_setup(skat_server_state *ss, action *a, player *pl, server *s) {
 	case ACTION_READY:
 	  if (s->ncons < 3) {
 		DEBUG_PRINTF("Rejecting action ACTION_READY with id %ld by player %s "
-					 "because "
-					 "s->ncons = %d < 3",
+					 "because s->ncons = %d < 3",
 					 a->id, pl->name.name, s->ncons);
 		return GAME_PHASE_INVALID;
 	  }
@@ -142,6 +141,10 @@ apply_action_setup(skat_server_state *ss, action *a, player *pl, server *s) {
 	  return GAME_PHASE_BETWEEN_ROUNDS;
 	case ACTION_RULE_CHANGE:
 	default:
+
+	  DEBUG_PRINTF("Trying to use undefined action %s in state %s",
+				   action_name_table[a->type],
+				   game_phase_name_table[ss->sgs.cgphase]);
 	  return GAME_PHASE_INVALID;
   }
 }
@@ -157,15 +160,14 @@ apply_action_between_rounds(skat_server_state *ss, action *a, player *pl,
 	case ACTION_READY:
 	  if (s->ncons < 3) {
 		DEBUG_PRINTF("Rejecting action ACTION_READY with id %ld by player %s "
-					 "because "
-					 "s->ncons = %d < 3",
+					 "because s->ncons = %d < 3",
 					 a->id, pl->name.name, s->ncons);
 
 		return GAME_PHASE_INVALID;
 	  }
 
-	  e.answer_to = -1;
-	  e.acting_player = -1;
+	  e.answer_to = a->id;
+	  e.acting_player = pl->index;
 	  e.type = EVENT_START_ROUND;
 
 	  if (ss->sgs.active_players[0] == -1) {
@@ -199,15 +201,20 @@ apply_action_between_rounds(skat_server_state *ss, action *a, player *pl,
 	  card_collection_empty(&ss->stiche_buf[1]);
 	  card_collection_empty(&ss->stiche_buf[2]);
 
-	  distribute_cards(ss);
+#if defined(DISTRIBUTE_SORTED_CARDS) && (DISTRIBUTE_SORTED_CARDS)
 	  // distributing manually for debugging:
-	  // debug_distribute_cards(ss);
+	  debug_distribute_cards(ss);
+#else
+	  distribute_cards(ss);
+#endif
 
 	  DEBUG_PRINTF("Player hands: %#x, %#x, %#x", ss->player_hands[0],
 				   ss->player_hands[1], ss->player_hands[2]);
 	  DEBUG_PRINTF("Skat: %u & %u", ss->skat[0], ss->skat[1]);
 
 	  e.type = EVENT_DISTRIBUTE_CARDS;
+	  e.answer_to = -1;
+	  e.acting_player = -1;
 
 	  void mask_hands(event * ev, player * pl) {
 		get_player_hand(ss, pl, &ev->hand);
@@ -246,6 +253,9 @@ apply_action_between_rounds(skat_server_state *ss, action *a, player *pl,
 
 	  return GAME_PHASE_PLAY_STICH_C1;
 	default:
+	  DEBUG_PRINTF("Trying to use undefined action %s in state %s",
+				   action_name_table[a->type],
+				   game_phase_name_table[ss->sgs.cgphase]);
 	  return GAME_PHASE_INVALID;
   }
 }
@@ -260,6 +270,9 @@ apply_action_reizen_begin(skat_server_state *ss, action *a, player *pl,
   DTODO_PRINTF("TODO: implement reizen");// TODO: implement reizen
   switch (a->type) {
 	default:
+	  DEBUG_PRINTF("Trying to use undefined action %s in state %s",
+				   action_name_table[a->type],
+				   game_phase_name_table[ss->sgs.cgphase]);
 	  return GAME_PHASE_INVALID;
   }
 }
@@ -273,6 +286,8 @@ static game_phase
 apply_action_stich(skat_server_state *ss, action *a, player *pl, server *s,
 				   int ind) {
   event e;
+  player *expected_player;
+  int expected_player_gupid;
   int curr, result;
   int winnerv;// indexed by vorhand + ap
   int winner; // indexed by ap
@@ -280,19 +295,32 @@ apply_action_stich(skat_server_state *ss, action *a, player *pl, server *s,
   switch (a->type) {
 	case ACTION_PLAY_CARD:
 	  curr = next_active_player(ss->sgs.curr_stich.vorhand, ind);
-	  if (!player_equals_by_name(pl, server_get_player_by_gupid(
-											 s, ss->sgs.active_players[curr])))
+	  expected_player_gupid = ss->sgs.active_players[curr];
+	  expected_player = server_get_player_by_gupid(s, expected_player_gupid);
+	  if (pl->index != expected_player_gupid) {
+		DEBUG_PRINTF("Wrong player trying to play card: Expected player %s "
+					 "(gupid: %d), but got %s (gupid %d) instead",
+					 expected_player->name.name, expected_player_gupid,
+					 pl->name.name, pl->index);
+
 		return GAME_PHASE_INVALID;
+	  }
 	  if (stich_card_legal(&ss->sgs.gr, ss->sgs.curr_stich.cs, ind, &a->card,
 						   &ss->player_hands[curr], &result)
-		  || !result)
+		  || !result) {
+		char buf[4];
+		card_get_name(&a->card, buf);
+		DEBUG_PRINTF("Trying to play illegal card %s", buf);
 		return GAME_PHASE_INVALID;
+	  }
 
 	  e.type = EVENT_PLAY_CARD;
 	  e.answer_to = a->id;
 	  e.acting_player = pl->index;
 	  e.card = a->card;
 	  server_distribute_event(s, &e, NULL);
+
+	  card_collection_remove_card(&ss->player_hands[curr], &a->card);
 
 	  if (!ind) {
 		ss->sgs.curr_stich.cs[0] = a->card;
@@ -307,7 +335,8 @@ apply_action_stich(skat_server_state *ss, action *a, player *pl, server *s,
 	  ss->sgs.curr_stich.cs[2] = a->card;
 	  ss->sgs.curr_stich.played_cards = 3;
 
-	  stich_get_winner(&ss->sgs.gr, &ss->sgs.curr_stich, &winnerv);// Sue me
+	  stich_get_winner(&ss->sgs.gr, &ss->sgs.curr_stich,
+					   &winnerv);// Sue me for discarding the return value
 
 	  winner = next_active_player(ss->sgs.curr_stich.vorhand, winnerv);
 	  ss->sgs.curr_stich.winner = winner;
@@ -341,6 +370,9 @@ apply_action_stich(skat_server_state *ss, action *a, player *pl, server *s,
 
 	  return GAME_PHASE_BETWEEN_ROUNDS;
 	default:
+	  DEBUG_PRINTF("Trying to use undefined action %s in state %s",
+				   action_name_table[a->type],
+				   game_phase_name_table[ss->sgs.cgphase]);
 	  return GAME_PHASE_INVALID;
   }
 }
@@ -364,6 +396,7 @@ apply_action(skat_server_state *ss, action *a, player *pl, server *s) {
 	case GAME_PHASE_PLAY_STICH_C3:
 	  return apply_action_stich(ss, a, pl, s, 2);
 	default:
+	  DERROR_PRINTF("Undefined Gamestate encountered!");
 	  return GAME_PHASE_INVALID;
   }
 }
@@ -389,7 +422,7 @@ int
 skat_client_state_apply(skat_client_state *cs, event *e, client *c) {
   DTODO_PRINTF("Insert sanity checks.");
   char card_name[4];
-  int my_active_player_index;
+  // int my_active_player_index;
   switch (e->type) {
 	case EVENT_START_GAME:
 	  DEBUG_PRINTF("Starting game");

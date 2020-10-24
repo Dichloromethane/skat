@@ -84,10 +84,10 @@ pos_callback(GLFWwindow *window, int xpos, int ypos) {
 
 static void
 key_callback(GLFWwindow *window, int key, int scancode, int action, int mods) {
-  const char *action_name = action == 0   ? "release"
-							: action == 1 ? "press"
-							: action == 2 ? "repeat"
-										  : "unknown";
+  const char *action_name =
+		  action == 0
+				  ? "release"
+				  : action == 1 ? "press" : action == 2 ? "repeat" : "unknown";
   const char *key_name = glfwGetKeyName(key, scancode);
   int shift = (mods & GLFW_MOD_SHIFT) != 0;
   int ctrl = (mods & GLFW_MOD_CONTROL) != 0;

@@ -74,7 +74,7 @@ retrieve_package(connection *c, package *p) {
 	p->payload.v = NULL;
   }
 
-  DEBUG_PRINTF("Retrieved package of type %s with payload size %lu",
+  DPRINTF_COND(DEBUG_PACKAGE, "Retrieved package of type %s with payload size %lu",
 			   package_name_table[p->type], p->payload_size);
   return 1;
 }

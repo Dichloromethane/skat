@@ -1,0 +1,123 @@
+
+#include<assert.h>
+
+/*
+Arguments:
+ TYPE: type
+ HEADER: is header
+ ATOMIC: is atomic
+*/
+
+#define _LL_MERGE(x, y) x ## y
+#define LL_MERGE(x, y) _LL_MERGE(x, y)
+
+#define LL_TNAME LL_MERGE(ll_, TYPE)
+#define LL_PREFIX(x) LL_MERGE(LL_MERGE(LL_TNAME, _), x)
+#define LL_T_ENTRY LL_MERGE(LL_MERGE(LL_TNAME, _), _entry)
+
+#if defined(HEADER) && HEADER
+#define LL_COND_BLOCK(x) ;
+#else
+#define LL_COND_BLOCK(x) x
+#endif
+
+#if defined(ATOMIC) && ATOMIC
+#define LL_LOCK(l) pthread_mutex_lock(&l->lock)
+#define LL_UNLOCK(l) pthread_mutex_unlock(&l->lock)
+#define LL_LOCK_INIT(l) pthread_mutex_init(&l->lock, NULL)
+#else
+#define LL_LOCK(l)
+#define LL_UNLOCK(l)
+#define LL_LOCK_INIT(l)
+#endif
+
+#if defined(HEADER) && HEADER
+
+typedef struct {
+  TYPE t;
+  int next;
+} LL_T_ENTRY;
+
+typedef struct {
+  LL_T_ENTRY *buf;
+  int size;
+  int free_top;
+#if defined(ATOMIC) && ATOMIC
+  pthread_mutex_t lock;
+#endif
+} LL_TNAME;
+
+#else
+
+static void
+LL_PREFIX(resize_buffer) (LL_TNAME *l) {
+  int new_size = l->size * 2;
+
+  assert(l->free_top == -1);
+
+  l->buf = realloc(l->buf, new_size * sizeof(LL_T_ENTRY));
+  assert(l->buf);
+  l->free_top = l->size;
+  for (int i = l->size; i < new_size - 1; i++) 
+	l->buf[i].next = i + 1;
+  l->buf[new_size-1].next = -1;
+}
+
+#endif
+
+void 
+LL_PREFIX(create) (LL_TNAME *l) LL_COND_BLOCK({
+  l->buf = malloc(16*sizeof(LL_T_ENTRY));
+  l->size = 16;
+
+  LL_LOCK_INIT(l);
+
+  l->free_top = 0;
+  l->buf[0].next = 1;
+  for (int i = 1; i < 15; i++) {
+	l->buf[i].next = i+1;
+  }
+  l->buf[15].next = -1;
+})
+
+int
+LL_PREFIX(insert) (LL_TNAME *l, TYPE *t) LL_COND_BLOCK({
+  int ret;
+  LL_T_ENTRY *new;
+
+  LL_LOCK(l);
+
+  if (l->free_top == -1)
+	LL_PREFIX(resize_buffer) (l);
+  new = &l->buf[l->free_top];
+  ret = l->free_top;
+  l->free_top = new->next;
+  *new = ((LL_T_ENTRY) {.t = *t, .next = -2});
+
+  LL_UNLOCK(l);
+
+  return ret;
+})
+
+void
+LL_PREFIX(remove) (LL_TNAME *l, TYPE *t, int ix) LL_COND_BLOCK({
+  assert(l->buf[ix].next == -2);
+
+  LL_LOCK(l);
+
+  l->buf[ix].next = l->free_top;
+  l->free_top = ix;
+  *t = l->buf[ix].t;
+
+  LL_UNLOCK(l);
+})
+
+#undef _LL_MERGE
+#undef LL_MERGE
+#undef LL_TNAME 
+#undef LL_PREFIX
+#undef LL_T_ENTRY
+#undef LL_LOCK
+#undef LL_UNLOCK
+#undef LL_LOCK_INIT
+#undef LL_COND_BLOCK
