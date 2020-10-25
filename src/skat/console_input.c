@@ -332,7 +332,6 @@ handle_console_input(void *v) {
 	  fflush(stdout);
 	  break;
 	}
-	printf("Read: %s", line);
 
 	console_command *cmd = console_command_create(line, read);
 	if (cmd == NULL) {
@@ -341,7 +340,7 @@ handle_console_input(void *v) {
 	}
 
 	printf("command: %s\n", cmd->command);
-	printf("%zu args:\n", cmd->args_length);
+	printf("%zu args%s\n", cmd->args_length, cmd->args_length > 0 ? ":" : "");
 	for (size_t i = 0; i < cmd->args_length; i++)
 	  printf("  %zu: %s\n", i, cmd->args[i]);
 
@@ -375,6 +374,11 @@ handle_console_input(void *v) {
 	// info
 	else MATCH_COMMAND(cmd->command, "info") {
 	  execute_print_info(c);
+	}
+
+	// exit
+	else MATCH_COMMAND(cmd->command, "exit") {
+	  stop_client(c);
 	}
 
 	// unknown command
