@@ -31,12 +31,10 @@
 static void
 client_close_all_connections(client *c) {
   DEBUG_PRINTF("Closing open connection to server");
-  if (close(c->c2s.c.fd) == -1)
-	DERROR_PRINTF("Error while closing connection socket to server: %s",
-				  strerror(errno));
+  conn_disable_conn(&c->c2s.c);
 }
 
-static void
+void
 client_prepare_exit(client *c) {
   c->exit = 1;
   client_close_all_connections(c);
@@ -272,7 +270,7 @@ client_play_card(client *c, unsigned int card_index,
   memset(&a, '\0', sizeof(a));
 
   if (card_collection_get_card(&c->cs.my_hand, card_index, &a.card)) {
-	DERROR_PRINTF("Could not play the given card index %d, out of range",
+	DERROR_PRINTF("Could not play the given card index %u, out of range",
 				  card_index);
 	return;
   }
@@ -281,13 +279,6 @@ client_play_card(client *c, unsigned int card_index,
 
   DEBUG_PRINTF("Enqueueing play card action");
   conn_enqueue_action(&c->c2s.c, &a);
-}
-
-void
-client_disconnect_connection(client *c, connection_c2s *conn) {
-  DERROR_PRINTF("Lost connection to server");
-  conn_disable_conn(&conn->c);
-  exit(EXIT_FAILURE);
 }
 
 void

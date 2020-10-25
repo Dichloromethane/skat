@@ -114,6 +114,15 @@ init_conn_c2s(connection_c2s *c2s, connection *base_conn) {
   c2s->c = *base_conn;
 }
 
+static void
+client_disconnect_connection(client *c) {
+  DERROR_PRINTF("Lost connection to server");
+  client_acquire_state_lock(c);
+  client_prepare_exit(c);
+  client_release_state_lock(c);
+  exit(EXIT_FAILURE);
+}
+
 connection_s2c *
 establish_connection_server(server *s, int fd, pthread_t handler) {
   package p;
@@ -233,9 +242,7 @@ conn_handle_incoming_package_client_single(client *c, connection_c2s *conn,
 	case PACKAGE_ERROR:
 	  conn->c.active = 0;
 	  DERROR_PRINTF("Received error from server, disconnecting");
-	  client_acquire_state_lock(c);
-	  client_disconnect_connection(c, conn);
-	  client_release_state_lock(c);
+	  client_disconnect_connection(c);
 	  return 0;
 	case PACKAGE_NOTIFY_JOIN:
 	  client_acquire_state_lock(c);
@@ -277,9 +284,7 @@ conn_handle_incoming_packages_client(client *c, connection_c2s *conn) {
   package_clean(&p);
   still_connected = retrieve_package(&conn->c, &p);
   if (!still_connected) {
-	client_acquire_state_lock(c);
-	client_disconnect_connection(c, conn);
-	client_release_state_lock(c);
+	client_disconnect_connection(c);
 	return 0;
   }
 

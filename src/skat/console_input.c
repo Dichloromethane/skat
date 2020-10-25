@@ -2,7 +2,9 @@
 #include "skat/card.h"
 #include "skat/card_collection.h"
 #include "skat/client.h"
+#include "skat/console_command.h"
 #include "skat/util.h"
+#include <errno.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <string.h>
@@ -300,47 +302,93 @@ skip:
   fflush(stdout);
 }
 
+static void
+stop_client(client *c) {
+  client_acquire_state_lock(c);
+  client_prepare_exit(c);
+  client_release_state_lock(c);
+  exit(EXIT_SUCCESS);
+}
+
 #define MATCH_COMMAND(c, s) if (!strncmp(c, s, sizeof(s)))
 
-// This is an exceedingly safe scanf-based parser
-// No judge plz
-_Noreturn void *
-handle_console_input(void *cc) {
-  client *c;
-  char *command;
-  int card_index;
+void *
+handle_console_input(void *v) {
+  client *c = v;
+  char *line = NULL;
+  size_t line_size = 0;
 
   DEBUG_PRINTF("Started console input thread");
 
-  c = cc;
-
   for (;;) {
-	// read command (first word)
 	printf("> ");
-	scanf("%ms", &command);
+	fflush(stdout);
+
+	// getline uses realloc on the given buffer, thus free is not required
+	ssize_t read = getline(&line, &line_size, stdin);
+
+	if (read == EOF) {
+	  printf("Read EOF\n");
+	  fflush(stdout);
+	  break;
+	}
+	printf("Read: %s", line);
+
+	console_command *cmd = console_command_create(line, read);
+	if (cmd == NULL) {
+	  printf("Invalid command: %s", line);
+	  continue;
+	}
+
+	printf("command: %s\n", cmd->command);
+	printf("%zu args:\n", cmd->args_length);
+	for (size_t i = 0; i < cmd->args_length; i++)
+	  printf("  %zu: %s\n", i, cmd->args[i]);
 
 	// ready
-	MATCH_COMMAND(command, "ready") { execute_ready(c); }
+	MATCH_COMMAND(cmd->command, "ready") { execute_ready(c); }
 
 	// play <card index>
-	else MATCH_COMMAND(command, "play") {
-	  scanf("%d", &card_index);
-	  execute_play_card(c, card_index);
+	else MATCH_COMMAND(cmd->command, "play") {
+	  if (cmd->args_length != 1)
+		printf("Invalid number of args for play: got %zu, but expected 1\n",
+			   cmd->args_length);
+	  else if (cmd->args[0][0] == '\0')
+		printf("Invalid arg, got NULL\n");
+	  else {
+		errno = 0;
+		char *end;
+		unsigned int card_index =
+				(unsigned int) strtoul(cmd->args[0], &end, 10);
+
+		if (errno != 0)
+		  printf("Unable to parse arg '%s': %s\n", cmd->args[0],
+				 strerror(errno));
+		else if (end[0] != '\0')
+		  printf("Unable to parse arg '%s' fully, still left to parse: '%s'\n",
+				 cmd->args[0], end);
+		else
+		  execute_play_card(c, card_index);
+	  }
 	}
 
 	// info
-	else MATCH_COMMAND(command, "info") {
+	else MATCH_COMMAND(cmd->command, "info") {
 	  execute_print_info(c);
 	}
 
+	// unknown command
 	else {
-	  printf("Invalid command: %s\n", command);
+	  printf("Invalid command: %s", cmd->command);
 	}
-	// ...
 
-
-	// enqueue command exec on async
-	free(command);
+	console_command_free(cmd);
   }
+
+  if (line)
+	free(line);
+
+  stop_client(c);
+
   __builtin_unreachable();
 }
