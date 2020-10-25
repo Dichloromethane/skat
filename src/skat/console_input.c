@@ -3,17 +3,64 @@
 #include "skat/card_collection.h"
 #include "skat/client.h"
 #include "skat/util.h"
+#include <stddef.h>
 #include <stdio.h>
 #include <string.h>
+
+static void
+print_card_array(card_id *arr, size_t length) {
+  char buf[4];
+
+  for (size_t i = 0; i < length; i++) {
+	card_get_name(&arr[i], buf);
+	printf(" %s", buf);
+  }
+}
+
+static void
+print_card_collection(card_collection *cc) {
+  char buf[4];
+  int result;
+  int ix = 0;
+  for (card_id cur = 0; cur < 32; cur++) {
+	card_collection_contains(cc, &cur, &result);
+	if (result) {
+	  card_get_name(&cur, buf);
+	  printf(" %s(%d)", buf, ix++);
+	}
+  }
+}
+
+typedef enum {
+  PRINT_PLAYER_TURN_SHOW_HAND_MODE_ALWAYS,
+  PRINT_PLAYER_TURN_SHOW_HAND_MODE_DEFAULT,
+  PRINT_PLAYER_TURN_SHOW_HAND_MODE_NEVER
+} print_player_turn_show_hand_mode;
+
+static void
+print_player_turn(client *c, print_player_turn_show_hand_mode mode) {
+  int player_turn =
+		  c->cs.sgs.active_players[(c->cs.sgs.curr_stich.vorhand
+									+ c->cs.sgs.curr_stich.played_cards)
+								   % 3];
+  if (c->cs.my_index == player_turn)
+	printf("It is YOUR turn.");
+  else
+	printf("It is %s's turn.", c->pls[player_turn]->name.name);
+
+  if ((c->cs.my_index == player_turn
+	   && mode != PRINT_PLAYER_TURN_SHOW_HAND_MODE_NEVER)
+	  || mode == PRINT_PLAYER_TURN_SHOW_HAND_MODE_ALWAYS) {
+	printf(" Your cards:");
+	print_card_collection(&c->cs.my_hand);
+  }
+}
 
 static void
 print_info_exec(void *p) {
   client *c = p;
 
   client_acquire_state_lock(c);
-
-  int result;
-  char a[4];
 
   game_phase phase = c->cs.sgs.cgphase;
   stich *last_stich = &c->cs.sgs.last_stich;
@@ -51,10 +98,7 @@ print_info_exec(void *p) {
 	  && phase != GAME_PHASE_BETWEEN_ROUNDS) {
 	if (c->cs.ist_alleinspieler) {
 	  printf("You are playing alone, the skat was:");
-	  for (int i = 0; i < 2; i++) {
-		card_get_name(&c->cs.skat[i], a);
-		printf(" %s", a);
-	  }
+	  print_card_array(c->cs.skat, 2);
 	  printf("\n");
 	} else {
 	  printf("You are playing with %s\n",
@@ -65,48 +109,23 @@ print_info_exec(void *p) {
 	  printf("Last Stich (num=%d, vorhand=%s, winner=%s):", c->cs.sgs.stich_num,
 			 c->pls[c->cs.sgs.active_players[last_stich->vorhand]]->name.name,
 			 c->pls[c->cs.sgs.active_players[last_stich->winner]]->name.name);
-	  for (int i = 0; i < last_stich->played_cards; i++) {
-		card_get_name(&last_stich->cs[i], a);
-		printf(" %s", a);
-	  }
+	  print_card_array(last_stich->cs, last_stich->played_cards);
 	  printf("\n");
 	}
 	printf("Current Stich (num=%d, vorhand=%s):", c->cs.sgs.stich_num,
 		   c->pls[c->cs.sgs.active_players[stich->vorhand]]->name.name);
-	for (int i = 0; i < stich->played_cards; i++) {
-	  card_get_name(&stich->cs[i], a);
-	  printf(" %s", a);
-	}
+	print_card_array(stich->cs, stich->played_cards);
 	printf("\n");
 
-	int player_turn =
-			c->cs.sgs
-					.active_players[(stich->vorhand + stich->played_cards) % 3];
-	if (c->cs.my_index == player_turn) {
-	  printf("It is YOUR turn\n");
-	} else {
-	  printf("It is %s's turn\n", c->pls[player_turn]->name.name);
-	}
-
-	int ix = 0;
-	printf("Your hand (%#x):", *hand);
-	for (card_id cur = 0; cur < 32; cur++) {
-	  card_collection_contains(hand, &cur, &result);
-	  if (result) {
-		card_get_name(&cur, a);
-		printf(" %s(%d)", a, ix++);
-	  }
-	}
+	print_player_turn(c, PRINT_PLAYER_TURN_SHOW_HAND_MODE_NEVER);
 	printf("\n");
 
-	printf("Your stiche (%#x):", *won_stiche);
-	for (card_id cur = 0; cur < 32; cur++) {
-	  card_collection_contains(won_stiche, &cur, &result);
-	  if (result) {
-		card_get_name(&cur, a);
-		printf(" %s", a);
-	  }
-	}
+	printf("Your hand:");
+	print_card_collection(hand);
+	printf("\n");
+
+	printf("Your stiche:");
+	print_card_collection(won_stiche);
 	printf("\n");
   }
 
@@ -134,18 +153,6 @@ client_ready_callback(void *v) {
 }
 
 static void
-print_current_stich(client *c) {
-  char buf[4];
-
-  printf("Cards currently on table:");
-
-  for (int i = 0; i < c->cs.sgs.curr_stich.played_cards; i++) {
-	card_get_name(&c->cs.sgs.curr_stich.cs[i], buf);
-	printf(" %s", buf);
-  }
-}
-
-static void
 execute_ready_wrapper(void *v) {
   client *c = v;
   client_action_callback cac;
@@ -163,7 +170,6 @@ execute_ready(client *c) {
 
   exec_async(&c->acq, &acb);
 }
-
 
 struct client_play_card_args {
   client *c;
@@ -191,8 +197,13 @@ client_play_card_callback(void *v) {
 
   char buf[4];
   card_get_name(&args->hdr.e.card, buf);
-  printf("Successfully played card %s. ", buf);
-  print_current_stich(args->hdr.c);
+  printf("Successfully played card %s. Cards currently on table:", buf);
+  if (args->hdr.c->cs.sgs.curr_stich.played_cards > 0)
+	print_card_array(args->hdr.c->cs.sgs.curr_stich.cs,
+					 args->hdr.c->cs.sgs.curr_stich.played_cards);
+  else
+	print_card_array(args->hdr.c->cs.sgs.last_stich.cs,
+					 args->hdr.c->cs.sgs.last_stich.played_cards);
 
 end:
   printf("\n> ");
@@ -240,31 +251,32 @@ execute_play_card(client *c, unsigned int card_index) {
 void
 io_handle_event(client *c, event *e) {
   char buf[4];
-  int result;
-  int ix;
-  int player_turn;
 
   printf("--\n");
   switch (e->type) {
+	case EVENT_DISTRIBUTE_CARDS:
+	  print_player_turn(c, PRINT_PLAYER_TURN_SHOW_HAND_MODE_ALWAYS);
+	  break;
 	case EVENT_TEMP_REIZEN_DONE:
-	  if (c->cs.ist_alleinspieler)
-		printf("You are alleinspieler");
-	  else
+	  if (c->cs.ist_alleinspieler) {
+		printf("You are playing alone, the skat was:");
+		print_card_array(c->cs.skat, 2);
+	  } else
 		printf("You are playing with %s",
 			   c->pls[c->cs.sgs.active_players[c->cs.my_partner]]->name.name);
 	  break;
-	case EVENT_DISTRIBUTE_CARDS:
-	  printf("Your cards: ");
-	  ix = 0;
-	  for (card_id cur = 0; cur < 32; cur++) {
-		card_collection_contains(&c->cs.my_hand, &cur, &result);
-		if (result) {
-		  card_get_name(&cur, buf);
-		  printf(" %s(%d)", buf, ix++);
-		}
-	  }
-	  printf("\n");
-	  goto print_print_turn;
+	case EVENT_PLAY_CARD:
+	  card_get_name(&e->card, buf);
+	  printf("Card %s played. Cards currently on table:", buf);
+	  if (c->cs.sgs.curr_stich.played_cards > 0) {
+		print_card_array(c->cs.sgs.curr_stich.cs,
+						 c->cs.sgs.curr_stich.played_cards);
+		printf("\n");
+		print_player_turn(c, PRINT_PLAYER_TURN_SHOW_HAND_MODE_DEFAULT);
+	  } else
+		print_card_array(c->cs.sgs.last_stich.cs,
+						 c->cs.sgs.last_stich.played_cards);
+	  break;
 	case EVENT_STICH_DONE:
 	  if (e->stich_winner == c->cs.my_index) {
 		printf("You won the Stich! \\o/");
@@ -275,26 +287,14 @@ io_handle_event(client *c, event *e) {
 	  } else {
 		printf("You lost the Stich. Gid good.");
 	  }
-	  break;
-	case EVENT_PLAY_CARD:
-	  card_get_name(&e->card, buf);
-	  printf("Card %s played. ", buf);
-	  print_current_stich(c);
 	  printf("\n");
-	  goto print_print_turn;
+	  print_player_turn(c, PRINT_PLAYER_TURN_SHOW_HAND_MODE_DEFAULT);
+	  break;
 	default:
 	  printf("Something (%s) happened", event_name_table[e->type]);
   }
   goto skip;
-print_print_turn:
-  player_turn = c->cs.sgs.active_players[(c->cs.sgs.curr_stich.vorhand
-										  + c->cs.sgs.curr_stich.played_cards)
-										 % 3];
-  if (c->cs.my_index == player_turn) {
-	printf("It is YOUR turn\n");
-  } else {
-	printf("It is %s's turn\n", c->pls[player_turn]->name.name);
-  }
+
 skip:
   printf("\n> ");
   fflush(stdout);
