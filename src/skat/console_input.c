@@ -10,26 +10,45 @@
 #include <string.h>
 
 static void
-print_card_array(card_id *arr, size_t length) {
+print_card_array(const card_id *const arr, const size_t length) {
   char buf[4];
 
   for (size_t i = 0; i < length; i++) {
 	card_get_name(&arr[i], buf);
-	printf(" %s", buf);
+	printf(" %s(%d)", buf, arr[i]);
   }
 }
 
 static void
-print_card_collection(card_collection *cc) {
+print_card_collection(const client *const c, const card_collection *const cc,
+					  const card_sort_mode mode) {
+  uint8_t count;
+  if (card_collection_get_card_count(cc, &count))
+	return;
+
+  card_id *cid_array = malloc(count * sizeof(card_id));
+
+  uint8_t j = 0;
+  for (uint8_t i = 0; i < count; i++) {
+	card_id cid;
+	if (card_collection_get_card(cc, &i, &cid))
+	  continue;
+
+	cid_array[j++] = cid;
+  }
+
+  card_compare_args args =
+		  (card_compare_args){.gr = &c->cs.sgs.gr, .mode = &mode};
+
+  qsort_r(cid_array, j, sizeof(card_id),
+		  (int (*)(const void *, const void *, void *)) card_compare, &args);
+
   char buf[4];
-  int result;
-  int ix = 0;
-  for (card_id cur = 0; cur < 32; cur++) {
-	card_collection_contains(cc, &cur, &result);
-	if (result) {
-	  card_get_name(&cur, buf);
-	  printf(" %s(%d)", buf, ix++);
-	}
+  for (uint8_t i = 0; i < j; i++) {
+	card_id cid = cid_array[i];
+
+	card_get_name(&cid, buf);
+	printf(" %s(%d)", buf, cid);
   }
 }
 
@@ -40,7 +59,8 @@ typedef enum {
 } print_player_turn_show_hand_mode;
 
 static void
-print_player_turn(client *c, print_player_turn_show_hand_mode mode) {
+print_player_turn(const client *const c,
+				  const print_player_turn_show_hand_mode mode) {
   int player_turn =
 		  c->cs.sgs.active_players[(c->cs.sgs.curr_stich.vorhand
 									+ c->cs.sgs.curr_stich.played_cards)
@@ -54,7 +74,7 @@ print_player_turn(client *c, print_player_turn_show_hand_mode mode) {
 	   && mode != PRINT_PLAYER_TURN_SHOW_HAND_MODE_NEVER)
 	  || mode == PRINT_PLAYER_TURN_SHOW_HAND_MODE_ALWAYS) {
 	printf(" Your cards:");
-	print_card_collection(&c->cs.my_hand);
+	print_card_collection(c, &c->cs.my_hand, CARD_SORT_MODE_HAND);
   }
 }
 
@@ -115,11 +135,13 @@ print_info_exec(void *p) {
 	printf("\n");
 
 	printf("Your hand:");
-	print_card_collection(hand);
+	print_card_collection(c, hand, CARD_SORT_MODE_HAND);
 	printf("\n");
 
-	printf("Your stiche:");
-	print_card_collection(won_stiche);
+	unsigned int score;
+	card_collection_get_score(won_stiche, &score);
+	printf("Your stiche(score=%u):", score);
+	print_card_collection(c, won_stiche, CARD_SORT_MODE_STICHE);
 	printf("\n");
   }
 
@@ -167,7 +189,7 @@ execute_ready(client *c) {
 
 struct client_play_card_args {
   client *c;
-  unsigned int card_index;
+  card_id cid;
 };
 
 typedef struct {
@@ -184,7 +206,7 @@ client_play_card_callback(void *v) {
   printf("--\n");
 
   if (args->hdr.e.type == EVENT_ILLEGAL_ACTION) {
-	printf("Big unluck! You tried to play a card, but it -sadly- was the wrong "
+	printf("Big anlak! You tried to play a card, but it -sadly- was the wrong "
 		   "card");
 	goto end;
   }
@@ -215,7 +237,7 @@ client_play_card_wrapper(void *v) {
 		  malloc(sizeof(client_play_card_callback_args));
   cac.args = cach;
   cac.f = client_play_card_callback;
-  client_play_card(args->c, args->card_index, &cac);
+  client_play_card(args->c, args->cid, &cac);
   free(args);
 }
 
@@ -229,13 +251,13 @@ execute_print_info(client *c) {
 }
 
 static void
-execute_play_card(client *c, unsigned int card_index) {
+execute_play_card(client *c, card_id cid) {
   async_callback acb;
 
   struct client_play_card_args *args =
 		  malloc(sizeof(struct client_play_card_args));
   args->c = c;
-  args->card_index = card_index;
+  args->cid = cid;
 
   acb = (async_callback){.do_stuff = client_play_card_wrapper, .data = args};
 
@@ -349,8 +371,7 @@ handle_console_input(void *v) {
 	  else {
 		errno = 0;
 		char *end;
-		unsigned int card_index =
-				(unsigned int) strtoul(cmd->args[0], &end, 10);
+		unsigned long card_index = strtoul(cmd->args[0], &end, 10);
 
 		if (errno != 0)
 		  printf("Unable to parse arg '%s': %s\n", cmd->args[0],
@@ -358,8 +379,10 @@ handle_console_input(void *v) {
 		else if (end[0] != '\0')
 		  printf("Unable to parse arg '%s' fully, still left to parse: '%s'\n",
 				 cmd->args[0], end);
+		else if (card_index >= 256)
+		  printf("Card index '%lu' is out of range\n", card_index);
 		else
-		  execute_play_card(c, card_index);
+		  execute_play_card(c, (card_id) card_index);
 	  }
 	}
 

@@ -262,19 +262,21 @@ client_ready(client *c, client_action_callback *cac) {
 }
 
 void
-client_play_card(client *c, unsigned int card_index,
-				 client_action_callback *cac) {
+client_play_card(client *c, card_id cid, client_action_callback *cac) {
   action a;
 
   memset(&a, '\0', sizeof(a));
 
-  if (card_collection_get_card(&c->cs.my_hand, card_index, &a.card)) {
-	DERROR_PRINTF("Could not play the given card index %u, out of range",
-				  card_index);
+  int result;
+  if (card_collection_contains(&c->cs.my_hand, &cid, &result) || !result) {
+	DERROR_PRINTF("Could not play the given card index %u as you do not have "
+				  "it on hand",
+				  cid);
 	return;
   }
   a.type = ACTION_PLAY_CARD;
   a.id = ll_client_action_callback_insert(&c->ll_cac, cac);
+  a.card = cid;
 
   DEBUG_PRINTF("Enqueueing play card action");
   conn_enqueue_action(&c->c2s.c, &a);

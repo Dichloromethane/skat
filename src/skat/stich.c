@@ -1,4 +1,5 @@
 #include "skat/stich.h"
+#include "skat/util.h"
 
 static unsigned int
 stich_get_card_value(const game_rules *const gr, const card *const c0,
@@ -7,23 +8,25 @@ stich_get_card_value(const game_rules *const gr, const card *const c0,
 	case GAME_TYPE_COLOR:
 	case GAME_TYPE_GRAND:
 	case GAME_TYPE_RAMSCH:
-	  if (c->ct == CARD_TYPE_B) {
+	  if (c->ct == CARD_TYPE_B)
 		return 20 + c->cc;
-	  } else if (gr->type == GAME_TYPE_COLOR && c->cc == gr->trumpf) {
+	  else if (gr->type == GAME_TYPE_COLOR && c->cc == gr->trumpf)
 		return 10 + c->ct;
-	  } else if (c->cc == c0->cc) {
+	  else if (c->cc == c0->cc)
 		return c->ct;
-	  } else {
-		return 0;
-	  }
+	  return 0;
 	case GAME_TYPE_NULL:
 	  if (c->cc == c0->cc) {
-		return c->ct == CARD_TYPE_10 ? 7 : 2 * c->ct;
-	  } else {
-		return 0;
+		if (c->ct == CARD_TYPE_10)
+		  return 10;
+		else if (c->ct == CARD_TYPE_B)
+		  return 11;
+		return 3 * c->ct;
 	  }
-	default:
 	  return 0;
+	default:
+	  DERROR_PRINTF("Game Type is invalid");
+	  exit(EXIT_FAILURE);
   }
 }
 
@@ -84,11 +87,18 @@ stich_bekennt(const game_rules *const gr, const card_id *const first_id,
 static int
 stich_bekennt_any(const game_rules *const gr, const card_id *const first_id,
 				  const card_collection *const hand) {
-  int result;
-  for (card_id cid = 0; cid < 32; cid++)
-	if (!card_collection_contains(hand, &cid, &result) && result
-		&& stich_bekennt(gr, first_id, &cid))
+  uint8_t count;
+  if (card_collection_get_card_count(hand, &count))
+	return 0;
+
+  for (uint8_t i = 0; i < count; i++) {
+	card_id cid;
+	if (card_collection_get_card(hand, &i, &cid))
+	  continue;
+
+	if (stich_bekennt(gr, first_id, &cid))
 	  return 1;
+  }
   return 0;
 }
 

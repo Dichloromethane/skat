@@ -2,7 +2,7 @@
 
 #include "skat/card.h"
 
-typedef enum {
+typedef enum game_type {
   GAME_TYPE_INVALID = 0,
   GAME_TYPE_COLOR,
   GAME_TYPE_GRAND,

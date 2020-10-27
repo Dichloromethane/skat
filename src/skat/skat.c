@@ -34,40 +34,71 @@ get_player_hand(skat_server_state *ss, player *pl, card_collection *col) {
   card_collection_empty(col);
 }
 
+#define RANDOM_CARD_DISTRIBUTE(draw_pile, player_hand) \
+  do { \
+	card_id cid_; \
+	int error_; \
+\
+	error_ = card_collection_draw_random(draw_pile, &cid_); \
+	if (error_) { \
+	  DERROR_PRINTF("Error %d while drawing random card from draw pile %#x", \
+					error_, *(draw_pile)); \
+	} \
+\
+	error_ = card_collection_add_card(player_hand, &cid_); \
+	if (error_) { \
+	  DERROR_PRINTF("Error %d while adding card %u to collection %#x", error_, \
+					cid_, *(draw_pile)); \
+	} \
+\
+	error_ = card_collection_remove_card(draw_pile, &cid_); \
+	if (error_) { \
+	  DERROR_PRINTF("Error %d while removing card %u from collection %#x", \
+					error_, cid_, *(draw_pile)); \
+	} \
+\
+  } while (0)
+
 // Conforming to the rules. Poggers.
 static int
 distribute_cards(skat_server_state *ss) {
   card_collection draw_pile;
   card_collection_fill(&draw_pile);
 
-  card_id cid;
   for (int i = 0; i < 3; i++) {
 	for (int j = 0; j < 3; j++) {
-	  card_collection_draw_random(&draw_pile, &cid);
-	  card_collection_add_card(&ss->player_hands[i], &cid);
-	  card_collection_remove_card(&draw_pile, &cid);
+	  RANDOM_CARD_DISTRIBUTE(&draw_pile, &ss->player_hands[i]);
 	}
   }
 
   for (int i = 0; i < 2; i++) {
-	card_collection_draw_random(&draw_pile, &cid);
-	ss->skat[i] = cid;
-	card_collection_remove_card(&draw_pile, &cid);
+	card_id cid_;
+	int error_;
+
+	error_ = card_collection_draw_random(&draw_pile, &cid_);
+	if (error_) {
+	  DERROR_PRINTF("Error %d while drawing random card from draw pile %#x",
+					error_, draw_pile);
+	}
+
+	ss->skat[i] = cid_;
+
+	error_ = card_collection_remove_card(&draw_pile, &cid_);
+	if (error_) {
+	  DERROR_PRINTF("Error %d while removing card %u from draw pile %#x",
+					error_, cid_, draw_pile);
+	}
   }
 
   for (int i = 0; i < 3; i++) {
 	for (int j = 0; j < 4; j++) {
-	  card_collection_draw_random(&draw_pile, &cid);
-	  card_collection_add_card(&ss->player_hands[i], &cid);
-	  card_collection_remove_card(&draw_pile, &cid);
+	  RANDOM_CARD_DISTRIBUTE(&draw_pile, &ss->player_hands[i]);
 	}
   }
 
   for (int i = 0; i < 3; i++) {
 	for (int j = 0; j < 3; j++) {
-	  card_collection_draw_random(&draw_pile, &cid);
-	  card_collection_add_card(&ss->player_hands[i], &cid);
-	  card_collection_remove_card(&draw_pile, &cid);
+	  RANDOM_CARD_DISTRIBUTE(&draw_pile, &ss->player_hands[i]);
 	}
   }
 
@@ -183,7 +214,17 @@ apply_action_between_rounds(skat_server_state *ss, action *a, player *pl,
 		ss->sgs.active_players[2] = s->ps[ix]->gupid;
 	  }
 
-	  memcpy(e.current_active_players, ss->sgs.active_players, 3 * sizeof(int));
+	  for (int gupid = 0; gupid < 4; gupid++) {
+		if (s->ps[gupid])
+		  s->ps[gupid]->ap = -1;
+	  }
+
+	  for (int ap = 0; ap < 3; ap++) {
+		s->ps[ss->sgs.active_players[ap]]->ap = ap;
+	  }
+
+	  memcpy(e.current_active_players, ss->sgs.active_players,
+			 sizeof(e.current_active_players));
 
 	  server_distribute_event(s, &e, NULL);
 
@@ -432,12 +473,16 @@ skat_client_state_apply(skat_client_state *cs, event *e, client *c) {
 	  memcpy(cs->sgs.active_players, e->current_active_players,
 			 sizeof(cs->sgs.active_players));
 
-	  for (int i = 0; i < 3; ++i) {
-		if (cs->sgs.active_players[i] == cs->my_gupid) {
-		  cs->my_active_player_index = i;
-		  break;
-		}
+	  for (int gupid = 0; gupid < 4; gupid++) {
+		if (c->pls[gupid])
+		  c->pls[gupid]->ap = -1;
 	  }
+
+	  for (int ap = 0; ap < 3; ap++) {
+		c->pls[c->cs.sgs.active_players[ap]]->ap = ap;
+	  }
+
+	  cs->my_active_player_index = c->pls[c->cs.my_gupid]->ap;
 
 	  return 1;
 	case EVENT_DISTRIBUTE_CARDS:

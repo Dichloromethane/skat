@@ -54,8 +54,7 @@ void client_notify_join(client *, payload_notify_join *);
 void client_notify_leave(client *, payload_notify_leave *);
 
 void client_ready(client *c, client_action_callback *);
-void client_play_card(client *c, unsigned int card_index,
-					  client_action_callback *);
+void client_play_card(client *c, card_id cid, client_action_callback *);
 
 void client_init(client *c, char *host, int port, char *name);
 _Noreturn void client_run(client *c, int resume);
