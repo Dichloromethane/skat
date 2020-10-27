@@ -45,10 +45,11 @@ destroy_player_name(player_name *const pname) {
 }
 
 player *
-create_player(int index, const player_name *const pname) {
+create_player(int gupid, int ap, const player_name *const pname) {
   size_t extra = player_name_extra_size(pname);
   player *ret = malloc(sizeof(player) + extra);
-  ret->index = index;
+  ret->gupid = gupid;
+  ret->ap = ap;
   ret->name.length = pname->length;
   copy_player_name(&ret->name, pname);
   return ret;

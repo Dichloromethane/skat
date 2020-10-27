@@ -135,6 +135,11 @@ establish_connection_server(server *s, int fd, pthread_t handler) {
   package_clean(&p);
   retrieve_package(&c, &p);
 
+  // TODO: remove this so we can actually resume a player or add a new player in
+  // between rounds
+  CH_ASSERT_NULL(s->ss.sgs.cgphase == GAME_PHASE_SETUP, &c,
+				 CONN_ERROR_INVALID_JOIN_TIME);
+
   if (p.type == PACKAGE_JOIN) {
 	payload_join *pl_join = p.payload.pl_j;
 
@@ -158,7 +163,7 @@ establish_connection_server(server *s, int fd, pthread_t handler) {
 	CH_ASSERT_NULL(s2c = server_get_free_connection(s, &gupid), &c,
 				   CONN_ERROR_TOO_MANY_PLAYERS);
 
-	player *pl = create_player(gupid, &pl_join->pname);
+	player *pl = create_player(gupid, -1, &pl_join->pname);
 
 	init_conn_s2c(s2c, &c);
 	s2c->c.active = 1;
@@ -500,7 +505,7 @@ conn_notify_join(connection_s2c *c, player *pl) {
 		  sizeof(payload_notify_join) + player_name_extra_size(&pl->name);
   payload_notify_join *pl_nj = malloc(pl_nj_size);
 
-  pl_nj->gupid = pl->index;
+  pl_nj->gupid = pl->gupid;
 
   pl_nj->pname.length = pl->name.length;
   copy_player_name(&pl_nj->pname, &pl->name);
@@ -526,7 +531,7 @@ conn_notify_disconnect(connection_s2c *c, player *pl) {
   size_t pl_nl_size = sizeof(payload_notify_leave);
   payload_notify_leave pl_nl;
   memset(&pl_nl, '\0', pl_nl_size);
-  pl_nl.gupid = pl->index;
+  pl_nl.gupid = pl->gupid;
 
   p.payload_size = pl_nl_size;
   p.payload.pl_nl = &pl_nl;

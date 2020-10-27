@@ -5,7 +5,7 @@
 #include "skat/game_rules.h"
 
 typedef struct stich {
-  card_id cs[3];// indexed index by vorhand + active player
+  card_id cs[3];// indexedby vorhand + active player
   int played_cards;
   int vorhand;// indexed active player
   int winner; // indexed active player

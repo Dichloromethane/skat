@@ -10,7 +10,8 @@ typedef struct {
 } player_name;
 
 typedef struct {
-  int index;// gupid, 0-3
+  int gupid;// gupid, 0-3
+  int ap;   // active player index, -1 or 0-2
   player_name name;
 } player;
 
@@ -20,4 +21,4 @@ void copy_player_name(player_name *dest, const player_name *src);
 player_name *create_player_name(const char *str);
 size_t player_name_extra_size(const player_name *pname);
 void destroy_player_name(player_name *pname);
-player *create_player(int index, const player_name *pname);
+player *create_player(int gupid, int ap, const player_name *pname);

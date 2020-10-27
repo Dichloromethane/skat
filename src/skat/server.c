@@ -56,7 +56,7 @@ server_has_player_name(server *s, player_name *pname) {
 
 void
 server_send_event(server *s, event *e, player *pl) {
-  connection_s2c *c = server_get_connection_by_gupid(s, pl->index);
+  connection_s2c *c = server_get_connection_by_gupid(s, pl->gupid);
   if (c) {
 	conn_enqueue_event(&c->c, e);
   }
@@ -97,7 +97,7 @@ server_get_free_connection(server *s, int *n) {
 void
 server_add_player_for_connection(server *s, player *pl, int n) {
   s->ps[n] = pl;
-  pl->index = n;
+  pl->gupid = n;
   s->ncons++;
 }
 
@@ -165,14 +165,18 @@ size_t
 server_resync_player(server *s, player *pl, payload_resync **pl_rs) {
   DEBUG_PRINTF("Resync requested by player '%s'", pl->name.name);
 
+  int active_player_indices[4];
   size_t player_name_lengths[4];
   size_t player_names_length = 0;
 
   for (int i = 0; i < 4; i++) {
-	if (server_is_player_active(s, i))
+	if (server_is_player_active(s, i)) {
+	  active_player_indices[i] = s->ps[i]->ap;
 	  player_names_length += (player_name_lengths[i] = s->ps[i]->name.length);
-	else
+	} else {
+	  active_player_indices[i] = -1;
 	  player_name_lengths[i] = 0;
+	}
   }
 
   size_t payload_size =
@@ -181,6 +185,8 @@ server_resync_player(server *s, player *pl, payload_resync **pl_rs) {
 
   skat_resync_player(&s->ss, &(*pl_rs)->scs, pl);
 
+  memcpy((*pl_rs)->active_player_indices, active_player_indices,
+		 sizeof(active_player_indices));
   memcpy((*pl_rs)->player_name_lengths, player_name_lengths,
 		 sizeof(player_name_lengths));
   size_t offset = 0;

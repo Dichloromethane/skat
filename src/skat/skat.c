@@ -26,11 +26,9 @@ skat_calculate_game_result(skat_server_state *ss, int *score) {
 
 static void
 get_player_hand(skat_server_state *ss, player *pl, card_collection *col) {
-  for (int i = 0; i < 3; ++i) {
-	if (ss->sgs.active_players[i] == pl->index) {
-	  *col = ss->player_hands[i];
-	  return;
-	}
+  if (pl->ap >= 0) {
+	*col = ss->player_hands[pl->ap];
+	return;
   }
 
   card_collection_empty(col);
@@ -125,7 +123,7 @@ static game_phase
 apply_action_setup(skat_server_state *ss, action *a, player *pl, server *s) {
   event e;
   e.answer_to = a->id;
-  e.acting_player = pl->index;
+  e.acting_player = pl->gupid;
   switch (a->type) {
 	case ACTION_READY:
 	  if (s->ncons < 3) {
@@ -155,7 +153,7 @@ apply_action_between_rounds(skat_server_state *ss, action *a, player *pl,
   int pm, ix;
   event e;
   e.answer_to = a->id;
-  e.acting_player = pl->index;
+  e.acting_player = pl->gupid;
   switch (a->type) {
 	case ACTION_READY:
 	  if (s->ncons < 3) {
@@ -167,13 +165,13 @@ apply_action_between_rounds(skat_server_state *ss, action *a, player *pl,
 	  }
 
 	  e.answer_to = a->id;
-	  e.acting_player = pl->index;
+	  e.acting_player = pl->gupid;
 	  e.type = EVENT_START_ROUND;
 
 	  if (ss->sgs.active_players[0] == -1) {
 		for (int i = 0, j = 0; i < 4; i++)
 		  if ((s->playermask >> i) & 1)
-			ss->sgs.active_players[j++] = s->ps[i]->index;
+			ss->sgs.active_players[j++] = s->ps[i]->gupid;
 	  } else if (s->ncons == 3) {// we don't have a spectator
 		perm(ss->sgs.active_players, 3, 0x12);
 	  } else {
@@ -182,7 +180,7 @@ apply_action_between_rounds(skat_server_state *ss, action *a, player *pl,
 		  pm |= 1 << ss->sgs.active_players[i];
 		ix = __builtin_ctz(~pm);
 		perm(ss->sgs.active_players, 3, 0x12);
-		ss->sgs.active_players[2] = s->ps[ix]->index;
+		ss->sgs.active_players[2] = s->ps[ix]->gupid;
 	  }
 
 	  memcpy(e.current_active_players, ss->sgs.active_players, 3 * sizeof(int));
@@ -244,9 +242,8 @@ apply_action_between_rounds(skat_server_state *ss, action *a, player *pl,
 	  e.skat[1] = 0;
 
 	  void mask_skat(event * ev, player * pl) {
-		if (ss->sgs.active_players[ss->sgs.alleinspieler] == pl->index) {
+		if (ss->sgs.alleinspieler == pl->ap)
 		  memcpy(ev->skat, ss->skat, sizeof(ev->skat));
-		}
 	  }
 
 	  server_distribute_event(s, &e, mask_skat);
@@ -266,7 +263,7 @@ apply_action_reizen_begin(skat_server_state *ss, action *a, player *pl,
   // remember to initialize stiche!
   event e;
   e.answer_to = a->id;
-  e.acting_player = pl->index;
+  e.acting_player = pl->gupid;
   DTODO_PRINTF("TODO: implement reizen");// TODO: implement reizen
   switch (a->type) {
 	default:
@@ -297,11 +294,11 @@ apply_action_stich(skat_server_state *ss, action *a, player *pl, server *s,
 	  curr = next_active_player(ss->sgs.curr_stich.vorhand, ind);
 	  expected_player_gupid = ss->sgs.active_players[curr];
 	  expected_player = server_get_player_by_gupid(s, expected_player_gupid);
-	  if (pl->index != expected_player_gupid) {
+	  if (pl->gupid != expected_player_gupid) {
 		DEBUG_PRINTF("Wrong player trying to play card: Expected player %s "
 					 "(gupid: %d), but got %s (gupid %d) instead",
 					 expected_player->name.name, expected_player_gupid,
-					 pl->name.name, pl->index);
+					 pl->name.name, pl->gupid);
 
 		return GAME_PHASE_INVALID;
 	  }
@@ -316,7 +313,7 @@ apply_action_stich(skat_server_state *ss, action *a, player *pl, server *s,
 
 	  e.type = EVENT_PLAY_CARD;
 	  e.answer_to = a->id;
-	  e.acting_player = pl->index;
+	  e.acting_player = pl->gupid;
 	  e.card = a->card;
 	  server_distribute_event(s, &e, NULL);
 
@@ -436,7 +433,7 @@ skat_client_state_apply(skat_client_state *cs, event *e, client *c) {
 			 sizeof(cs->sgs.active_players));
 
 	  for (int i = 0; i < 3; ++i) {
-		if (cs->sgs.active_players[i] == cs->my_index) {
+		if (cs->sgs.active_players[i] == cs->my_gupid) {
 		  cs->my_active_player_index = i;
 		  break;
 		}
@@ -508,7 +505,7 @@ skat_client_state_apply(skat_client_state *cs, event *e, client *c) {
 	  DEBUG_PRINTF("%s (%d) played card %s",
 				   c->pls[e->acting_player]->name.name, e->acting_player,
 				   card_name);
-	  if (c->cs.my_index == e->acting_player) {
+	  if (c->cs.my_gupid == e->acting_player) {
 		card_collection_remove_card(&cs->my_hand, &e->card);
 	  }
 
@@ -552,7 +549,7 @@ skat_client_state_apply(skat_client_state *cs, event *e, client *c) {
 		}
 	  }
 
-	  if (cs->my_index == e->stich_winner
+	  if (cs->my_gupid == e->stich_winner
 		  || (!cs->ist_alleinspieler
 			  && cs->sgs.active_players[cs->my_partner] == e->stich_winner)) {
 		card_collection_add_card_array(&cs->my_stiche, cs->sgs.curr_stich.cs,
@@ -600,17 +597,10 @@ skat_resync_player(skat_server_state *ss, skat_client_state *cs, player *pl) {
 
   get_player_hand(ss, pl, &cs->my_hand);
 
-  cs->my_index = pl->index;
+  cs->my_gupid = pl->gupid;
+  cs->my_active_player_index = pl->ap;
 
-  cs->my_active_player_index = -1;
-  for (int i = 0; i < 3; i++) {
-	if (cs->sgs.active_players[i] == cs->my_index) {
-	  cs->my_active_player_index = i;
-	  break;
-	}
-  }
-
-  if (cs->my_active_player_index != 0) {
+  if (cs->my_active_player_index >= 0) {
 	card_collection *stichp = ss->stiche[cs->my_active_player_index];
 	if (stichp != NULL)
 	  cs->my_stiche = *stichp;

@@ -45,12 +45,12 @@ print_player_turn(client *c, print_player_turn_show_hand_mode mode) {
 		  c->cs.sgs.active_players[(c->cs.sgs.curr_stich.vorhand
 									+ c->cs.sgs.curr_stich.played_cards)
 								   % 3];
-  if (c->cs.my_index == player_turn)
+  if (c->cs.my_gupid == player_turn)
 	printf("It is YOUR turn.");
   else
 	printf("It is %s's turn.", c->pls[player_turn]->name.name);
 
-  if ((c->cs.my_index == player_turn
+  if ((c->cs.my_gupid == player_turn
 	   && mode != PRINT_PLAYER_TURN_SHOW_HAND_MODE_NEVER)
 	  || mode == PRINT_PLAYER_TURN_SHOW_HAND_MODE_ALWAYS) {
 	printf(" Your cards:");
@@ -73,7 +73,7 @@ print_info_exec(void *p) {
   printf("--\n\n--------------------------\n");
 
   printf("You are %s[gupid=%d, active_player=%d]\n",
-		 c->pls[c->cs.my_index]->name.name, c->cs.my_index,
+		 c->pls[c->cs.my_gupid]->name.name, c->cs.my_gupid,
 		 c->cs.my_active_player_index);
 
   printf("You are playing with:");
@@ -81,15 +81,7 @@ print_info_exec(void *p) {
 	player *pl = c->pls[i];
 	if (pl == NULL)
 	  continue;
-
-	int ap = -1;
-	for (int j = 0; j < 3; j++) {
-	  if (c->cs.sgs.active_players[j] == pl->index) {
-		ap = j;
-		break;
-	  }
-	}
-	printf(" %s[gupid=%d, active_player=%d]", pl->name.name, pl->index, ap);
+	printf(" %s[gupid=%d, active_player=%d]", pl->name.name, pl->gupid, pl->ap);
   }
   printf("\n");
 
@@ -280,7 +272,7 @@ io_handle_event(client *c, event *e) {
 						 c->cs.sgs.last_stich.played_cards);
 	  break;
 	case EVENT_STICH_DONE:
-	  if (e->stich_winner == c->cs.my_index) {
+	  if (e->stich_winner == c->cs.my_gupid) {
 		printf("You won the Stich! \\o/");
 	  } else if (!c->cs.ist_alleinspieler
 				 && e->stich_winner

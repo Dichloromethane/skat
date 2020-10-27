@@ -1,5 +1,6 @@
 #include "skat/client.h"
 #include "skat/connection.h"
+#include "skat/ctimer.h"
 #include "skat/util.h"
 
 #if defined(CONSOLE_INPUT) && CONSOLE_INPUT
@@ -8,18 +9,6 @@
 #error "Not yet supported, use the console implementation instead"
 #endif
 
-#include <errno.h>
-#include <netdb.h>
-#include <netinet/in.h>
-#include <signal.h>
-#include <skat/ctimer.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/socket.h>
-#include <sys/types.h>
-#include <unistd.h>
-
 #define TYPE   client_action_callback
 #define HEADER 0
 #define ATOMIC 1
@@ -27,6 +16,17 @@
 #undef ATOMIC
 #undef HEADER
 #undef TYPE
+
+#include <errno.h>
+#include <netdb.h>
+#include <netinet/in.h>
+#include <signal.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 static void
 client_close_all_connections(client *c) {
@@ -74,7 +74,6 @@ client_conn_action_sender(void *args) {
 
   return NULL;
 }
-
 
 static void *
 client_conn_thread(void *args) {
@@ -186,7 +185,7 @@ client_release_action_id(client *c, event *e) {
   client_action_callback ac;
   client_action_callback_hdr *args;
 
-  if (e->answer_to == -1 || e->acting_player != c->cs.my_index)
+  if (e->answer_to == -1 || e->acting_player != c->cs.my_gupid)
 	return 0;
 
   ll_client_action_callback_remove(&c->ll_cac, &ac, e->answer_to);
@@ -294,7 +293,8 @@ client_handle_resync(client *c, payload_resync *pl) {
 	size_t len = pl->player_name_lengths[i];
 	if (len > 0) {
 	  c->pls[i] = malloc(sizeof(player) + len + 1);
-	  c->pls[i]->index = i;
+	  c->pls[i]->gupid = i;
+	  c->pls[i]->ap = pl->active_player_indices[i];
 	  c->pls[i]->name.length = len;
 
 	  memcpy(c->pls[i]->name.name, pl->player_names + offset,
@@ -313,7 +313,7 @@ client_notify_join(client *c, payload_notify_join *pl_nj) {
 
   if (c->pls[pl_nj->gupid])
 	free(c->pls[pl_nj->gupid]);
-  c->pls[pl_nj->gupid] = create_player(pl_nj->gupid, &pl_nj->pname);
+  c->pls[pl_nj->gupid] = create_player(pl_nj->gupid, pl_nj->ap, &pl_nj->pname);
 
   client_skat_state_notify_join(&c->cs, pl_nj);
 }

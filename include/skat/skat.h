@@ -85,7 +85,7 @@ typedef struct {
   shared_game_state sgs;
   card_collection my_hand;
   card_collection my_stiche;
-  int my_index;              // gupid
+  int my_gupid;              // gupid
   int my_active_player_index;// active_player
   int my_partner;            // active_player
   int ist_alleinspieler;
