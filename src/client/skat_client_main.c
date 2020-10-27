@@ -18,7 +18,7 @@ int
 main(int argc, char **argv) {
   int opt;
   char *remaining;
-  char *host = "localhost";
+  char *host = DEFAULT_HOST;
   long port = DEFAULT_PORT;
   int resume = 0;
   int graphical = 0;
