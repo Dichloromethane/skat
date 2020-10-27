@@ -22,7 +22,7 @@ typedef enum card_type {
   CARD_TYPE_B           // 8, 7, 4
 } card_type;
 
-typedef struct {
+typedef struct card {
   card_type ct; // type
   card_color cc;// color
 } card;

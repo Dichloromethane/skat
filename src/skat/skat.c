@@ -343,7 +343,7 @@ apply_action_stich(skat_server_state *ss, action *a, player *pl, server *s,
 
 		return GAME_PHASE_INVALID;
 	  }
-	  if (stich_card_legal(&ss->sgs.gr, ss->sgs.curr_stich.cs, ind, &a->card,
+	  if (stich_card_legal(&ss->sgs.gr, &ss->sgs.curr_stich, &a->card,
 						   &ss->player_hands[curr], &result)
 		  || !result) {
 		char buf[4];
@@ -368,10 +368,10 @@ apply_action_stich(skat_server_state *ss, action *a, player *pl, server *s,
 		ss->sgs.curr_stich.cs[1] = a->card;
 		ss->sgs.curr_stich.played_cards = 2;
 		return GAME_PHASE_PLAY_STICH_C3;
+	  } else {// ind == 2
+		ss->sgs.curr_stich.cs[2] = a->card;
+		ss->sgs.curr_stich.played_cards = 3;
 	  }
-
-	  ss->sgs.curr_stich.cs[2] = a->card;
-	  ss->sgs.curr_stich.played_cards = 3;
 
 	  stich_get_winner(&ss->sgs.gr, &ss->sgs.curr_stich,
 					   &winnerv);// Sue me for discarding the return value

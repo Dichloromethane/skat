@@ -19,9 +19,18 @@ print_card_array(const card_id *const arr, const size_t length) {
   }
 }
 
+typedef enum card_color_mode {
+  CARD_COLOR_MODE_NONE,
+  CARD_COLOR_MODE_PLAYABLE
+} card_color_mode;
+
+#define PLAYABLE_COLOR     "\e[32m"
+#define NOT_PLAYABLE_COLOR "\e[31m"
+
 static void
 print_card_collection(const client *const c, const card_collection *const cc,
-					  const card_sort_mode mode) {
+					  const card_sort_mode sort_mode,
+					  const card_color_mode color_mode) {
   uint8_t count;
   if (card_collection_get_card_count(cc, &count))
 	return;
@@ -38,7 +47,7 @@ print_card_collection(const client *const c, const card_collection *const cc,
   }
 
   card_compare_args args =
-		  (card_compare_args){.gr = &c->cs.sgs.gr, .mode = &mode};
+		  (card_compare_args){.gr = &c->cs.sgs.gr, .mode = &sort_mode};
 
   qsort_r(cid_array, j, sizeof(card_id),
 		  (int (*)(const void *, const void *, void *)) card_compare, &args);
@@ -46,9 +55,24 @@ print_card_collection(const client *const c, const card_collection *const cc,
   char buf[4];
   for (uint8_t i = 0; i < j; i++) {
 	card_id cid = cid_array[i];
+	int error = card_get_name(&cid, buf);
+	if (error)
+	  continue;
 
-	card_get_name(&cid, buf);
-	printf(" %s(%d)", buf, cid);
+	if (color_mode == CARD_COLOR_MODE_PLAYABLE) {
+	  int result;
+	  error = stich_card_legal(&c->cs.sgs.gr, &c->cs.sgs.curr_stich, &cid, cc,
+							   &result);
+	  if (error)
+		continue;
+
+	  if (result)
+		printf(PLAYABLE_COLOR " %s(%d)" COLOR_CLEAR, buf, cid);
+	  else
+		printf(NOT_PLAYABLE_COLOR " %s(%d)" COLOR_CLEAR, buf, cid);
+	} else {
+	  printf(" %s(%d)", buf, cid);
+	}
   }
 }
 
@@ -65,16 +89,18 @@ print_player_turn(const client *const c,
 		  c->cs.sgs.active_players[(c->cs.sgs.curr_stich.vorhand
 									+ c->cs.sgs.curr_stich.played_cards)
 								   % 3];
-  if (c->cs.my_gupid == player_turn)
+  int is_my_turn = c->cs.my_gupid == player_turn;
+  if (is_my_turn)
 	printf("It is YOUR turn.");
   else
 	printf("It is %s's turn.", c->pls[player_turn]->name.name);
 
-  if ((c->cs.my_gupid == player_turn
-	   && mode != PRINT_PLAYER_TURN_SHOW_HAND_MODE_NEVER)
+  if ((is_my_turn && mode != PRINT_PLAYER_TURN_SHOW_HAND_MODE_NEVER)
 	  || mode == PRINT_PLAYER_TURN_SHOW_HAND_MODE_ALWAYS) {
 	printf(" Your cards:");
-	print_card_collection(c, &c->cs.my_hand, CARD_SORT_MODE_HAND);
+	print_card_collection(c, &c->cs.my_hand, CARD_SORT_MODE_HAND,
+						  is_my_turn ? CARD_COLOR_MODE_PLAYABLE
+									 : CARD_COLOR_MODE_NONE);
   }
 }
 
@@ -135,13 +161,15 @@ print_info_exec(void *p) {
 	printf("\n");
 
 	printf("Your hand:");
-	print_card_collection(c, hand, CARD_SORT_MODE_HAND);
+	print_card_collection(c, hand, CARD_SORT_MODE_HAND,
+						  CARD_COLOR_MODE_PLAYABLE);
 	printf("\n");
 
 	unsigned int score;
 	card_collection_get_score(won_stiche, &score);
 	printf("Your stiche(score=%u):", score);
-	print_card_collection(c, won_stiche, CARD_SORT_MODE_STICHE);
+	print_card_collection(c, won_stiche, CARD_SORT_MODE_STICHE,
+						  CARD_COLOR_MODE_NONE);
 	printf("\n");
   }
 

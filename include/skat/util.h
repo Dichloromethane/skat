@@ -16,13 +16,13 @@ size_t util_rand_int(size_t min, size_t max);
 size_t round_to_next_pow2(size_t n);
 void perm(int *, int, int);
 
-#define ERROR_COLOR "\e[31m"
 #define COLOR_CLEAR "\e[0m"
+
+#define ERROR_COLOR "\e[31m"
 #define ERROR_C(x)  ERROR_COLOR x COLOR_CLEAR
 
 #define TODO_COLOR "\e[33m"
 #define TODO_C(x)  TODO_COLOR x COLOR_CLEAR
-
 
 #define DERROR_PRINTF(fmt, ...) \
   DEBUG_PRINTF_LABEL(ERROR_C("ERROR"), fmt, ##__VA_ARGS__)

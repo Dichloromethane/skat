@@ -11,6 +11,7 @@ typedef struct stich {
   int winner; // indexed active player
 } stich;
 
-int stich_get_winner(const game_rules *, const stich *, int *);
-int stich_card_legal(const game_rules *, const card_id *, int, const card_id *,
-					 const card_collection *, int *);
+int stich_get_winner(const game_rules *gr, const stich *stich, int *result);
+int stich_card_legal(const game_rules *gr, const stich *stich,
+					 const card_id *new_card, const card_collection *hand,
+					 int *result);
