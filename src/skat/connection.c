@@ -389,11 +389,7 @@ conn_resync_player(server *s, connection_s2c *c) {
 
   player *pl = server_get_player_by_gupid(s, c->gupid);
 
-  payload_resync *pl_rs;
-  size_t payload_size = server_resync_player(s, pl, &pl_rs);
-
-  p.payload_size = payload_size;
-  p.payload.pl_rs = pl_rs;
+  p.payload_size = server_resync_player(s, pl, &p.payload.pl_rs);
 
   send_package(&c->c, &p);
 

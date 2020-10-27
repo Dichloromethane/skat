@@ -164,21 +164,19 @@ server_release_state_lock(server *s) {
 size_t
 server_resync_player(server *s, player *pl, payload_resync **pl_rs) {
   DEBUG_PRINTF("Resync requested by player '%s'", pl->name.name);
+
   size_t player_name_lengths[4];
-  for (int i = 0; i < 4; i++) {
-	if (server_is_player_active(s, i)) {
-	  player_name_lengths[i] = s->ps[i]->name.length;
-	} else {
-	  player_name_lengths[i] = 0;
-	}
-  }
-
   size_t player_names_length = 0;
+
   for (int i = 0; i < 4; i++) {
-	player_names_length += player_name_lengths[i];
+	if (server_is_player_active(s, i))
+	  player_names_length += (player_name_lengths[i] = s->ps[i]->name.length);
+	else
+	  player_name_lengths[i] = 0;
   }
 
-  size_t payload_size = sizeof(payload_resync) + player_names_length;
+  size_t payload_size =
+		  sizeof(payload_resync) + player_names_length * sizeof(char);
   *pl_rs = malloc(payload_size);
 
   skat_resync_player(&s->ss, &(*pl_rs)->scs, pl);
