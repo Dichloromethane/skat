@@ -143,6 +143,10 @@ establish_connection_server(server *s, int fd, pthread_t handler) {
   if (p.type == PACKAGE_JOIN) {
 	payload_join *pl_join = p.payload.pl_j;
 
+	CH_ASSERT_NULL(pl_join->network_protocol_version
+						   == NETWORK_PROTOCOL_VERSION,
+				   &c, CONN_ERROR_PROTOCOL_VERSION_MISMATCH);
+
 	server_acquire_state_lock(s);
 
 	DEBUG_PRINTF("New player join with name '%s'", pl_join->pname.name);
@@ -188,6 +192,10 @@ establish_connection_server(server *s, int fd, pthread_t handler) {
 	return s2c;
   } else if (p.type == PACKAGE_CONN_RESUME) {
 	payload_resume *pl_resume = p.payload.pl_rm;
+
+	CH_ASSERT_NULL(pl_resume->network_protocol_version
+						   == NETWORK_PROTOCOL_VERSION,
+				   &c, CONN_ERROR_PROTOCOL_VERSION_MISMATCH);
 
 	server_acquire_state_lock(s);
 
@@ -319,6 +327,7 @@ establish_connection_client(client *c, int socket_fd, pthread_t handler,
 
 	size_t pl_size = sizeof(payload_resume) + player_name_extra_size(pname);
 	payload_resume *pl = malloc(pl_size);
+	pl->network_protocol_version = NETWORK_PROTOCOL_VERSION;
 	pl->pname.length = pname->length;
 	copy_player_name(&pl->pname, pname);
 	p.payload_size = pl_size;
@@ -328,6 +337,7 @@ establish_connection_client(client *c, int socket_fd, pthread_t handler,
 
 	size_t pl_size = sizeof(payload_join) + player_name_extra_size(pname);
 	payload_join *pl = malloc(pl_size);
+    pl->network_protocol_version = NETWORK_PROTOCOL_VERSION;
 	pl->pname.length = pname->length;
 	copy_player_name(&pl->pname, pname);
 	p.payload_size = pl_size;

@@ -55,6 +55,7 @@ typedef struct {
 } payload_error;
 
 typedef struct {
+  uint16_t network_protocol_version;
   player_name pname;
 } payload_join;
 

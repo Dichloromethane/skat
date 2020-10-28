@@ -36,8 +36,7 @@ void perm(int *, int, int);
 	  DEBUG_PRINTF(__VA_ARGS__); \
   } while (0)
 
-#ifdef HAS_DEBUG_PRINTF
-
+#if defined(HAS_DEBUG_PRINTF) && HAS_DEBUG_PRINTF
 extern pthread_mutex_t debug_printf_lock;
 
 #define DEBUG_PRINTF_RAW(fmt, ...) dprintf(2, fmt, ##__VA_ARGS__)
@@ -69,7 +68,7 @@ extern pthread_mutex_t debug_printf_lock;
 #define DEBUG_TICK 0
 #endif
 
-#if defined(HAS_DEBUG_PACKAGE_PRINTF) && (HAS_DEBUG_PACKAGE_PRINTF)
+#if defined(HAS_DEBUG_PACKAGE_PRINTF) && HAS_DEBUG_PACKAGE_PRINTF
 #define DEBUG_PACKAGE 1
 #else
 #define DEBUG_PACKAGE 0
