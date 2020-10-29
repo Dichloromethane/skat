@@ -140,7 +140,7 @@ card_collection_get_score(const card_collection *const col,
 	  if (error)
 		return 2;
 
-	  unsigned int card_score;
+	  uint8_t card_score;
 	  card_get_score(&cid, &card_score);
 	  total_score += card_score;
 	}
