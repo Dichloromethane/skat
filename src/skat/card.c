@@ -1,5 +1,5 @@
 #include "skat/card.h"
-#include <skat/game_rules.h>
+#include "skat/game_rules.h"
 
 const char *const CARD_TYPE_NAMES = "789DK0AB";
 const uint8_t CARD_SCORES[] = {0, 0, 0, 3, 4, 10, 11, 2};

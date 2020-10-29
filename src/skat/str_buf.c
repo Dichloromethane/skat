@@ -1,6 +1,6 @@
 #include "skat/str_buf.h"
+#include "skat/utf8.h"
 #include "skat/util.h"
-#include <skat/utf8.h>
 #include <stdlib.h>
 #include <string.h>
 

@@ -1,8 +1,8 @@
 #include "conf.h"
 #include "skat/client.h"
+#include "skat/util.h"
 #include <errno.h>
 #include <limits.h>
-#include <skat/util.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>

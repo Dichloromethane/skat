@@ -1,7 +1,7 @@
 #include "skat/skat.h"
+#include "skat/client.h"
 #include "skat/server.h"
 #include "skat/util.h"
-#include <skat/client.h>
 #include <string.h>
 
 #undef SKAT_HDR

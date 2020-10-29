@@ -3,7 +3,7 @@
 #include "client/linmath.h"
 #include "client/vertex.h"
 #include "skat/util.h"
-#include <skat/utf8.h>
+#include "skat/utf8.h"
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
