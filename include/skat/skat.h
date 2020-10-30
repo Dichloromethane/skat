@@ -7,6 +7,7 @@
 #include "skat/event.h"
 #include "skat/game_rules.h"
 #include "skat/player.h"
+#include "skat/reizen.h"
 #include "skat/stich.h"
 
 #ifndef STRINGIFY
@@ -56,20 +57,11 @@ extern char *game_phase_name_table[];
 typedef struct server server;
 typedef struct client client;
 
-typedef struct {
-  int reizwert;
-  unsigned hand : 1;
-  unsigned schneider : 1;
-  unsigned schwarz : 1;
-  unsigned ouvert : 1;
-  unsigned contra : 1;
-  unsigned re : 1;
-} reiz_resultat;
-
-typedef struct {
+typedef struct shared_game_state {
   game_phase cgphase;
+
+  reiz_state rs;
   game_rules gr;
-  reiz_resultat rr;
 
   int active_players[3];// map active player -> gupid
 
@@ -81,7 +73,7 @@ typedef struct {
   int alleinspieler;// indexed by active player
 } shared_game_state;
 
-typedef struct {
+typedef struct skat_client_state {
   shared_game_state sgs;
   card_collection my_hand;
   card_collection my_stiche;
@@ -92,7 +84,7 @@ typedef struct {
   card_id skat[2];
 } skat_client_state;
 
-typedef struct {
+typedef struct skat_server_state {
   shared_game_state sgs;
   card_collection player_hands[3];// indexed by active player
   card_id skat[2];
@@ -101,7 +93,6 @@ typedef struct {
   card_collection *stiche[3];
 
   card_collection stiche_buf[3];// indexed via *stiche (3 weil ramschen)
-  int spielwert;
 } skat_server_state;
 
 void skat_state_notify_disconnect(skat_server_state *, player *, server *);

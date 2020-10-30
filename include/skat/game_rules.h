@@ -13,4 +13,8 @@ typedef enum game_type {
 typedef struct game_rules {
   game_type type;
   card_color trumpf;
+  unsigned hand : 1;
+  unsigned schneider_angesagt : 1;
+  unsigned schwarz_angesagt : 1;
+  unsigned ouvert : 1;
 } game_rules;

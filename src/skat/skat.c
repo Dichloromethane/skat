@@ -104,6 +104,8 @@ distribute_cards(skat_server_state *ss) {
 
   return 0;
 }
+
+#if defined(DISTRIBUTE_SORTED_CARDS) && DISTRIBUTE_SORTED_CARDS
 static int
 debug_distribute_cards(skat_server_state *ss) {
   card_get_id(&(card){.cc = COLOR_KARO, .ct = CARD_TYPE_7}, &ss->skat[0]);
@@ -149,6 +151,7 @@ debug_distribute_cards(skat_server_state *ss) {
 
   return 0;
 }
+#endif
 
 static game_phase
 apply_action_setup(skat_server_state *ss, action *a, player *pl, server *s) {
@@ -234,7 +237,11 @@ apply_action_between_rounds(skat_server_state *ss, action *a, player *pl,
 			  (stich){.played_cards = 0, .vorhand = -1, .winner = -1};
 	  ss->sgs.stich_num = 0;
 	  ss->sgs.alleinspieler = -1;
-	  ss->spielwert = -1;
+	  ss->sgs.rs.rphase = REIZ_PHASE_INVALID;
+	  ss->sgs.rs.telling_player = -1;
+	  ss->sgs.rs.listening_player = -1;
+	  ss->sgs.rs.reizwert = 0;
+	  ss->sgs.rs.winner = -1;
 	  memset(ss->stiche, '\0', 3 * sizeof(ss->stiche[0]));
 	  card_collection_empty(&ss->stiche_buf[0]);
 	  card_collection_empty(&ss->stiche_buf[1]);
@@ -263,24 +270,26 @@ apply_action_between_rounds(skat_server_state *ss, action *a, player *pl,
 
 	  DTODO_PRINTF("TODO: implement reizen");// TODO: implement reizen
 	  // return GAME_PHASE_REIZEN_BEGIN;
-	  ss->spielwert = 18;
 	  ss->stiche[0] = &ss->stiche_buf[0];
 	  ss->stiche[1] = &ss->stiche_buf[1];
 	  ss->stiche[2] = &ss->stiche_buf[1];
 	  card_collection_add_card_array(ss->stiche[0], ss->skat, 2);
+
+	  ss->sgs.rs = (reiz_state){.rphase = REIZ_PHASE_DONE,
+								.telling_player = -1,
+								.listening_player = -1,
+								.reizwert = 18,
+								.winner = 0};
+	  ss->sgs.gr = (game_rules){.type = GAME_TYPE_COLOR,
+								.trumpf = COLOR_KREUZ,
+								.hand = 0,
+								.schneider_angesagt = 0,
+								.schwarz_angesagt = 0,
+								.ouvert = 0};
 	  ss->sgs.alleinspieler = 0;
-	  ss->sgs.gr = (game_rules){.type = GAME_TYPE_COLOR, .trumpf = COLOR_KREUZ};
-	  ss->sgs.rr = (reiz_resultat){.reizwert = 18,
-								   .hand = 0,
-								   .schneider = 0,
-								   .schwarz = 0,
-								   .ouvert = 0,
-								   .contra = 0,
-								   .re = 0};
 
 	  e.type = EVENT_TEMP_REIZEN_DONE;
-	  e.skat[0] = 0;
-	  e.skat[1] = 0;
+	  memset(e.skat, '\0', sizeof(e.skat));
 
 	  void mask_skat(event * ev, player * pl) {
 		if (ss->sgs.alleinspieler == pl->ap)
@@ -302,9 +311,9 @@ static game_phase
 apply_action_reizen_begin(skat_server_state *ss, action *a, player *pl,
 						  server *s) {
   // remember to initialize stiche!
-  event e;
-  e.answer_to = a->id;
-  e.acting_player = pl->gupid;
+  // event e;
+  // e.answer_to = a->id;
+  // e.acting_player = pl->gupid;
   DTODO_PRINTF("TODO: implement reizen");// TODO: implement reizen
   switch (a->type) {
 	default:
@@ -510,14 +519,17 @@ skat_client_state_apply(skat_client_state *cs, event *e, client *c) {
 	  memcpy(cs->skat, e->skat, sizeof(cs->skat));
 
 	  cs->sgs.alleinspieler = 0;
-	  cs->sgs.gr = (game_rules){.type = GAME_TYPE_COLOR, .trumpf = COLOR_KREUZ};
-	  cs->sgs.rr = (reiz_resultat){.reizwert = 18,
-								   .hand = 0,
-								   .schneider = 0,
-								   .schwarz = 0,
-								   .ouvert = 0,
-								   .contra = 0,
-								   .re = 0};
+	  cs->sgs.rs = (reiz_state){.rphase = REIZ_PHASE_DONE,
+								.telling_player = -1,
+								.listening_player = -1,
+								.reizwert = 18,
+								.winner = 0};
+	  cs->sgs.gr = (game_rules){.type = GAME_TYPE_COLOR,
+								.trumpf = COLOR_KREUZ,
+								.hand = 0,
+								.schneider_angesagt = 0,
+								.schwarz_angesagt = 0,
+								.ouvert = 0};
 
 	  if (cs->my_active_player_index == cs->sgs.alleinspieler
 		  || cs->sgs.gr.type == GAME_TYPE_RAMSCH) {
