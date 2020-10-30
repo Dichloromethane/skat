@@ -84,10 +84,10 @@ pos_callback(GLFWwindow *window, int xpos, int ypos) {
 
 static void
 key_callback(GLFWwindow *window, int key, int scancode, int action, int mods) {
-  const char *action_name =
-		  action == 0
-				  ? "release"
-				  : action == 1 ? "press" : action == 2 ? "repeat" : "unknown";
+  const char *action_name = action == 0   ? "release"
+							: action == 1 ? "press"
+							: action == 2 ? "repeat"
+										  : "unknown";
   const char *key_name = glfwGetKeyName(key, scancode);
   int shift = (mods & GLFW_MOD_SHIFT) != 0;
   int ctrl = (mods & GLFW_MOD_CONTROL) != 0;
@@ -314,16 +314,16 @@ start_GRAPHICAL(int fullscreen) {
 	  render_line(MAGENTA, 1440 - (880 / 2), 85, 1440 + (880 / 2), 85);
 	  render_line(MAGENTA, 1440, 85 - (72 / 2), 1440, 85 + (72 / 2));
 	  text_render_printf(TRL_CENTER, MAGENTA, 1440, 85, 1.0f,
-						 "TeQuBrFoJuOvThLaD♠? /j");
+						 u8"TeQuBrFoJuOvThLaD♠? /j");
 
-	  float symbol_width = text_render_string_width(1.0f, "\u2660");
-	  text_render_printf(TRL_BOTTOM_LEFT, BLACK, 10, 310, 1.0f, "\u2660");
+	  float symbol_width = text_render_string_width(1.0f, u8"\u2660");
+	  text_render_printf(TRL_BOTTOM_LEFT, BLACK, 10, 310, 1.0f, u8"\u2660");
 	  text_render_printf(TRL_BOTTOM_LEFT, RED, 10 + symbol_width, 310, 1.0f,
-						 "\u2665");
+						 u8"\u2665");
 	  text_render_printf(TRL_BOTTOM_LEFT, RED, 10 + 2 * symbol_width, 310, 1.0f,
-						 "\u2666");
+						 u8"\u2666");
 	  text_render_printf(TRL_BOTTOM_LEFT, BLACK, 10 + 3 * symbol_width, 310,
-						 1.0f, "\u2663");
+						 1.0f, u8"\u2663");
 
 	  /*
 	  char buf1[4];
