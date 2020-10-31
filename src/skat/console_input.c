@@ -24,8 +24,10 @@ typedef enum card_color_mode {
   CARD_COLOR_MODE_PLAYABLE
 } card_color_mode;
 
-#define PLAYABLE_COLOR     "\e[32m"
-#define NOT_PLAYABLE_COLOR "\e[31m"
+#define RED_CARD_COLOR     "\e[31;1m"
+#define BLACK_CARD_COLOR   "\e[30;1m"
+#define PLAYABLE_COLOR     "\e[4m"
+#define NOT_PLAYABLE_COLOR ""
 
 static void
 print_card_collection(const client *const c, const card_collection *const cc,
@@ -53,23 +55,30 @@ print_card_collection(const client *const c, const card_collection *const cc,
 		  (int (*)(const void *, const void *, void *)) card_compare, &args);
 
   char buf[4];
+  card card;
   for (uint8_t i = 0; i < j; i++) {
 	card_id cid = cid_array[i];
-	int error = card_get_name(&cid, buf);
+
+	int error = card_get(&cid, &card);
+	if (error)
+	  continue;
+
+	error = card_get_name(&cid, buf);
 	if (error)
 	  continue;
 
 	if (color_mode == CARD_COLOR_MODE_PLAYABLE) {
-	  int result;
+	  int is_playable;
 	  error = stich_card_legal(&c->cs.sgs.gr, &c->cs.sgs.curr_stich, &cid, cc,
-							   &result);
+							   &is_playable);
 	  if (error)
 		continue;
 
-	  if (result)
-		printf(PLAYABLE_COLOR " %s(%d)" COLOR_CLEAR, buf, cid);
-	  else
-		printf(NOT_PLAYABLE_COLOR " %s(%d)" COLOR_CLEAR, buf, cid);
+	  printf(" %s%s%s(%d)" COLOR_CLEAR,
+			 is_playable ? PLAYABLE_COLOR : NOT_PLAYABLE_COLOR,
+			 (card.cc == COLOR_KREUZ || card.cc == COLOR_PIK) ? BLACK_CARD_COLOR
+															  : RED_CARD_COLOR,
+			 buf, cid);
 	} else {
 	  printf(" %s(%d)", buf, cid);
 	}
