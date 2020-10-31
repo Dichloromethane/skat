@@ -9,17 +9,13 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
-#define CH_ASSERT(stmt, c, err, ret) \
+#define CH_ASSERT(stmt, c, err, ret_label) \
   do { \
 	if (!(stmt)) { \
 	  conn_error(c, err); \
-	  return ret; \
+	  goto ret_label; \
 	} \
   } while (0)
-
-#define CH_ASSERT_1(stmt, c, err)    CH_ASSERT(stmt, c, err, 1)
-#define CH_ASSERT_0(stmt, c, err)    CH_ASSERT(stmt, c, err, 0)
-#define CH_ASSERT_NULL(stmt, c, err) CH_ASSERT(stmt, c, err, NULL)
 
 #define ATOMIC_QUEUE_NO_INCLUDE_HEADER
 #define TYPE action
@@ -125,6 +121,8 @@ client_disconnect_connection(client *c) {
 
 connection_s2c *
 establish_connection_server(server *s, int fd, pthread_t handler) {
+  __label__ err, err_release;
+
   package p;
   connection c;
   connection_s2c *s2c;
@@ -137,17 +135,16 @@ establish_connection_server(server *s, int fd, pthread_t handler) {
 
   // TODO: remove this so we can actually resume a player or add a new player in
   // between rounds
-  CH_ASSERT_NULL(s->ss.sgs.cgphase == GAME_PHASE_SETUP, &c,
-				 CONN_ERROR_INVALID_JOIN_TIME);
+  CH_ASSERT(s->ss.sgs.cgphase == GAME_PHASE_SETUP, &c,
+			CONN_ERROR_INVALID_JOIN_TIME, err);
 
   if (p.type == PACKAGE_JOIN) {
 	payload_join *pl_join = p.payload.pl_j;
 
-	CH_ASSERT_NULL(pl_join->network_protocol_version
-						   == NETWORK_PROTOCOL_VERSION,
-				   &c, CONN_ERROR_PROTOCOL_VERSION_MISMATCH);
-	CH_ASSERT_NULL(pl_join->name_length + 1 < PLAYER_MAX_NAME_LENGTH, &c,
-				   CONN_ERROR_NAME_TOO_LONG);
+	CH_ASSERT(pl_join->network_protocol_version == NETWORK_PROTOCOL_VERSION, &c,
+			  CONN_ERROR_PROTOCOL_VERSION_MISMATCH, err);
+	CH_ASSERT(pl_join->name_length + 1 < PLAYER_MAX_NAME_LENGTH, &c,
+			  CONN_ERROR_NAME_TOO_LONG, err);
 
 	server_acquire_state_lock(s);
 
@@ -163,11 +160,11 @@ establish_connection_server(server *s, int fd, pthread_t handler) {
 	  }
 	}
 
-	CH_ASSERT_NULL(!server_has_player_name(s, pl_join->name), &c,
-				   CONN_ERROR_PLAYER_NAME_IN_USE);
+	CH_ASSERT(!server_has_player_name(s, pl_join->name), &c,
+			  CONN_ERROR_PLAYER_NAME_IN_USE, err_release);
 
-	CH_ASSERT_NULL(s2c = server_get_free_connection(s, &gupid), &c,
-				   CONN_ERROR_TOO_MANY_PLAYERS);
+	CH_ASSERT(s2c = server_get_free_connection(s, &gupid), &c,
+			  CONN_ERROR_TOO_MANY_PLAYERS, err_release);
 
 	player *pl = create_player(gupid, -1, pl_join->name);
 
@@ -195,11 +192,10 @@ establish_connection_server(server *s, int fd, pthread_t handler) {
   } else if (p.type == PACKAGE_CONN_RESUME) {
 	payload_resume *pl_resume = p.payload.pl_rm;
 
-	CH_ASSERT_NULL(pl_resume->network_protocol_version
-						   == NETWORK_PROTOCOL_VERSION,
-				   &c, CONN_ERROR_PROTOCOL_VERSION_MISMATCH);
-	CH_ASSERT_NULL(pl_resume->name_length + 1 < PLAYER_MAX_NAME_LENGTH, &c,
-				   CONN_ERROR_NAME_TOO_LONG);
+	CH_ASSERT(pl_resume->network_protocol_version == NETWORK_PROTOCOL_VERSION,
+			  &c, CONN_ERROR_PROTOCOL_VERSION_MISMATCH, err);
+	CH_ASSERT(pl_resume->name_length + 1 < PLAYER_MAX_NAME_LENGTH, &c,
+			  CONN_ERROR_NAME_TOO_LONG, err);
 
 	server_acquire_state_lock(s);
 
@@ -215,10 +211,10 @@ establish_connection_server(server *s, int fd, pthread_t handler) {
 	  }
 	}
 
-	CH_ASSERT_NULL(
-			s2c = server_get_connection_by_pname(s, pl_resume->name, &gupid),
-			&c, CONN_ERROR_NO_SUCH_PLAYER_NAME);
-	CH_ASSERT_NULL(!s2c->c.active, &s2c->c, CONN_ERROR_PLAYER_NAME_IN_USE);
+	CH_ASSERT(s2c = server_get_connection_by_pname(s, pl_resume->name, &gupid),
+			  &c, CONN_ERROR_NO_SUCH_PLAYER_NAME, err_release);
+	CH_ASSERT(!s2c->c.active, &s2c->c, CONN_ERROR_PLAYER_NAME_IN_USE,
+			  err_release);
 
 	init_conn_s2c(s2c, &c);
 	s2c->c.active = 1;
@@ -240,13 +236,19 @@ establish_connection_server(server *s, int fd, pthread_t handler) {
 	return s2c;
   }
 
-  CH_ASSERT_NULL(0, &c, CONN_ERROR_INVALID_CONN_STATE);
-  __builtin_unreachable();
+  CH_ASSERT(0, &c, CONN_ERROR_INVALID_CONN_STATE, err);
+
+err_release:
+  server_release_state_lock(s);
+err:
+  return NULL;
 }
 
 static int
 conn_handle_incoming_package_client_single(client *c, connection_c2s *conn,
 										   package *p) {
+  __label__ err;
+
   switch (p->type) {
 	case PACKAGE_EVENT:// clients receive events and send actions
 	  conn_enqueue_event(&conn->c, &p->payload.pl_ev->ev);
@@ -273,9 +275,12 @@ conn_handle_incoming_package_client_single(client *c, connection_c2s *conn,
 	  break;
 	default:
 	  DTODO_PRINTF("TODO: rest of the client side protocol");// TODO: this
-	  CH_ASSERT_0(0, &conn->c, CONN_ERROR_INVALID_PACKAGE_TYPE);
+	  CH_ASSERT(0, &conn->c, CONN_ERROR_INVALID_PACKAGE_TYPE, err);
   }
   return 1;
+
+err:
+  return 0;
 }
 
 static int
@@ -313,6 +318,8 @@ conn_handle_incoming_packages_client(client *c, connection_c2s *conn) {
 connection_c2s *
 establish_connection_client(client *c, int socket_fd, pthread_t handler,
 							int resume) {
+  __label__ err;
+
   DEBUG_PRINTF("%s connection to server",
 			   resume ? "Resuming" : "Establishing new");
 
@@ -361,9 +368,9 @@ establish_connection_client(client *c, int socket_fd, pthread_t handler,
 	return NULL;
   }
 
-  CH_ASSERT_NULL((!resume && p.type == PACKAGE_CONFIRM_JOIN)
-						 || (resume && p.type == PACKAGE_CONFIRM_RESUME),
-				 &c2s->c, CONN_ERROR_INVALID_CONN_STATE);
+  CH_ASSERT((!resume && p.type == PACKAGE_CONFIRM_JOIN)
+					|| (resume && p.type == PACKAGE_CONFIRM_RESUME),
+			&c2s->c, CONN_ERROR_INVALID_CONN_STATE, err);
 
   package_free(&p);
 
@@ -391,6 +398,9 @@ establish_connection_client(client *c, int socket_fd, pthread_t handler,
   package_clean(&p);
 
   return c2s;
+
+err:
+  return NULL;
 }
 
 int
@@ -423,6 +433,7 @@ conn_resync_player(server *s, connection_s2c *c) {
 static int
 conn_handle_incoming_packages_server_single(server *s, connection_s2c *c,
 											package *p) {
+  __label__ err;
   int still_connected;
   payload_action *pl_ac;
 
@@ -445,9 +456,12 @@ conn_handle_incoming_packages_server_single(server *s, connection_s2c *c,
 	  server_release_state_lock(s);
 	  return 0;
 	default:
-	  CH_ASSERT_0(0, &c->c, CONN_ERROR_INVALID_PACKAGE_TYPE);
+	  CH_ASSERT(0, &c->c, CONN_ERROR_INVALID_PACKAGE_TYPE, err);
   }
   return 1;
+
+err:
+  return 0;
 }
 
 int
