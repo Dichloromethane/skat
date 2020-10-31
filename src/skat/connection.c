@@ -146,28 +146,30 @@ establish_connection_server(server *s, int fd, pthread_t handler) {
 	CH_ASSERT_NULL(pl_join->network_protocol_version
 						   == NETWORK_PROTOCOL_VERSION,
 				   &c, CONN_ERROR_PROTOCOL_VERSION_MISMATCH);
+	CH_ASSERT_NULL(pl_join->name_length + 1 < PLAYER_MAX_NAME_LENGTH, &c,
+				   CONN_ERROR_NAME_TOO_LONG);
 
 	server_acquire_state_lock(s);
 
-	DEBUG_PRINTF("New player join with name '%s'", pl_join->pname.name);
+	DEBUG_PRINTF("New player join with name '%s'", pl_join->name);
 	for (int i = 0; i < 4; i++) {
-	  player *pl = s->ps[i];
+	  player *pl = s->pls[i];
 	  if (pl) {
 		int active = server_is_player_active(s, i);
-		DEBUG_PRINTF("Existing player %d: '%s' (%s)", i, pl->name.name,
+		DEBUG_PRINTF("Existing player %d: '%s' (%s)", i, pl->name,
 					 active ? "active" : "inactive");
 	  } else {
 		DEBUG_PRINTF("Empty player slot %d", i);
 	  }
 	}
 
-	CH_ASSERT_NULL(!server_has_player_name(s, &pl_join->pname), &c,
+	CH_ASSERT_NULL(!server_has_player_name(s, pl_join->name), &c,
 				   CONN_ERROR_PLAYER_NAME_IN_USE);
 
 	CH_ASSERT_NULL(s2c = server_get_free_connection(s, &gupid), &c,
 				   CONN_ERROR_TOO_MANY_PLAYERS);
 
-	player *pl = create_player(gupid, -1, &pl_join->pname);
+	player *pl = create_player(gupid, -1, pl_join->name);
 
 	init_conn_s2c(s2c, &c);
 	s2c->c.active = 1;
@@ -196,15 +198,17 @@ establish_connection_server(server *s, int fd, pthread_t handler) {
 	CH_ASSERT_NULL(pl_resume->network_protocol_version
 						   == NETWORK_PROTOCOL_VERSION,
 				   &c, CONN_ERROR_PROTOCOL_VERSION_MISMATCH);
+	CH_ASSERT_NULL(pl_resume->name_length + 1 < PLAYER_MAX_NAME_LENGTH, &c,
+				   CONN_ERROR_NAME_TOO_LONG);
 
 	server_acquire_state_lock(s);
 
-	DEBUG_PRINTF("Resuming player join with name '%s'", pl_resume->pname.name);
+	DEBUG_PRINTF("Resuming player join with name '%s'", pl_resume->name);
 	for (int i = 0; i < 4; i++) {
-	  player *pl = s->ps[i];
+	  player *pl = s->pls[i];
 	  if (pl) {
 		int active = server_is_player_active(s, i);
-		DEBUG_PRINTF("Existing player %d: %s (%s)", i, pl->name.name,
+		DEBUG_PRINTF("Existing player %d: %s (%s)", i, pl->name,
 					 active ? "active" : "inactive");
 	  } else {
 		DEBUG_PRINTF("Empty player slot %d", i);
@@ -212,7 +216,7 @@ establish_connection_server(server *s, int fd, pthread_t handler) {
 	}
 
 	CH_ASSERT_NULL(
-			s2c = server_get_connection_by_pname(s, &pl_resume->pname, &gupid),
+			s2c = server_get_connection_by_pname(s, pl_resume->name, &gupid),
 			&c, CONN_ERROR_NO_SUCH_PLAYER_NAME);
 	CH_ASSERT_NULL(!s2c->c.active, &s2c->c, CONN_ERROR_PLAYER_NAME_IN_USE);
 
@@ -319,27 +323,27 @@ establish_connection_client(client *c, int socket_fd, pthread_t handler,
   init_conn_c2s(c2s, &base_conn);
 
   package p;
-  player_name *pname = create_player_name(c->name);
+  size_t name_length = strlen(c->name);
 
   package_clean(&p);
   if (resume) {
 	p.type = PACKAGE_CONN_RESUME;
 
-	size_t pl_size = sizeof(payload_resume) + player_name_extra_size(pname);
+	size_t pl_size = sizeof(payload_resume) + name_length + 1;
 	payload_resume *pl = malloc(pl_size);
 	pl->network_protocol_version = NETWORK_PROTOCOL_VERSION;
-	pl->pname.length = pname->length;
-	copy_player_name(&pl->pname, pname);
+	pl->name_length = name_length;
+	memcpy(pl->name, c->name, name_length + 1);
 	p.payload_size = pl_size;
 	p.payload.pl_rm = pl;
   } else {
 	p.type = PACKAGE_JOIN;
 
-	size_t pl_size = sizeof(payload_join) + player_name_extra_size(pname);
+	size_t pl_size = sizeof(payload_join) + name_length + 1;
 	payload_join *pl = malloc(pl_size);
-    pl->network_protocol_version = NETWORK_PROTOCOL_VERSION;
-	pl->pname.length = pname->length;
-	copy_player_name(&pl->pname, pname);
+	pl->network_protocol_version = NETWORK_PROTOCOL_VERSION;
+	pl->name_length = name_length;
+	memcpy(pl->name, c->name, name_length + 1);
 	p.payload_size = pl_size;
 	p.payload.pl_j = pl;
   }
@@ -347,7 +351,6 @@ establish_connection_client(client *c, int socket_fd, pthread_t handler,
   send_package(&c2s->c, &p);
 
   package_free(&p);
-  destroy_player_name(pname);
 
   if (!retrieve_package(&c2s->c, &p))
 	return NULL;
@@ -402,7 +405,7 @@ conn_resync_player(server *s, connection_s2c *c) {
   package_clean(&p);
   p.type = PACKAGE_RESYNC;
 
-  player *pl = server_get_player_by_gupid(s, c->gupid);
+  player *pl = s->pls[c->gupid];
 
   p.payload_size = server_resync_player(s, pl, &p.payload.pl_rs);
 
@@ -511,14 +514,14 @@ conn_notify_join(connection_s2c *c, player *pl) {
   package_clean(&p);
   p.type = PACKAGE_NOTIFY_JOIN;
 
-  size_t pl_nj_size =
-		  sizeof(payload_notify_join) + player_name_extra_size(&pl->name);
+  size_t pl_nj_size = sizeof(payload_notify_join) + pl->name_length + 1;
   payload_notify_join *pl_nj = malloc(pl_nj_size);
 
   pl_nj->gupid = pl->gupid;
+  pl_nj->ap = pl->ap;
 
-  pl_nj->pname.length = pl->name.length;
-  copy_player_name(&pl_nj->pname, &pl->name);
+  pl_nj->name_length = pl->name_length;
+  memcpy(pl_nj->name, pl->name, pl->name_length + 1);
 
   p.payload_size = pl_nj_size;
   p.payload.pl_nj = pl_nj;

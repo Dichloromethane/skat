@@ -1,10 +1,12 @@
 #include "conf.h"
 #include "skat/client.h"
+#include "skat/player.h"
 #include "skat/util.h"
 #include <errno.h>
 #include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 
 static void
@@ -62,8 +64,15 @@ main(int argc, char **argv) {
 	exit(EXIT_FAILURE);
   }
 
-  printf("Options: port=%ld; host=%s; name=%s; resume=%d;\n", port, host,
-		 argv[optind], resume);
+  char *name = argv[optind];
+  if (strlen(name) + 1 >= PLAYER_MAX_NAME_LENGTH) {
+	fprintf(stderr, "Name was too long\n");
+	print_usage(argv[0]);
+	exit(EXIT_FAILURE);
+  }
+
+  printf("Options: port=%ld; host=%s; name=%s; resume=%d;\n", port, host, name,
+		 resume);
 
   if (graphical) {
 	// TODO: add graphical loop for render and skat logic
@@ -73,7 +82,7 @@ main(int argc, char **argv) {
   }
 
   client *c = malloc(sizeof(client));
-  client_init(c, host, (int) port, argv[optind]);
+  client_init(c, host, (int) port, name);
   client_run(c, resume);
   __builtin_unreachable();
 }

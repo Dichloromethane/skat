@@ -237,7 +237,7 @@ client_tick(client *c) {
 	  /*
 	  err_ev.type = EVENT_ILLEGAL_ACTION;
 	  err_ev.answer_to = a.id;
-	  copy_player_name(&err_ev.player, &s->ps[i].id);
+	  copy_player_name(&err_ev.player, &s->pls[i].id);
 	  conn_enqueue_event(&s->conns[i].c, &err_ev);
 	   */
 	}
@@ -297,11 +297,10 @@ client_handle_resync(client *c, payload_resync *pl) {
 	  c->pls[i] = malloc(sizeof(player) + len + 1);
 	  c->pls[i]->gupid = i;
 	  c->pls[i]->ap = pl->active_player_indices[i];
-	  c->pls[i]->name.length = len;
+	  c->pls[i]->name_length = len;
 
-	  memcpy(c->pls[i]->name.name, pl->player_names + offset,
-			 len * sizeof(char));
-	  c->pls[i]->name.name[len] = '\0';
+	  memcpy(c->pls[i]->name, pl->player_names + offset, len * sizeof(char));
+	  c->pls[i]->name[len] = '\0';
 	  offset += len;
 	} else {
 	  c->pls[i] = NULL;
@@ -311,18 +310,18 @@ client_handle_resync(client *c, payload_resync *pl) {
 
 void
 client_notify_join(client *c, payload_notify_join *pl_nj) {
-  DEBUG_PRINTF("%s has joined the game", pl_nj->pname.name);
+  DEBUG_PRINTF("%s has joined the game", pl_nj->name);
 
   if (c->pls[pl_nj->gupid])
 	free(c->pls[pl_nj->gupid]);
-  c->pls[pl_nj->gupid] = create_player(pl_nj->gupid, pl_nj->ap, &pl_nj->pname);
+  c->pls[pl_nj->gupid] = create_player(pl_nj->gupid, pl_nj->ap, pl_nj->name);
 
   client_skat_state_notify_join(&c->cs, pl_nj);
 }
 
 void
 client_notify_leave(client *c, payload_notify_leave *pl_nl) {
-  DEBUG_PRINTF("%s has left the game", c->pls[pl_nl->gupid]->name.name);
+  DEBUG_PRINTF("%s has left the game", c->pls[pl_nl->gupid]->name);
 
   free(c->pls[pl_nl->gupid]);
   c->pls[pl_nl->gupid] = NULL;

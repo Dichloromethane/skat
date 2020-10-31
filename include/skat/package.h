@@ -56,7 +56,8 @@ typedef struct {
 
 typedef struct {
   uint16_t network_protocol_version;
-  player_name pname;
+  size_t name_length;
+  char name[];
 } payload_join;
 
 typedef payload_join payload_resume;
@@ -64,7 +65,8 @@ typedef payload_join payload_resume;
 typedef struct payload_notify_join {
   int gupid;
   int ap;
-  player_name pname;
+  size_t name_length;
+  char name[];
 } payload_notify_join;
 
 typedef struct payload_notify_leave {

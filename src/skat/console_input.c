@@ -93,7 +93,7 @@ print_player_turn(const client *const c,
   if (is_my_turn)
 	printf("It is YOUR turn.");
   else
-	printf("It is %s's turn.", c->pls[player_turn]->name.name);
+	printf("It is %s's turn.", c->pls[player_turn]->name);
 
   if ((is_my_turn && mode != PRINT_PLAYER_TURN_SHOW_HAND_MODE_NEVER)
 	  || mode == PRINT_PLAYER_TURN_SHOW_HAND_MODE_ALWAYS) {
@@ -119,7 +119,7 @@ print_info_exec(void *p) {
   printf("--\n\n--------------------------\n");
 
   printf("You are %s[gupid=%d, active_player=%d]\n",
-		 c->pls[c->cs.my_gupid]->name.name, c->cs.my_gupid,
+		 c->pls[c->cs.my_gupid]->name, c->cs.my_gupid,
 		 c->cs.my_active_player_index);
 
   printf("You are playing with:");
@@ -127,7 +127,7 @@ print_info_exec(void *p) {
 	player *pl = c->pls[i];
 	if (pl == NULL)
 	  continue;
-	printf(" %s[gupid=%d, active_player=%d]", pl->name.name, pl->gupid, pl->ap);
+	printf(" %s[gupid=%d, active_player=%d]", pl->name, pl->gupid, pl->ap);
   }
   printf("\n");
 
@@ -142,18 +142,18 @@ print_info_exec(void *p) {
 	  printf("\n");
 	} else {
 	  printf("You are playing with %s\n",
-			 c->pls[c->cs.sgs.active_players[c->cs.my_partner]]->name.name);
+			 c->pls[c->cs.sgs.active_players[c->cs.my_partner]]->name);
 	}
 
 	if (c->cs.sgs.stich_num > 0) {
 	  printf("Last Stich (num=%d, vorhand=%s, winner=%s):", c->cs.sgs.stich_num,
-			 c->pls[c->cs.sgs.active_players[last_stich->vorhand]]->name.name,
-			 c->pls[c->cs.sgs.active_players[last_stich->winner]]->name.name);
+			 c->pls[c->cs.sgs.active_players[last_stich->vorhand]]->name,
+			 c->pls[c->cs.sgs.active_players[last_stich->winner]]->name);
 	  print_card_array(last_stich->cs, last_stich->played_cards);
 	  printf("\n");
 	}
 	printf("Current Stich (num=%d, vorhand=%s):", c->cs.sgs.stich_num,
-		   c->pls[c->cs.sgs.active_players[stich->vorhand]]->name.name);
+		   c->pls[c->cs.sgs.active_players[stich->vorhand]]->name);
 	print_card_array(stich->cs, stich->played_cards);
 	printf("\n");
 
@@ -307,7 +307,7 @@ io_handle_event(client *c, event *e) {
 		print_card_array(c->cs.skat, 2);
 	  } else
 		printf("You are playing with %s",
-			   c->pls[c->cs.sgs.active_players[c->cs.my_partner]]->name.name);
+			   c->pls[c->cs.sgs.active_players[c->cs.my_partner]]->name);
 	  break;
 	case EVENT_PLAY_CARD:
 	  card_get_name(&e->card, buf);

@@ -163,7 +163,7 @@ apply_action_setup(skat_server_state *ss, action *a, player *pl, server *s) {
 	  if (s->ncons < 3) {
 		DEBUG_PRINTF("Rejecting action ACTION_READY with id %ld by player %s "
 					 "because s->ncons = %d < 3",
-					 a->id, pl->name.name, s->ncons);
+					 a->id, pl->name, s->ncons);
 		return GAME_PHASE_INVALID;
 	  }
 
@@ -193,7 +193,7 @@ apply_action_between_rounds(skat_server_state *ss, action *a, player *pl,
 	  if (s->ncons < 3) {
 		DEBUG_PRINTF("Rejecting action ACTION_READY with id %ld by player %s "
 					 "because s->ncons = %d < 3",
-					 a->id, pl->name.name, s->ncons);
+					 a->id, pl->name, s->ncons);
 
 		return GAME_PHASE_INVALID;
 	  }
@@ -205,7 +205,7 @@ apply_action_between_rounds(skat_server_state *ss, action *a, player *pl,
 	  if (ss->sgs.active_players[0] == -1) {
 		for (int i = 0, j = 0; i < 4; i++)
 		  if ((s->playermask >> i) & 1)
-			ss->sgs.active_players[j++] = s->ps[i]->gupid;
+			ss->sgs.active_players[j++] = s->pls[i]->gupid;
 	  } else if (s->ncons == 3) {// we don't have a spectator
 		perm(ss->sgs.active_players, 3, 0x12);
 	  } else {
@@ -214,16 +214,16 @@ apply_action_between_rounds(skat_server_state *ss, action *a, player *pl,
 		  pm |= 1 << ss->sgs.active_players[i];
 		ix = __builtin_ctz(~pm);
 		perm(ss->sgs.active_players, 3, 0x12);
-		ss->sgs.active_players[2] = s->ps[ix]->gupid;
+		ss->sgs.active_players[2] = s->pls[ix]->gupid;
 	  }
 
 	  for (int gupid = 0; gupid < 4; gupid++) {
-		if (s->ps[gupid])
-		  s->ps[gupid]->ap = -1;
+		if (s->pls[gupid])
+		  s->pls[gupid]->ap = -1;
 	  }
 
 	  for (int ap = 0; ap < 3; ap++) {
-		s->ps[ss->sgs.active_players[ap]]->ap = ap;
+		s->pls[ss->sgs.active_players[ap]]->ap = ap;
 	  }
 
 	  memcpy(e.current_active_players, ss->sgs.active_players,
@@ -343,12 +343,12 @@ apply_action_stich(skat_server_state *ss, action *a, player *pl, server *s,
 	case ACTION_PLAY_CARD:
 	  curr = next_active_player(ss->sgs.curr_stich.vorhand, ind);
 	  expected_player_gupid = ss->sgs.active_players[curr];
-	  expected_player = server_get_player_by_gupid(s, expected_player_gupid);
+	  expected_player = s->pls[expected_player_gupid];
 	  if (pl->gupid != expected_player_gupid) {
 		DEBUG_PRINTF("Wrong player trying to play card: Expected player %s "
 					 "(gupid: %d), but got %s (gupid %d) instead",
-					 expected_player->name.name, expected_player_gupid,
-					 pl->name.name, pl->gupid);
+					 expected_player->name, expected_player_gupid, pl->name,
+					 pl->gupid);
 
 		return GAME_PHASE_INVALID;
 	  }
@@ -452,7 +452,7 @@ int
 skat_server_state_apply(skat_server_state *ss, action *a, player *pl,
 						server *s) {
   DEBUG_PRINTF("Applying action %s by player '%s'", action_name_table[a->type],
-			   pl->name.name);
+			   pl->name);
 
   game_phase new;
   new = apply_action(ss, a, pl, s);
@@ -559,9 +559,8 @@ skat_client_state_apply(skat_client_state *cs, event *e, client *c) {
 	  return 1;
 	case EVENT_PLAY_CARD:
 	  card_get_name(&e->card, card_name);
-	  DEBUG_PRINTF("%s (%d) played card %s",
-				   c->pls[e->acting_player]->name.name, e->acting_player,
-				   card_name);
+	  DEBUG_PRINTF("%s (%d) played card %s", c->pls[e->acting_player]->name,
+				   e->acting_player, card_name);
 	  if (c->cs.my_gupid == e->acting_player) {
 		card_collection_remove_card(&cs->my_hand, &e->card);
 	  }
