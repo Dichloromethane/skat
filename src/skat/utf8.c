@@ -6,7 +6,7 @@ int
 utf8_valid(const char *utf8_str) {
   if (!utf8_str) {
 	DERROR_PRINTF("null pointer");
-	exit(1);
+	exit(EXIT_FAILURE);
   }
 
   const unsigned char *str = (const unsigned char *) utf8_str;
@@ -34,7 +34,7 @@ const char *
 utf8_codepoint(const char *utf8_str, unicode_codepoint_t *out_cp) {
   if (!utf8_str) {
 	DERROR_PRINTF("null pointer");
-	exit(1);
+	exit(EXIT_FAILURE);
   }
 
   const unsigned char *str = (const unsigned char *) utf8_str;
@@ -67,7 +67,7 @@ utf8_codepoint(const char *utf8_str, unicode_codepoint_t *out_cp) {
 	utf8_str++;
   } else {// invalid utf8 codepoint
 	DERROR_PRINTF("Found an invalid utf8 codepoint");
-	exit(1);
+	exit(EXIT_FAILURE);
   }
 
   return utf8_str;
@@ -77,10 +77,10 @@ void
 utf8_convert_unicode_codepoint(unicode_codepoint_t cp, char *out_utf8_cp) {
   if (!out_utf8_cp) {
 	DERROR_PRINTF("null pointer");
-	exit(1);
+	exit(EXIT_FAILURE);
   } else if ((cp & 0xffe00000u) != 0) {// >21 bits used, invalid
 	DERROR_PRINTF("Given codepoint is invalid");
-	exit(1);
+	exit(EXIT_FAILURE);
   } else if (cp & 0x001f0000u) {// 17-21 bits used, 4 bytes utf8
 	out_utf8_cp[0] = (char) (0b11110000u | ((cp >> 18u) & 0b00000111u));
 	out_utf8_cp[1] = (char) (0b10000000u | ((cp >> 12u) & 0b00111111u));
@@ -105,7 +105,7 @@ size_t
 utf8_length(const char *utf8_str) {
   if (!utf8_str) {
 	DERROR_PRINTF("null pointer");
-	exit(1);
+	exit(EXIT_FAILURE);
   }
 
   size_t length = 0;
