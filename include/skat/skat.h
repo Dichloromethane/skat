@@ -37,12 +37,13 @@ GAME_PHASE_HDR_TABLE_BEGIN
   FIRST_GAME_PHASE(INVALID),
   GAME_PHASE(SETUP),
   GAME_PHASE(BETWEEN_ROUNDS),
-  GAME_PHASE(REIZEN_BEGIN),
+  GAME_PHASE(REIZEN),
   GAME_PHASE(SKAT_AUFNEHMEN),
   GAME_PHASE(PLAY_START),
   GAME_PHASE(PLAY_STICH_C1),
   GAME_PHASE(PLAY_STICH_C2),
   GAME_PHASE(PLAY_STICH_C3),
+  GAME_PHASE(CLIENT_WAIT_REIZEN_DONE),
   GAME_PHASE(CLIENT_WAIT_STICH_DONE),
   GAME_PHASE(CLIENT_WAIT_ROUND_DONE),
   GAME_PHASE(END)
@@ -71,6 +72,7 @@ typedef struct shared_game_state {
   stich last_stich;
   int stich_num;    // 0-9
   int alleinspieler;// indexed by active player
+  int took_skat;
 } shared_game_state;
 
 typedef struct skat_client_state {
@@ -88,6 +90,8 @@ typedef struct skat_server_state {
   shared_game_state sgs;
   card_collection player_hands[3];// indexed by active player
   card_id skat[2];
+
+  card_collection initial_alleinspieler_hand;
 
   // indexed by active player, has to be initialized after reizen
   card_collection *stiche[3];

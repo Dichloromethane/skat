@@ -171,7 +171,6 @@ apply_action_setup(skat_server_state *ss, action *a, player *pl, server *s) {
 	  server_distribute_event(s, &e, NULL);
 
 	  return GAME_PHASE_BETWEEN_ROUNDS;
-	case ACTION_RULE_CHANGE:
 	default:
 
 	  DEBUG_PRINTF("Trying to use undefined action %s in state %s",
@@ -238,14 +237,19 @@ apply_action_between_rounds(skat_server_state *ss, action *a, player *pl,
 	  ss->sgs.stich_num = 0;
 	  ss->sgs.alleinspieler = -1;
 	  ss->sgs.rs.rphase = REIZ_PHASE_INVALID;
-	  ss->sgs.rs.telling_player = -1;
-	  ss->sgs.rs.listening_player = -1;
+	  ss->sgs.rs.waiting_teller = -1;
 	  ss->sgs.rs.reizwert = 0;
 	  ss->sgs.rs.winner = -1;
 	  memset(ss->stiche, '\0', 3 * sizeof(ss->stiche[0]));
 	  card_collection_empty(&ss->stiche_buf[0]);
 	  card_collection_empty(&ss->stiche_buf[1]);
 	  card_collection_empty(&ss->stiche_buf[2]);
+
+	  card_collection_empty(&ss->player_hands[0]);
+	  card_collection_empty(&ss->player_hands[1]);
+	  card_collection_empty(&ss->player_hands[2]);
+
+	  card_collection_empty(&ss->initial_alleinspieler_hand);
 
 #if defined(DISTRIBUTE_SORTED_CARDS) && (DISTRIBUTE_SORTED_CARDS)
 	  // distributing manually for debugging:
@@ -268,27 +272,15 @@ apply_action_between_rounds(skat_server_state *ss, action *a, player *pl,
 
 	  server_distribute_event(s, &e, mask_hands);
 
-	  DTODO_PRINTF("TODO: implement reizen");// TODO: implement reizen
-	  // return GAME_PHASE_REIZEN_BEGIN;
-	  ss->stiche[0] = &ss->stiche_buf[0];
-	  ss->stiche[1] = &ss->stiche_buf[1];
-	  ss->stiche[2] = &ss->stiche_buf[1];
-	  card_collection_add_card_array(ss->stiche[0], ss->skat, 2);
+	  ss->sgs.rs.rphase = REIZ_PHASE_MITTELHAND_TO_VORHAND;
+	  ss->sgs.rs.waiting_teller = 1;
+	  ss->sgs.rs.reizwert = 0;
+	  ss->sgs.rs.winner = -1;
 
-	  ss->sgs.rs = (reiz_state){.rphase = REIZ_PHASE_DONE,
-								.telling_player = -1,
-								.listening_player = -1,
-								.reizwert = 18,
-								.winner = 0};
-	  ss->sgs.gr = (game_rules){.type = GAME_TYPE_COLOR,
-								.trumpf = COLOR_KREUZ,
-								.hand = 0,
-								.schneider_angesagt = 0,
-								.schwarz_angesagt = 0,
-								.ouvert = 0};
-	  ss->sgs.alleinspieler = 0;
+	  return GAME_PHASE_REIZEN;
 
-	  e.type = EVENT_TEMP_REIZEN_DONE;
+	  // TODO: take this code to skat aufnehmen
+	  /*e.type = EVENT_TEMP_REIZEN_DONE;
 	  memset(e.skat, '\0', sizeof(e.skat));
 
 	  void mask_skat(event * ev, player * pl) {
@@ -298,7 +290,7 @@ apply_action_between_rounds(skat_server_state *ss, action *a, player *pl,
 
 	  server_distribute_event(s, &e, mask_skat);
 
-	  return GAME_PHASE_PLAY_STICH_C1;
+	  return GAME_PHASE_PLAY_STICH_C1;*/
 	default:
 	  DEBUG_PRINTF("Trying to use undefined action %s in state %s",
 				   action_name_table[a->type],
@@ -307,15 +299,201 @@ apply_action_between_rounds(skat_server_state *ss, action *a, player *pl,
   }
 }
 
+static const uint8_t skat_stiche_buf_lookup[3][3] = {{0, 1, 1},
+													 {0, 1, 0},
+													 {0, 0, 1}};
+
 static game_phase
-apply_action_reizen_begin(skat_server_state *ss, action *a, player *pl,
-						  server *s) {
-  // remember to initialize stiche!
-  // event e;
-  // e.answer_to = a->id;
-  // e.acting_player = pl->gupid;
-  DTODO_PRINTF("TODO: implement reizen");// TODO: implement reizen
+finish_reizen(skat_server_state *ss, server *s, event *e) {
+  ss->sgs.rs.rphase = REIZ_PHASE_DONE;
+  ss->sgs.rs.waiting_teller = 1;
+
+  if (ss->sgs.rs.reizwert < 18) {
+	ss->sgs.rs.reizwert = 0;
+
+	ss->sgs.gr.type = GAME_TYPE_RAMSCH;
+
+	ss->sgs.alleinspieler = -1;
+
+	for (int ap = 0; ap < 3; ap++)
+	  ss->stiche[ap] = &ss->stiche_buf[ap];
+
+	e->type = EVENT_REIZEN_DONE;
+	e->alleinspieler = ss->sgs.alleinspieler;
+	e->reizwert_final = ss->sgs.rs.reizwert;
+
+	server_distribute_event(s, e, NULL);
+
+	// TODO: implement schieberamsch
+	return GAME_PHASE_PLAY_STICH_C1;
+  } else {
+	ss->sgs.alleinspieler = ss->sgs.rs.winner;
+
+	ss->initial_alleinspieler_hand = ss->player_hands[ss->sgs.alleinspieler];
+	card_collection_add_card_array(&ss->initial_alleinspieler_hand, ss->skat,
+								   2);
+
+	for (int ap = 0; ap < 3; ap++)
+	  ss->stiche[ap] =
+			  &ss->stiche_buf[skat_stiche_buf_lookup[ss->sgs.alleinspieler]
+													[ap]];
+
+	e->type = EVENT_REIZEN_DONE;
+	e->alleinspieler = ss->sgs.alleinspieler;
+	e->reizwert_final = ss->sgs.rs.reizwert;
+
+	server_distribute_event(s, e, NULL);
+
+	return GAME_PHASE_SKAT_AUFNEHMEN;
+  }
+}
+
+static game_phase
+apply_action_reizen(skat_server_state *ss, action *a, player *pl, server *s) {
+  if (ss->sgs.rs.rphase == REIZ_PHASE_INVALID
+	  || ss->sgs.rs.rphase == REIZ_PHASE_DONE) {
+	DEBUG_PRINTF("Invalid reiz phase %s",
+				 reiz_phase_name_table[ss->sgs.rs.rphase]);
+	return GAME_PHASE_INVALID;
+  }
+
+  event e;
+  e.answer_to = a->id;
+  e.acting_player = pl->gupid;
+  e.reizwert = 0;
   switch (a->type) {
+	case ACTION_REIZEN_NUMBER:
+	  if (!ss->sgs.rs.waiting_teller) {
+		DEBUG_PRINTF("Not waiting for teller");
+		return GAME_PHASE_INVALID;
+	  }
+
+	  if (ss->sgs.rs.rphase == REIZ_PHASE_MITTELHAND_TO_VORHAND
+		  && pl->ap != 1) {
+		DEBUG_PRINTF("Wrong player trying reizen number: expected 1 but got %d",
+					 pl->ap);
+		return GAME_PHASE_INVALID;
+	  }
+
+	  if (ss->sgs.rs.rphase == REIZ_PHASE_HINTERHAND_TO_WINNER && pl->ap != 2) {
+		DEBUG_PRINTF("Wrong player trying reizen number: expected 2 but got %d",
+					 pl->ap);
+		return GAME_PHASE_INVALID;
+	  }
+
+	  if (ss->sgs.rs.rphase == REIZ_PHASE_WINNER
+		  && pl->ap != ss->sgs.rs.winner) {
+		DEBUG_PRINTF(
+				"Wrong player trying reizen number: expected %d but got %d",
+				ss->sgs.rs.winner, pl->ap);
+		return GAME_PHASE_INVALID;
+	  }
+
+	  if (a->reizwert < 18 || a->reizwert <= ss->sgs.rs.reizwert) {
+		DEBUG_PRINTF("Invalid reizwert %u for current reizwert %u", a->reizwert,
+					 ss->sgs.rs.reizwert);
+		return GAME_PHASE_INVALID;
+	  }
+
+	  ss->sgs.rs.reizwert = a->reizwert;
+	  ss->sgs.rs.waiting_teller = 0;
+
+	  e.type = EVENT_REIZEN_NUMBER;
+	  e.reizwert = ss->sgs.rs.reizwert;
+
+	  server_distribute_event(s, &e, NULL);
+
+	  if (ss->sgs.rs.rphase == REIZ_PHASE_WINNER)
+		return finish_reizen(ss, s, &e);
+
+	  return GAME_PHASE_REIZEN;
+	case ACTION_REIZEN_CONFIRM:
+	  if ((ss->sgs.rs.rphase == REIZ_PHASE_MITTELHAND_TO_VORHAND
+		   || ss->sgs.rs.rphase == REIZ_PHASE_HINTERHAND_TO_WINNER)
+		  && ss->sgs.rs.waiting_teller) {
+		DEBUG_PRINTF("Only the listener may confirm now");
+		return GAME_PHASE_INVALID;
+	  }
+
+	  if (ss->sgs.rs.rphase == REIZ_PHASE_MITTELHAND_TO_VORHAND
+		  && pl->ap != 0) {
+		DEBUG_PRINTF(
+				"Wrong player trying reizen confirm: expected 0 but got %d",
+				pl->ap);
+		return GAME_PHASE_INVALID;
+	  }
+
+	  if (ss->sgs.rs.rphase == REIZ_PHASE_HINTERHAND_TO_WINNER
+		  && pl->ap != ss->sgs.rs.winner) {
+		DEBUG_PRINTF(
+				"Wrong player trying reizen confirm: expected %d but got %d",
+				ss->sgs.rs.winner, pl->ap);
+		return GAME_PHASE_INVALID;
+	  }
+
+	  ss->sgs.rs.waiting_teller = 1;
+
+	  e.type = EVENT_REIZEN_CONFIRM;
+
+	  server_distribute_event(s, &e, NULL);
+
+	  if (ss->sgs.rs.rphase == REIZ_PHASE_WINNER) {
+		if (ss->sgs.rs.reizwert < 18)
+		  ss->sgs.rs.reizwert = 18;
+		return finish_reizen(ss, s, &e);
+	  }
+
+	  return GAME_PHASE_REIZEN;
+	case ACTION_REIZEN_PASSE:
+	  if (ss->sgs.rs.rphase == REIZ_PHASE_MITTELHAND_TO_VORHAND && pl->ap != 1
+		  && ss->sgs.rs.waiting_teller) {
+		DEBUG_PRINTF("Wrong player trying reizen passe: expected 1 but got %d",
+					 pl->ap);
+		return GAME_PHASE_INVALID;
+	  }
+
+	  if (ss->sgs.rs.rphase == REIZ_PHASE_MITTELHAND_TO_VORHAND && pl->ap != 0
+		  && !ss->sgs.rs.waiting_teller) {
+		DEBUG_PRINTF("Wrong player trying reizen passe: expected 0 but got %d",
+					 pl->ap);
+		return GAME_PHASE_INVALID;
+	  }
+
+	  if (ss->sgs.rs.rphase == REIZ_PHASE_HINTERHAND_TO_WINNER && pl->ap != 2
+		  && ss->sgs.rs.waiting_teller) {
+		DEBUG_PRINTF("Wrong player trying reizen passe: expected 2 but got %d",
+					 pl->ap);
+		return GAME_PHASE_INVALID;
+	  }
+
+	  if (ss->sgs.rs.rphase == REIZ_PHASE_HINTERHAND_TO_WINNER
+		  && pl->ap != ss->sgs.rs.winner && !ss->sgs.rs.waiting_teller) {
+		DEBUG_PRINTF("Wrong player trying reizen passe: expected %d but got %d",
+					 ss->sgs.rs.winner, pl->ap);
+		return GAME_PHASE_INVALID;
+	  }
+
+	  e.type = EVENT_REIZEN_PASSE;
+
+	  server_distribute_event(s, &e, NULL);
+
+	  if (ss->sgs.rs.rphase == REIZ_PHASE_MITTELHAND_TO_VORHAND) {
+		ss->sgs.rs.rphase = REIZ_PHASE_HINTERHAND_TO_WINNER;
+		ss->sgs.rs.winner = ss->sgs.rs.waiting_teller;
+		ss->sgs.rs.waiting_teller = 1;
+	  } else if (ss->sgs.rs.rphase == REIZ_PHASE_HINTERHAND_TO_WINNER) {
+		if (ss->sgs.rs.waiting_teller)
+		  ss->sgs.rs.winner = 2;
+		ss->sgs.rs.waiting_teller = 1;
+
+		if (ss->sgs.rs.reizwert >= 18)
+		  return finish_reizen(ss, s, &e);
+
+		ss->sgs.rs.rphase = REIZ_PHASE_WINNER;
+		return GAME_PHASE_REIZEN;
+	  }
+	  // REIZ_PHASE_WINNER
+	  return finish_reizen(ss, s, &e);
 	default:
 	  DEBUG_PRINTF("Trying to use undefined action %s in state %s",
 				   action_name_table[a->type],
@@ -434,8 +612,8 @@ apply_action(skat_server_state *ss, action *a, player *pl, server *s) {
 	  return apply_action_setup(ss, a, pl, s);
 	case GAME_PHASE_BETWEEN_ROUNDS:
 	  return apply_action_between_rounds(ss, a, pl, s);
-	case GAME_PHASE_REIZEN_BEGIN:
-	  return apply_action_reizen_begin(ss, a, pl, s);
+	case GAME_PHASE_REIZEN:
+	  return apply_action_reizen(ss, a, pl, s);
 	case GAME_PHASE_PLAY_STICH_C1:
 	  return apply_action_stich(ss, a, pl, s, 0);
 	case GAME_PHASE_PLAY_STICH_C2:
@@ -465,11 +643,113 @@ skat_server_state_apply(skat_server_state *ss, action *a, player *pl,
 void
 skat_server_state_tick(skat_server_state *ss, server *s) {}
 
+static int
+skat_client_handle_reizen_events(skat_client_state *cs, event *e, client *c) {
+  if (cs->sgs.cgphase != GAME_PHASE_REIZEN
+	  && cs->sgs.cgphase != GAME_PHASE_CLIENT_WAIT_REIZEN_DONE) {
+	DERROR_PRINTF("Trying to apply event %s, while in invalid game state %s",
+				  event_name_table[e->type],
+				  game_phase_name_table[cs->sgs.cgphase]);
+	return 0;
+  }
+
+  reiz_state *rs = &cs->sgs.rs;
+
+  if (rs->rphase == REIZ_PHASE_INVALID || rs->rphase == REIZ_PHASE_DONE) {
+	DERROR_PRINTF("Trying to apply event %s, while in invalid reiz phase %s",
+				  event_name_table[e->type], reiz_phase_name_table[rs->rphase]);
+	return 0;
+  }
+
+  switch (e->type) {
+	case EVENT_REIZEN_NUMBER:
+	  rs->reizwert = e->reizwert;
+	  rs->waiting_teller = 0;
+	  if (rs->rphase == REIZ_PHASE_WINNER)
+		cs->sgs.cgphase = GAME_PHASE_CLIENT_WAIT_REIZEN_DONE;
+	  return 1;
+	case EVENT_REIZEN_CONFIRM:
+	  rs->waiting_teller = 1;
+	  if (rs->rphase == REIZ_PHASE_WINNER) {
+		if (rs->reizwert < 18)
+		  rs->reizwert = 18;
+		cs->sgs.cgphase = GAME_PHASE_CLIENT_WAIT_REIZEN_DONE;
+	  }
+	  return 1;
+	case EVENT_REIZEN_PASSE:
+	  if (rs->rphase == REIZ_PHASE_MITTELHAND_TO_VORHAND) {
+		rs->rphase = REIZ_PHASE_HINTERHAND_TO_WINNER;
+		rs->winner = rs->waiting_teller;
+		rs->waiting_teller = 1;
+	  } else if (rs->rphase == REIZ_PHASE_HINTERHAND_TO_WINNER) {
+		if (rs->waiting_teller)
+		  rs->winner = 2;
+		rs->waiting_teller = 1;
+
+		if (rs->reizwert >= 18) {
+		  cs->sgs.cgphase = GAME_PHASE_CLIENT_WAIT_REIZEN_DONE;
+		} else {
+		  rs->rphase = REIZ_PHASE_WINNER;
+		}
+	  } else {
+		cs->sgs.cgphase = GAME_PHASE_CLIENT_WAIT_REIZEN_DONE;
+	  }
+	  return 1;
+	case EVENT_REIZEN_DONE:
+	  if (cs->sgs.cgphase != GAME_PHASE_CLIENT_WAIT_REIZEN_DONE) {
+		DERROR_PRINTF(
+				"Trying to apply event %s, while in invalid game state %s",
+				event_name_table[e->type],
+				game_phase_name_table[cs->sgs.cgphase]);
+		return 0;
+	  }
+
+	  rs->rphase = REIZ_PHASE_DONE;
+	  rs->waiting_teller = 1;
+	  rs->reizwert = e->reizwert_final;
+	  cs->sgs.alleinspieler = rs->winner = e->alleinspieler;
+
+	  if (rs->reizwert < 18) {
+		cs->sgs.gr.type = GAME_TYPE_RAMSCH;
+		// TODO: implement schieberamsch
+		cs->sgs.cgphase = GAME_PHASE_PLAY_STICH_C1;
+	  } else {
+		cs->sgs.cgphase = GAME_PHASE_SKAT_AUFNEHMEN;
+	  }
+
+	  if (cs->my_active_player_index == cs->sgs.alleinspieler
+		  || cs->sgs.gr.type == GAME_TYPE_RAMSCH) {
+		cs->ist_alleinspieler = 1;
+		cs->my_partner = -1;
+	  } else {
+		cs->ist_alleinspieler = 0;
+
+		// 0,1 | 1,0, sum=1 -> 2
+		// 0,2 | 2,0, sum=2 -> 1
+		// 1,2 | 2,1, sum=3 -> 3
+
+		int sum = cs->my_active_player_index + cs->sgs.alleinspieler;
+		if (sum == 1)
+		  cs->my_partner = 2;
+		else if (sum == 2)
+		  cs->my_partner = 1;
+		else
+		  cs->my_partner = 3;
+	  }
+
+	  return 1;
+	default:
+	  DERROR_PRINTF("Trying to apply event %s, while handling reizen events, "
+					"this should not happen",
+					event_name_table[e->type]);
+	  return 0;
+  }
+}
+
 int
 skat_client_state_apply(skat_client_state *cs, event *e, client *c) {
   DTODO_PRINTF("Insert sanity checks.");
-  char card_name[4];
-  // int my_active_player_index;
+  char card_name_buf[4];
   switch (e->type) {
 	case EVENT_START_GAME:
 	  DEBUG_PRINTF("Starting game");
@@ -506,61 +786,26 @@ skat_client_state_apply(skat_client_state *cs, event *e, client *c) {
 	  cs->sgs.stich_num = 0;
 	  cs->sgs.alleinspieler = -1;
 
+	  cs->sgs.rs.rphase = REIZ_PHASE_MITTELHAND_TO_VORHAND;
+	  cs->sgs.rs.waiting_teller = 1;
+	  cs->sgs.rs.reizwert = 0;
+	  cs->sgs.rs.winner = -1;
+
 	  card_collection_empty(&cs->my_stiche);
 	  cs->my_partner = -1;
 	  cs->ist_alleinspieler = -1;
 
-	  DTODO_PRINTF("TODO: implement reizen");// TODO: implement reizen
-	  cs->sgs.cgphase = GAME_PHASE_REIZEN_BEGIN;
+	  cs->sgs.cgphase = GAME_PHASE_REIZEN;
 	  return 1;
-	case EVENT_TEMP_REIZEN_DONE:
-	  DEBUG_PRINTF("(Temp) Reizen done");
-
-	  memcpy(cs->skat, e->skat, sizeof(cs->skat));
-
-	  cs->sgs.alleinspieler = 0;
-	  cs->sgs.rs = (reiz_state){.rphase = REIZ_PHASE_DONE,
-								.telling_player = -1,
-								.listening_player = -1,
-								.reizwert = 18,
-								.winner = 0};
-	  cs->sgs.gr = (game_rules){.type = GAME_TYPE_COLOR,
-								.trumpf = COLOR_KREUZ,
-								.hand = 0,
-								.schneider_angesagt = 0,
-								.schwarz_angesagt = 0,
-								.ouvert = 0};
-
-	  if (cs->my_active_player_index == cs->sgs.alleinspieler
-		  || cs->sgs.gr.type == GAME_TYPE_RAMSCH) {
-		cs->ist_alleinspieler = 1;
-		cs->my_partner = cs->my_active_player_index;
-	  } else {
-		cs->ist_alleinspieler = 0;
-
-		// 0,1 | 1,0, sum=1 -> 2
-		// 0,2 | 2,0, sum=2 -> 1
-		// 1,2 | 2,1, sum=3 -> 3
-
-		int sum = cs->my_active_player_index + cs->sgs.alleinspieler;
-		if (sum == 1)
-		  cs->my_partner = 2;
-		else if (sum == 2)
-		  cs->my_partner = 1;
-		else
-		  cs->my_partner = 3;
-	  }
-
-	  if (c->cs.ist_alleinspieler && cs->sgs.gr.type != GAME_TYPE_RAMSCH)
-		card_collection_add_card_array(&cs->my_stiche, cs->skat, 2);
-
-	  cs->sgs.cgphase = GAME_PHASE_PLAY_STICH_C1;
-
-	  return 1;
+	case EVENT_REIZEN_NUMBER:
+	case EVENT_REIZEN_CONFIRM:
+	case EVENT_REIZEN_PASSE:
+	case EVENT_REIZEN_DONE:
+	  return skat_client_handle_reizen_events(cs, e, c);
 	case EVENT_PLAY_CARD:
-	  card_get_name(&e->card, card_name);
+	  card_get_name(&e->card, card_name_buf);
 	  DEBUG_PRINTF("%s (%d) played card %s", c->pls[e->acting_player]->name,
-				   e->acting_player, card_name);
+				   e->acting_player, card_name_buf);
 	  if (c->cs.my_gupid == e->acting_player) {
 		card_collection_remove_card(&cs->my_hand, &e->card);
 	  }

@@ -30,7 +30,9 @@
 ACTION_HDR_TABLE_BEGIN
   FIRST_ACTION(INVALID),
   ACTION(READY),
-  ACTION(RULE_CHANGE),
+  ACTION(REIZEN_NUMBER),
+  ACTION(REIZEN_CONFIRM),
+  ACTION(REIZEN_PASSE),
   ACTION(PLAY_CARD)
 ACTION_HDR_TABLE_END
 
@@ -46,6 +48,7 @@ typedef struct {
   action_id id;
   union {
 	card_id card;
+	uint16_t reizwert;
   };
 } action;
 

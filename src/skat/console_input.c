@@ -310,11 +310,20 @@ io_handle_event(client *c, event *e) {
 	case EVENT_DISTRIBUTE_CARDS:
 	  print_player_turn(c, PRINT_PLAYER_TURN_SHOW_HAND_MODE_ALWAYS);
 	  break;
-	case EVENT_TEMP_REIZEN_DONE:
-	  if (c->cs.ist_alleinspieler) {
-		printf("You are playing alone, the skat was:");
-		print_card_array(c->cs.skat, 2);
-	  } else
+	case EVENT_REIZEN_NUMBER:
+	case EVENT_REIZEN_CONFIRM:
+	case EVENT_REIZEN_PASSE:
+	  printf("event=%s, acting_player=%d, rphase=%s, waiting_teller=%d, "
+			 "reizwert=%u, winner=%d",
+			 event_name_table[e->type], e->acting_player,
+			 reiz_phase_name_table[c->cs.sgs.rs.rphase],
+			 c->cs.sgs.rs.waiting_teller, c->cs.sgs.rs.reizwert,
+			 c->cs.sgs.rs.winner);
+	  break;
+	case EVENT_REIZEN_DONE:
+	  if (c->cs.ist_alleinspieler)
+		printf("You are playing alone");
+	  else
 		printf("You are playing with %s",
 			   c->pls[c->cs.sgs.active_players[c->cs.my_partner]]->name);
 	  break;

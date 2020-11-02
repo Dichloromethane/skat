@@ -37,7 +37,10 @@ EVENT_HDR_TABLE_BEGIN
   EVENT(START_ROUND),
   EVENT(PLAYER_READY),
   EVENT(DISTRIBUTE_CARDS),
-  EVENT(TEMP_REIZEN_DONE),
+  EVENT(REIZEN_NUMBER),
+  EVENT(REIZEN_CONFIRM),
+  EVENT(REIZEN_PASSE),
+  EVENT(REIZEN_DONE),
   EVENT(PLAY_CARD),
   EVENT(STICH_DONE),
   EVENT(ROUND_DONE)
@@ -58,6 +61,11 @@ typedef struct {
 	card_id card;
 	int score_round[3];// indexed by ap
 	int stich_winner;  // gupid
+	uint16_t reizwert;
+	struct {
+	  int alleinspieler;// ap
+	  uint16_t reizwert_final;
+	};
   };
 } event;
 
