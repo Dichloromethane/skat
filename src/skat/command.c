@@ -61,22 +61,54 @@ command_free(command *const cmd) {
 }
 
 int
-command_equals(const command *const cmd, const char *const str,
-			   int *const result) {
-  *result = !strcmp(cmd->command, str);
+command_equals(const command *cmd, int *result, const char *str,
+			   size_t alias_count, ...) {
+  int equals = !strcmp(cmd->command, str);
+  if (!equals) {
+	*result = 0;
+	return 0;
+  }
+
+  va_list ap;
+  va_start(ap, alias_count);
+  for (size_t i = 0; i < alias_count; ++i) {
+	const char *const alias = va_arg(ap, const char *const);
+	equals = !strcmp(cmd->command, alias);
+	if (!equals)
+	  break;
+  }
+  va_end(ap);
+
+  *result = equals;
   return 0;
 }
 
 int
-command_arg_equals(const command *const cmd, const size_t index,
-				   const char *const str, int *const result) {
+command_arg_equals(const command *cmd, size_t index, int *result,
+				   const char *str, size_t alias_count, ...) {
   if (index >= cmd->args_length) {
 	fprintf(stderr, "Invalid arg index: got %zu but length was %zu\n", index,
 			cmd->args_length);
 	return 1;
   }
 
-  *result = !strcmp(cmd->args[index], str);
+  const char *const arg = cmd->args[index];
+  int equals = !strcmp(arg, str);
+  if (!equals)
+	goto end;
+
+  va_list ap;
+  va_start(ap, alias_count);
+  for (size_t i = 0; i < alias_count; ++i) {
+	const char *const alias = va_arg(ap, const char *const);
+	equals = !strcmp(cmd->command, alias);
+	if (!equals)
+	  break;
+  }
+  va_end(ap);
+
+end:
+  *result = equals;
   return 0;
 }
 
@@ -88,9 +120,8 @@ command_check_arg_length(const command *cmd, size_t expected_args,
 }
 
 int
-command_parse_arg_u64(const command *const cmd, const size_t index,
-					  const uint64_t min, const uint64_t max,
-					  uint64_t *const result) {
+command_parse_arg_u64(const command *cmd, int print_errors, size_t index,
+					  uint64_t min, uint64_t max, uint64_t *result) {
   if (index >= cmd->args_length) {
 	fprintf(stderr, "Invalid arg index: got %zu but length was %zu\n", index,
 			cmd->args_length);
@@ -100,7 +131,8 @@ command_parse_arg_u64(const command *const cmd, const size_t index,
   const char *const arg = cmd->args[index];
 
   if (arg[0] == '\0') {
-	fprintf(stderr, "Invalid arg, got NULL\n");
+	if (print_errors)
+	  fprintf(stderr, "Invalid arg, got NULL\n");
 	return 2;
   }
 
@@ -109,18 +141,21 @@ command_parse_arg_u64(const command *const cmd, const size_t index,
   unsigned long long int result_ = strtoull(arg, &end, 10);
 
   if (errno != 0) {
-	fprintf(stderr, "Unable to parse arg '%s': %s\n", arg, strerror(errno));
+	if (print_errors)
+	  fprintf(stderr, "Unable to parse arg '%s': %s\n", arg, strerror(errno));
 	return 3;
   } else if (end[0] != '\0') {
-	fprintf(stderr,
-			"Unable to parse arg '%s' fully, still left to parse: '%s'\n", arg,
-			end);
+	if (print_errors)
+	  fprintf(stderr,
+			  "Unable to parse arg '%s' fully, still left to parse: '%s'\n",
+			  arg, end);
 	return 4;
   } else if (result_ < min || result_ > max) {
-	fprintf(stderr,
-			"Parsed arg '%llu' is out of range, min is %" PRIu64
-			" and max is %" PRIu64 "\n",
-			result_, min, max);
+	if (print_errors)
+	  fprintf(stderr,
+			  "Parsed arg '%llu' is out of range, min is %" PRIu64
+			  " and max is %" PRIu64 "\n",
+			  result_, min, max);
 	return 5;
   }
 
@@ -129,11 +164,11 @@ command_parse_arg_u64(const command *const cmd, const size_t index,
 }
 
 int
-command_parse_arg_u32(const command *const cmd, const size_t index,
-					  const uint32_t min, const uint32_t max,
-					  uint32_t *const result) {
+command_parse_arg_u32(const command *cmd, int print_errors, size_t index,
+					  uint32_t min, uint32_t max, uint32_t *result) {
   uint64_t result_;
-  int error = command_parse_arg_u64(cmd, index, min, max, &result_);
+  int error =
+		  command_parse_arg_u64(cmd, print_errors, index, min, max, &result_);
   if (error)
 	return error;
 
@@ -142,11 +177,12 @@ command_parse_arg_u32(const command *const cmd, const size_t index,
 }
 
 int
-command_parse_arg_u16(const command *const cmd, const size_t index,
-					  const uint16_t min, const uint16_t max,
-					  uint16_t *const result) {
+command_parse_arg_u16(const command *const cmd, int print_errors,
+					  const size_t index, const uint16_t min,
+					  const uint16_t max, uint16_t *const result) {
   uint64_t result_;
-  int error = command_parse_arg_u64(cmd, index, min, max, &result_);
+  int error =
+		  command_parse_arg_u64(cmd, print_errors, index, min, max, &result_);
   if (error)
 	return error;
 
@@ -155,11 +191,12 @@ command_parse_arg_u16(const command *const cmd, const size_t index,
 }
 
 int
-command_parse_arg_u8(const command *const cmd, const size_t index,
-					 const uint8_t min, const uint8_t max,
+command_parse_arg_u8(const command *const cmd, int print_errors,
+					 const size_t index, const uint8_t min, const uint8_t max,
 					 uint8_t *const result) {
   uint64_t result_;
-  int error = command_parse_arg_u64(cmd, index, min, max, &result_);
+  int error =
+		  command_parse_arg_u64(cmd, print_errors, index, min, max, &result_);
   if (error)
 	return error;
 
@@ -168,9 +205,8 @@ command_parse_arg_u8(const command *const cmd, const size_t index,
 }
 
 int
-command_parse_arg_i64(const command *const cmd, const size_t index,
-					  const int64_t min, const int64_t max,
-					  int64_t *const result) {
+command_parse_arg_i64(const command *cmd, int print_errors, size_t index,
+					  int64_t min, int64_t max, int64_t *result) {
   if (index >= cmd->args_length) {
 	fprintf(stderr, "Invalid arg index: got %zu but length was %zu\n", index,
 			cmd->args_length);
@@ -180,7 +216,8 @@ command_parse_arg_i64(const command *const cmd, const size_t index,
   const char *const arg = cmd->args[index];
 
   if (arg[0] == '\0') {
-	fprintf(stderr, "Invalid arg, got NULL\n");
+	if (print_errors)
+	  fprintf(stderr, "Invalid arg, got NULL\n");
 	return 2;
   }
 
@@ -189,18 +226,21 @@ command_parse_arg_i64(const command *const cmd, const size_t index,
   long long int result_ = strtoll(arg, &end, 10);
 
   if (errno != 0) {
-	fprintf(stderr, "Unable to parse arg '%s': %s\n", arg, strerror(errno));
+	if (print_errors)
+	  fprintf(stderr, "Unable to parse arg '%s': %s\n", arg, strerror(errno));
 	return 3;
   } else if (end[0] != '\0') {
-	fprintf(stderr,
-			"Unable to parse arg '%s' fully, still left to parse: '%s'\n", arg,
-			end);
+	if (print_errors)
+	  fprintf(stderr,
+			  "Unable to parse arg '%s' fully, still left to parse: '%s'\n",
+			  arg, end);
 	return 4;
   } else if (result_ < min || result_ > max) {
-	fprintf(stderr,
-			"Parsed arg '%lld' is out of range, min is %" PRId64
-			" and max is %" PRId64 "\n",
-			result_, min, max);
+	if (print_errors)
+	  fprintf(stderr,
+			  "Parsed arg '%lld' is out of range, min is %" PRId64
+			  " and max is %" PRId64 "\n",
+			  result_, min, max);
 	return 5;
   }
 
@@ -209,11 +249,12 @@ command_parse_arg_i64(const command *const cmd, const size_t index,
 }
 
 int
-command_parse_arg_i32(const command *const cmd, const size_t index,
-					  const int32_t min, const int32_t max,
+command_parse_arg_i32(const command *const cmd, int print_errors,
+					  const size_t index, const int32_t min, const int32_t max,
 					  int32_t *const result) {
   int64_t result_;
-  int error = command_parse_arg_i64(cmd, index, min, max, &result_);
+  int error =
+		  command_parse_arg_i64(cmd, print_errors, index, min, max, &result_);
   if (error)
 	return error;
 
@@ -222,11 +263,12 @@ command_parse_arg_i32(const command *const cmd, const size_t index,
 }
 
 int
-command_parse_arg_i16(const command *const cmd, const size_t index,
-					  const int16_t min, const int16_t max,
+command_parse_arg_i16(const command *const cmd, int print_errors,
+					  const size_t index, const int16_t min, const int16_t max,
 					  int16_t *const result) {
   int64_t result_;
-  int error = command_parse_arg_i64(cmd, index, min, max, &result_);
+  int error =
+		  command_parse_arg_i64(cmd, print_errors, index, min, max, &result_);
   if (error)
 	return error;
 
@@ -235,10 +277,12 @@ command_parse_arg_i16(const command *const cmd, const size_t index,
 }
 
 int
-command_parse_arg_i8(const command *const cmd, const size_t index,
-					 const int8_t min, const int8_t max, int8_t *const result) {
+command_parse_arg_i8(const command *const cmd, int print_errors,
+					 const size_t index, const int8_t min, const int8_t max,
+					 int8_t *const result) {
   int64_t result_;
-  int error = command_parse_arg_i64(cmd, index, min, max, &result_);
+  int error =
+		  command_parse_arg_i64(cmd, print_errors, index, min, max, &result_);
   if (error)
 	return error;
 
@@ -247,19 +291,21 @@ command_parse_arg_i8(const command *const cmd, const size_t index,
 }
 
 int
-command_parse_arg_ld(const command *const cmd, const size_t index,
-					 const long double min, const long double max,
-					 long double *const result) {
+command_parse_arg_ld(const command *const cmd, int print_errors,
+					 const size_t index, const long double min,
+					 const long double max, long double *const result) {
   if (index >= cmd->args_length) {
-	fprintf(stderr, "Invalid arg index: got %zu but length was %zu\n", index,
-			cmd->args_length);
+	if (print_errors)
+	  fprintf(stderr, "Invalid arg index: got %zu but length was %zu\n", index,
+			  cmd->args_length);
 	return 1;
   }
 
   const char *const arg = cmd->args[index];
 
   if (arg[0] == '\0') {
-	fprintf(stderr, "Invalid arg, got NULL\n");
+	if (print_errors)
+	  fprintf(stderr, "Invalid arg, got NULL\n");
 	return 2;
   }
 
@@ -268,17 +314,20 @@ command_parse_arg_ld(const command *const cmd, const size_t index,
   long double result_ = strtold(arg, &end);
 
   if (errno != 0) {
-	fprintf(stderr, "Unable to parse arg '%s': %s\n", arg, strerror(errno));
+	if (print_errors)
+	  fprintf(stderr, "Unable to parse arg '%s': %s\n", arg, strerror(errno));
 	return 3;
   } else if (end[0] != '\0') {
-	fprintf(stderr,
-			"Unable to parse arg '%s' fully, still left to parse: '%s'\n", arg,
-			end);
+	if (print_errors)
+	  fprintf(stderr,
+			  "Unable to parse arg '%s' fully, still left to parse: '%s'\n",
+			  arg, end);
 	return 4;
   } else if (result_ < min || result_ > max) {
-	fprintf(stderr,
-			"Parsed arg '%Lf' is out of range, min is %Lf and max is %Lf\n",
-			result_, min, max);
+	if (print_errors)
+	  fprintf(stderr,
+			  "Parsed arg '%Lf' is out of range, min is %Lf and max is %Lf\n",
+			  result_, min, max);
 	return 5;
   }
 
@@ -287,10 +336,12 @@ command_parse_arg_ld(const command *const cmd, const size_t index,
 }
 
 int
-command_parse_arg_d(const command *const cmd, const size_t index,
-					const double min, const double max, double *const result) {
+command_parse_arg_d(const command *const cmd, int print_errors,
+					const size_t index, const double min, const double max,
+					double *const result) {
   long double result_;
-  int error = command_parse_arg_ld(cmd, index, min, max, &result_);
+  int error =
+		  command_parse_arg_ld(cmd, print_errors, index, min, max, &result_);
   if (error)
 	return error;
 
@@ -300,10 +351,12 @@ command_parse_arg_d(const command *const cmd, const size_t index,
 
 
 int
-command_parse_arg_f(const command *const cmd, const size_t index,
-					const float min, const float max, float *const result) {
+command_parse_arg_f(const command *const cmd, int print_errors,
+					const size_t index, const float min, const float max,
+					float *const result) {
   long double result_;
-  int error = command_parse_arg_ld(cmd, index, min, max, &result_);
+  int error =
+		  command_parse_arg_ld(cmd, print_errors, index, min, max, &result_);
   if (error)
 	return error;
 

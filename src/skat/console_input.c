@@ -412,7 +412,7 @@ handle_console_input(void *v) {
 	  printf("  %zu: %s\n", i, cmd->args[i]);
 
 	int result = 0;
-	if (!command_equals(cmd, "ready", &result) && result) {
+	if (!command_equals(cmd, &result, "ready", 0) && result) {
 	  // ready
 	  if (command_check_arg_length(cmd, 0, &result) || !result) {
 		fprintf(stderr, "Expected exactly 0 args for ready, but got %zu\n",
@@ -420,17 +420,17 @@ handle_console_input(void *v) {
 	  } else {
 		execute_ready(c);
 	  }
-	} else if (!command_equals(cmd, "play", &result) && result) {
+	} else if (!command_equals(cmd, &result, "play", 0) && result) {
 	  // play <card index>
 	  if (command_check_arg_length(cmd, 1, &result) || !result) {
 		fprintf(stderr, "Expected exactly 1 arg for play, but got %zu\n",
 				cmd->args_length);
 	  } else {
 		card_id cid;
-		if (!command_parse_arg_u8(cmd, 0, 0, CARD_ID_MAX, &cid))
+		if (!command_parse_arg_u8(cmd, 1, 0, 0, CARD_ID_MAX, &cid))
 		  execute_play_card(c, cid);
 	  }
-	} else if (!command_equals(cmd, "info", &result) && result) {
+	} else if (!command_equals(cmd, &result, "info", 0) && result) {
 	  // info
 	  if (command_check_arg_length(cmd, 0, &result) || !result) {
 		fprintf(stderr, "Expected exactly 0 args for info, but got %zu\n",
@@ -438,7 +438,7 @@ handle_console_input(void *v) {
 	  } else {
 		execute_print_info(c);
 	  }
-	} else if (!command_equals(cmd, "exit", &result) && result) {
+	} else if (!command_equals(cmd, &result, "exit", 1, "quit") && result) {
 	  // exit
 	  if (command_check_arg_length(cmd, 0, &result) || !result) {
 		fprintf(stderr, "Expected exactly 0 args for exit, but got %zu\n",
