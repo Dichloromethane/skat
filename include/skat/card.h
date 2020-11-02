@@ -28,6 +28,7 @@ typedef struct card {
 } card;
 
 typedef uint8_t card_id;
+#define CARD_ID_MAX (72)
 
 int card_get_id(const card *, card_id *);
 int card_get(const card_id *, card *);

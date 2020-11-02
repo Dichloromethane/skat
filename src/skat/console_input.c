@@ -2,7 +2,7 @@
 #include "skat/card.h"
 #include "skat/card_collection.h"
 #include "skat/client.h"
-#include "skat/console_command.h"
+#include "skat/command.h"
 #include "skat/util.h"
 #include <errno.h>
 #include <stddef.h>
@@ -21,6 +21,7 @@ print_card_array(const card_id *const arr, const size_t length) {
 
 typedef enum card_color_mode {
   CARD_COLOR_MODE_NONE,
+  CARD_COLOR_MODE_ONLY_CARD_COLOR,
   CARD_COLOR_MODE_PLAYABLE
 } card_color_mode;
 
@@ -79,6 +80,11 @@ print_card_collection(const client *const c, const card_collection *const cc,
 			 (card.cc == COLOR_KREUZ || card.cc == COLOR_PIK) ? BLACK_CARD_COLOR
 															  : RED_CARD_COLOR,
 			 buf, cid);
+	} else if (color_mode == CARD_COLOR_MODE_ONLY_CARD_COLOR) {
+	  printf(" %s%s(%d)" COLOR_CLEAR,
+			 (card.cc == COLOR_KREUZ || card.cc == COLOR_PIK) ? BLACK_CARD_COLOR
+															  : RED_CARD_COLOR,
+			 buf, cid);
 	} else {
 	  printf(" %s(%d)", buf, cid);
 	}
@@ -109,7 +115,7 @@ print_player_turn(const client *const c,
 	printf(" Your cards:");
 	print_card_collection(c, &c->cs.my_hand, CARD_SORT_MODE_HAND,
 						  is_my_turn ? CARD_COLOR_MODE_PLAYABLE
-									 : CARD_COLOR_MODE_NONE);
+									 : CARD_COLOR_MODE_ONLY_CARD_COLOR);
   }
 }
 
@@ -143,8 +149,8 @@ print_info_exec(void *p) {
   printf("Game Phase: %s, Type: %d, Trumpf: %d\n", game_phase_name_table[phase],
 		 c->cs.sgs.gr.type, c->cs.sgs.gr.trumpf);
 
-  if (phase != GAME_PHASE_INVALID && phase != GAME_PHASE_SETUP
-	  && phase != GAME_PHASE_BETWEEN_ROUNDS) {
+  if (phase == GAME_PHASE_PLAY_STICH_C1 || phase == GAME_PHASE_PLAY_STICH_C2
+	  || phase == GAME_PHASE_PLAY_STICH_C3) {
 	if (c->cs.ist_alleinspieler) {
 	  printf("You are playing alone, the skat was:");
 	  print_card_array(c->cs.skat, 2);
@@ -178,7 +184,7 @@ print_info_exec(void *p) {
 	card_collection_get_score(won_stiche, &score);
 	printf("Your stiche(score=%u):", score);
 	print_card_collection(c, won_stiche, CARD_SORT_MODE_STICHE,
-						  CARD_COLOR_MODE_NONE);
+						  CARD_COLOR_MODE_ONLY_CARD_COLOR);
 	printf("\n");
   }
 
@@ -308,7 +314,9 @@ io_handle_event(client *c, event *e) {
   printf("--\n");
   switch (e->type) {
 	case EVENT_DISTRIBUTE_CARDS:
-	  print_player_turn(c, PRINT_PLAYER_TURN_SHOW_HAND_MODE_ALWAYS);
+	  printf("Your hand: ");
+	  print_card_collection(c, &c->cs.my_hand, CARD_SORT_MODE_HAND,
+							CARD_COLOR_MODE_ONLY_CARD_COLOR);
 	  break;
 	case EVENT_REIZEN_NUMBER:
 	case EVENT_REIZEN_CONFIRM:
@@ -370,8 +378,6 @@ stop_client(client *c) {
   exit(EXIT_SUCCESS);
 }
 
-#define MATCH_COMMAND(c, s) if (!strncmp(c, s, sizeof(s)))
-
 void *
 handle_console_input(void *v) {
   client *c = v;
@@ -393,9 +399,10 @@ handle_console_input(void *v) {
 	  break;
 	}
 
-	console_command *cmd = console_command_create(line, read);
-	if (cmd == NULL) {
-	  printf("Invalid command: %s", line);
+	command *cmd;
+	int error = command_create(&cmd, line, read);
+	if (error) {
+	  printf("Invalid command (error %d): %s", error, line);
 	  continue;
 	}
 
@@ -404,50 +411,47 @@ handle_console_input(void *v) {
 	for (size_t i = 0; i < cmd->args_length; i++)
 	  printf("  %zu: %s\n", i, cmd->args[i]);
 
-	// ready
-	MATCH_COMMAND(cmd->command, "ready") { execute_ready(c); }
-
-	// play <card index>
-	else MATCH_COMMAND(cmd->command, "play") {
-	  if (cmd->args_length != 1)
-		printf("Invalid number of args for play: got %zu, but expected 1\n",
-			   cmd->args_length);
-	  else if (cmd->args[0][0] == '\0')
-		printf("Invalid arg, got NULL\n");
-	  else {
-		errno = 0;
-		char *end;
-		unsigned long card_index = strtoul(cmd->args[0], &end, 10);
-
-		if (errno != 0)
-		  printf("Unable to parse arg '%s': %s\n", cmd->args[0],
-				 strerror(errno));
-		else if (end[0] != '\0')
-		  printf("Unable to parse arg '%s' fully, still left to parse: '%s'\n",
-				 cmd->args[0], end);
-		else if (card_index >= 256)
-		  printf("Card index '%lu' is out of range\n", card_index);
-		else
-		  execute_play_card(c, (card_id) card_index);
+	int result = 0;
+	if (!command_equals(cmd, "ready", &result) && result) {
+	  // ready
+	  if (command_check_arg_length(cmd, 0, &result) || !result) {
+		fprintf(stderr, "Expected exactly 0 args for ready, but got %zu\n",
+				cmd->args_length);
+	  } else {
+		execute_ready(c);
 	  }
+	} else if (!command_equals(cmd, "play", &result) && result) {
+	  // play <card index>
+	  if (command_check_arg_length(cmd, 1, &result) || !result) {
+		fprintf(stderr, "Expected exactly 1 arg for play, but got %zu\n",
+				cmd->args_length);
+	  } else {
+		card_id cid;
+		if (!command_parse_arg_u8(cmd, 0, 0, CARD_ID_MAX, &cid))
+		  execute_play_card(c, cid);
+	  }
+	} else if (!command_equals(cmd, "info", &result) && result) {
+	  // info
+	  if (command_check_arg_length(cmd, 0, &result) || !result) {
+		fprintf(stderr, "Expected exactly 0 args for info, but got %zu\n",
+				cmd->args_length);
+	  } else {
+		execute_print_info(c);
+	  }
+	} else if (!command_equals(cmd, "exit", &result) && result) {
+	  // exit
+	  if (command_check_arg_length(cmd, 0, &result) || !result) {
+		fprintf(stderr, "Expected exactly 0 args for exit, but got %zu\n",
+				cmd->args_length);
+	  } else {
+		stop_client(c);
+	  }
+	} else {
+	  // unknown command
+	  fprintf(stderr, "Unknown command: %s", cmd->command);
 	}
 
-	// info
-	else MATCH_COMMAND(cmd->command, "info") {
-	  execute_print_info(c);
-	}
-
-	// exit
-	else MATCH_COMMAND(cmd->command, "exit") {
-	  stop_client(c);
-	}
-
-	// unknown command
-	else {
-	  printf("Invalid command: %s", cmd->command);
-	}
-
-	console_command_free(cmd);
+	command_free(cmd);
   }
 
   if (line)
