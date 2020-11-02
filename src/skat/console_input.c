@@ -315,7 +315,7 @@ io_handle_event(client *c, event *e) {
   switch (e->type) {
 	case EVENT_DISTRIBUTE_CARDS:
 	  printf("Your hand: ");
-	  print_card_collection(c, &c->cs.my_hand, CARD_SORT_MODE_HAND,
+	  print_card_collection(c, &c->cs.my_hand, CARD_SORT_MODE_ID,
 							CARD_COLOR_MODE_ONLY_CARD_COLOR);
 	  break;
 	case EVENT_REIZEN_NUMBER:

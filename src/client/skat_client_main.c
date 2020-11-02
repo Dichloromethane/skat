@@ -71,8 +71,8 @@ main(int argc, char **argv) {
 	exit(EXIT_FAILURE);
   }
 
-  printf("Options: port=%ld; host=%s; name=%s; resume=%d;\n", port, host, name,
-		 resume);
+  printf("Options: host=%s; port=%ld; name=%s; resume=%d; graphical=%d\n", host,
+		 port, name, resume, graphical);
 
   if (graphical) {
 	// TODO: add graphical loop for render and skat logic
