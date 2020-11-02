@@ -14,8 +14,8 @@ int command_create(command **cmd, const char *line, size_t length);
 int command_free(command *cmd);
 
 int command_equals(const command *cmd, int *result, size_t name_count, ...);
-int command_arg_equals(const command *cmd, int print_errors, size_t index, int *result,
-					   size_t name_count, ...);
+int command_arg_equals(const command *cmd, int print_errors, size_t index,
+					   int *result, size_t name_count, ...);
 int command_check_arg_length(const command *cmd, size_t expected_args,
 							 int *result);
 
