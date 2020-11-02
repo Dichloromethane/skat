@@ -61,20 +61,15 @@ command_free(command *const cmd) {
 }
 
 int
-command_equals(const command *cmd, int *result, const char *str,
-			   size_t alias_count, ...) {
-  int equals = !strcmp(cmd->command, str);
-  if (!equals) {
-	*result = 0;
-	return 0;
-  }
+command_equals(const command *cmd, int *result, size_t name_count, ...) {
+  int equals = 0;
 
   va_list ap;
-  va_start(ap, alias_count);
-  for (size_t i = 0; i < alias_count; ++i) {
-	const char *const alias = va_arg(ap, const char *const);
-	equals = !strcmp(cmd->command, alias);
-	if (!equals)
+  va_start(ap, name_count);
+  for (size_t i = 0; i < name_count; ++i) {
+	const char *const str = va_arg(ap, char *);
+	equals = !strcmp(cmd->command, str);
+	if (equals)
 	  break;
   }
   va_end(ap);
@@ -84,30 +79,27 @@ command_equals(const command *cmd, int *result, const char *str,
 }
 
 int
-command_arg_equals(const command *cmd, size_t index, int *result,
-				   const char *str, size_t alias_count, ...) {
+command_arg_equals(const command *cmd, int print_errors, size_t index,
+				   int *result, size_t name_count, ...) {
   if (index >= cmd->args_length) {
-	fprintf(stderr, "Invalid arg index: got %zu but length was %zu\n", index,
-			cmd->args_length);
+	if (print_errors)
+	  fprintf(stderr, "Invalid arg index: got %zu but length was %zu\n", index,
+			  cmd->args_length);
 	return 1;
   }
 
-  const char *const arg = cmd->args[index];
-  int equals = !strcmp(arg, str);
-  if (!equals)
-	goto end;
+  int equals = 0;
 
   va_list ap;
-  va_start(ap, alias_count);
-  for (size_t i = 0; i < alias_count; ++i) {
-	const char *const alias = va_arg(ap, const char *const);
-	equals = !strcmp(cmd->command, alias);
-	if (!equals)
+  va_start(ap, name_count);
+  for (size_t i = 0; i < name_count; ++i) {
+	const char *const str = va_arg(ap, char *);
+	equals = !strcmp(cmd->command, str);
+	if (equals)
 	  break;
   }
   va_end(ap);
 
-end:
   *result = equals;
   return 0;
 }
