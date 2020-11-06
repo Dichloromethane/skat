@@ -13,9 +13,7 @@ command_create(command **const cmd, const char *const line, size_t length) {
   if (line[length - 1] == '\n')
 	length--;
 
-  char *buf = malloc(length + 1);
-  memcpy(buf, line, length);
-  buf[length] = '\0';
+  char *buf = strndup(line, length);
 
   char *save_ptr = NULL, *token = strtok_r(buf, " ", &save_ptr);
   if (token == NULL)
