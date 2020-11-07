@@ -194,6 +194,98 @@ print_info_exec(void *p) {
   client_release_state_lock(c);
 }
 
+typedef enum {
+  REIZEN_INVALID = 0,
+  REIZEN_CONFIRM,
+  REIZEN_PASSE,
+  REIZEN_NEXT,
+  REIZEN_VALUE_BASE
+} reizen_input_type;
+
+typedef struct {
+  client *c;
+  reizen_input_type rit;
+} exec_reizen_wrapper_args;
+
+typedef struct {
+  client_action_callback_hdr hdr;
+} client_reizen_callback_args;
+
+static void
+client_reizen_callback(void *v) {
+  client_reizen_callback_args *crca;
+  crca = v;
+  client *c = crca->hdr.c;
+  
+  if (crca->hdr.e.type == EVENT_ILLEGAL_ACTION) {
+    printf("--\nBig unluck! You tried do a reizen, but that didn't work. Better luck next time\n> ");
+	goto end;
+  }
+
+  printf("--\n");
+
+  client_acquire_state_lock(c);
+
+  if (crca->hdr.e.type == EVENT_REIZEN_CONFIRM) {
+	printf("You confirmed the reizwert %d", c->cs.sgs.rs.reizwert);
+  } else if (crca->hdr.e.type == EVENT_REIZEN_PASSE) {
+    printf("You hast gepasst at reizwert %d", c->cs.sgs.rs.reizwert);
+  } else if (crca->hdr.e.type == EVENT_REIZEN_NUMBER) {
+	printf("You reizt with %d", c->cs.sgs.rs.reizwert);
+  }
+
+  printf("\n> ");
+ 
+  client_release_state_lock(c);
+ end:
+  fflush(stdout);
+  free(crca); // tree that 
+}
+
+static void 
+execute_reizen_wrapper(void *v) {
+  exec_reizen_wrapper_args *args = v;
+  client_action_callback cac;
+  client_reizen_callback_args *crca;
+  crca = malloc(sizeof(*crca));
+  cac.args = crca;
+  cac.f = client_reizen_callback;
+ 
+  switch(args->rit) { 
+   case REIZEN_INVALID:
+    DERROR_PRINTF("received invalid reizen type");
+    break;
+   case REIZEN_CONFIRM:
+	client_reizen_confirm(args->c, &cac);
+	break;
+   case REIZEN_PASSE:
+    client_reizen_passe(args->c, &cac);
+    break;
+   case REIZEN_NEXT:
+    client_reizen_next(args->c, 0, &cac);
+    break;
+   default:
+    client_reizen_next(args->c, args->rit - REIZEN_VALUE_BASE, &cac);
+  }
+
+  free(args);
+}
+
+static void 
+execute_reizen(client *c, reizen_input_type rit) {
+  async_callback acb;
+  exec_reizen_wrapper_args *args;
+
+  args = malloc(sizeof(exec_reizen_wrapper_args));
+  args->c = c;
+  args->rit = rit;
+
+  acb = (async_callback){.do_stuff = execute_reizen_wrapper, .data = args};
+
+  exec_async(&c->acq, &acb);
+}
+
+
 typedef struct {
   client_action_callback_hdr hdr;
 } client_ready_callback_args;
@@ -378,6 +470,15 @@ stop_client(client *c) {
   exit(EXIT_SUCCESS);
 }
 
+// Assuming cmd is commando, result is clobberable
+#define MATCH_NUM_ARGS(command_name, num) \
+      if (command_check_arg_length(cmd, num, &result) || result) 
+#define MATCH_NUM_ARGS_END(command_name, num) { \
+		fprintf(stderr, "Expected " #num " args for " #command_name  " , but got %zu\n",\
+				cmd->args_length);\
+		goto command_cleanup;\
+	  }\
+
 void *
 handle_console_input(void *v) {
   client *c = v;
@@ -412,15 +513,30 @@ handle_console_input(void *v) {
 	  printf("  %zu: %s\n", i, cmd->args[i]);
 
 	int result = 0;
+	uint16_t reizwert;
 
 	// ready
 	if (!command_equals(cmd, &result, 1, "ready") && result) {
-	  if (command_check_arg_length(cmd, 0, &result) || !result) {
-		fprintf(stderr, "Expected exactly 0 args for ready, but got %zu\n",
-				cmd->args_length);
-	  } else {
+	  MATCH_NUM_ARGS(ready, 0) {
 		execute_ready(c);
-	  }
+	  } else MATCH_NUM_ARGS_END(ready, 0);
+	}
+
+    // reizen <"number" | next | (weg | passe) | ja> 
+	else if (!command_equals(cmd, &result, 1, "reizen") && result) {
+	  MATCH_NUM_ARGS(reizen, 1) {
+		if (!command_arg_equals(cmd, 0, 0, &result, 2, "ja", "j") && result) 
+		  execute_reizen(c, REIZEN_CONFIRM);
+		else if (!command_arg_equals(cmd, 0, 0, &result, 5, "weg", "passe", 
+		  							 "w", "p", "nein") && result)
+		  execute_reizen(c, REIZEN_PASSE);
+		else if (!command_arg_equals(cmd, 0, 0, &result, 2, "next", "n") && result)
+		  execute_reizen(c, REIZEN_NEXT);
+	  	else if (!command_parse_arg_u16(cmd, 0, 0, 18, -1, &reizwert))
+		  execute_reizen(c, REIZEN_VALUE_BASE + reizwert);
+		else 
+		  dprintf(2, "Usage: reizen <\"number\" | next | (weg | passe) | ja>");
+	  } else MATCH_NUM_ARGS_END(reizen, 1);
 	}
 
 	// play <card index>
@@ -460,6 +576,7 @@ handle_console_input(void *v) {
 	  fprintf(stderr, "Unknown command: %s", cmd->command);
 	}
 
+   command_cleanup:
 	command_free(cmd);
   }
 
