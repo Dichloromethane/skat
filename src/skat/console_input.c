@@ -113,9 +113,101 @@ print_player_turn(const client *const c,
   if ((is_my_turn && mode != PRINT_PLAYER_TURN_SHOW_HAND_MODE_NEVER)
 	  || mode == PRINT_PLAYER_TURN_SHOW_HAND_MODE_ALWAYS) {
 	printf(" Your cards:");
-	print_card_collection(c, &c->cs.my_hand, CARD_SORT_MODE_HAND,
+	print_card_collection(c, &c->cs.my_hand, CARD_SORT_MODE_INGAME_HAND,
 						  is_my_turn ? CARD_COLOR_MODE_PLAYABLE
 									 : CARD_COLOR_MODE_ONLY_CARD_COLOR);
+  }
+}
+
+static void
+print_reizen_info(client *c, event *e) {
+  reiz_state *rs = &c->cs.sgs.rs;
+
+  if (e->type == EVENT_DISTRIBUTE_CARDS) {
+	printf("Reizen begin!");
+  } else if (e->type == EVENT_REIZEN_DONE) {
+	printf("Reizen done at reizwert %u!", rs->reizwert);
+  }
+
+  int teller_gupid, listener_gupid;
+  if (rs->rphase == REIZ_PHASE_INVALID || rs->rphase == REIZ_PHASE_DONE) {
+	teller_gupid = listener_gupid = -1;
+  } else if (rs->rphase == REIZ_PHASE_MITTELHAND_TO_VORHAND) {
+	teller_gupid = c->cs.sgs.active_players[1];
+	listener_gupid = c->cs.sgs.active_players[0];
+  } else if (rs->rphase == REIZ_PHASE_HINTERHAND_TO_WINNER) {
+	teller_gupid = c->cs.sgs.active_players[2];
+	listener_gupid = c->cs.sgs.active_players[rs->winner];
+  } else if (rs->rphase == REIZ_PHASE_WINNER) {
+	teller_gupid = c->cs.sgs.active_players[rs->winner];
+	listener_gupid = -1;
+  }
+
+  int is_actor = c->cs.my_gupid == e->acting_player;
+  player *actor = e->acting_player == -1 ? NULL : c->pls[e->acting_player];
+
+  int is_teller = c->cs.my_gupid == teller_gupid;
+  player *teller = teller_gupid == -1 ? NULL : c->pls[teller_gupid];
+
+  int is_listener = c->cs.my_gupid == listener_gupid;
+  player *listener = listener_gupid == -1 ? NULL : c->pls[listener_gupid];
+
+  if (e->type == EVENT_REIZEN_NUMBER) {
+	if (is_actor)
+	  printf("YOU reizt %u.", rs->reizwert);
+	else
+	  printf("%s reizt %u.", actor->name, rs->reizwert);
+  } else if (e->type == EVENT_REIZEN_CONFIRM) {
+	if (is_actor)
+	  printf("YOU confirmed the reizwert %u.", rs->reizwert);
+	else
+	  printf("%s confirmed the reizwert %u.", actor->name, rs->reizwert);
+  } else if (e->type == EVENT_REIZEN_PASSE) {
+	if (is_actor)
+	  printf("YOU hast gepasst at reizwert %u.", rs->reizwert);
+	else
+	  printf("%s hat gepasst at reizwert %u.", actor->name, rs->reizwert);
+  }
+
+  printf("\n");
+
+  if (rs->rphase == REIZ_PHASE_MITTELHAND_TO_VORHAND
+	  || rs->rphase == REIZ_PHASE_HINTERHAND_TO_WINNER) {
+	if (is_teller) {
+	  printf("YOU are saying, %s is listening.\n", listener->name);
+	  if (rs->waiting_teller)
+		printf("It is YOUR turn. Go higher then %u or pass.", rs->reizwert);
+	  else
+		printf("Waiting for listener to confirm or pass at %u.", rs->reizwert);
+	} else if (is_listener) {
+	  printf("%s is saying, YOU are listening.\n", teller->name);
+	  if (rs->waiting_teller)
+		printf("Waiting for teller to go higher than %u or pass.",
+			   rs->reizwert);
+	  else
+		printf("It is YOUR turn to confirm or pass at %u.", rs->reizwert);
+	} else {
+	  printf("%s is saying, %s is listening.\n", teller->name, listener->name);
+	  if (rs->waiting_teller)
+		printf("Waiting for teller to go higher than %u or pass.",
+			   rs->reizwert);
+	  else
+		printf("Waiting for listener to confirm or pass at %u.", rs->reizwert);
+	}
+  } else if (rs->rphase == REIZ_PHASE_WINNER) {
+	printf("Both players haben gepasst...\n");
+	if (is_teller)
+	  printf("Do YOU want to play, or do YOU want to ramsch?");
+	else
+	  printf("%s is deciding whether to play or ramsch.", teller->name);
+  }
+
+  if (e->type == EVENT_REIZEN_DONE) {
+	if (c->cs.ist_alleinspieler)
+	  printf("You are playing alone.");
+	else
+	  printf("You are playing with %s.",
+			 c->pls[c->cs.sgs.active_players[c->cs.my_partner]]->name);
   }
 }
 
@@ -149,8 +241,14 @@ print_info_exec(void *p) {
   printf("Game Phase: %s, Type: %d, Trumpf: %d\n", game_phase_name_table[phase],
 		 c->cs.sgs.gr.type, c->cs.sgs.gr.trumpf);
 
-  if (phase == GAME_PHASE_PLAY_STICH_C1 || phase == GAME_PHASE_PLAY_STICH_C2
-	  || phase == GAME_PHASE_PLAY_STICH_C3) {
+  if (phase == GAME_PHASE_REIZEN) {
+	printf("rphase=%s, waiting_teller=%d, reizwert=%u, winner=%d\n",
+		   reiz_phase_name_table[c->cs.sgs.rs.rphase],
+		   c->cs.sgs.rs.waiting_teller, c->cs.sgs.rs.reizwert,
+		   c->cs.sgs.rs.winner);
+  } else if (phase == GAME_PHASE_PLAY_STICH_C1
+			 || phase == GAME_PHASE_PLAY_STICH_C2
+			 || phase == GAME_PHASE_PLAY_STICH_C3) {
 	if (c->cs.ist_alleinspieler) {
 	  printf("You are playing alone, the skat was:");
 	  print_card_array(c->cs.skat, 2);
@@ -176,7 +274,7 @@ print_info_exec(void *p) {
 	printf("\n");
 
 	printf("Your hand:");
-	print_card_collection(c, hand, CARD_SORT_MODE_HAND,
+	print_card_collection(c, hand, CARD_SORT_MODE_INGAME_HAND,
 						  CARD_COLOR_MODE_PLAYABLE);
 	printf("\n");
 
@@ -216,9 +314,10 @@ client_reizen_callback(void *v) {
   client_reizen_callback_args *crca;
   crca = v;
   client *c = crca->hdr.c;
-  
+
   if (crca->hdr.e.type == EVENT_ILLEGAL_ACTION) {
-    printf("--\nBig unluck! You tried do a reizen, but that didn't work. Better luck next time\n> ");
+	printf("--\nBig unluck! You tried do a reizen, but that didn't work. "
+		   "Better luck next time\n> ");
 	goto end;
   }
 
@@ -226,23 +325,17 @@ client_reizen_callback(void *v) {
 
   client_acquire_state_lock(c);
 
-  if (crca->hdr.e.type == EVENT_REIZEN_CONFIRM) {
-	printf("You confirmed the reizwert %d", c->cs.sgs.rs.reizwert);
-  } else if (crca->hdr.e.type == EVENT_REIZEN_PASSE) {
-    printf("You hast gepasst at reizwert %d", c->cs.sgs.rs.reizwert);
-  } else if (crca->hdr.e.type == EVENT_REIZEN_NUMBER) {
-	printf("You reizt with %d", c->cs.sgs.rs.reizwert);
-  }
+  print_reizen_info(c, &crca->hdr.e);
 
   printf("\n> ");
- 
+
   client_release_state_lock(c);
- end:
+end:
   fflush(stdout);
-  free(crca); // tree that 
+  free(crca);// tree that
 }
 
-static void 
+static void
 execute_reizen_wrapper(void *v) {
   exec_reizen_wrapper_args *args = v;
   client_action_callback cac;
@@ -250,28 +343,28 @@ execute_reizen_wrapper(void *v) {
   crca = malloc(sizeof(*crca));
   cac.args = crca;
   cac.f = client_reizen_callback;
- 
-  switch(args->rit) { 
-   case REIZEN_INVALID:
-    DERROR_PRINTF("received invalid reizen type");
-    break;
-   case REIZEN_CONFIRM:
-	client_reizen_confirm(args->c, &cac);
-	break;
-   case REIZEN_PASSE:
-    client_reizen_passe(args->c, &cac);
-    break;
-   case REIZEN_NEXT:
-    client_reizen_next(args->c, 0, &cac);
-    break;
-   default:
-    client_reizen_next(args->c, args->rit - REIZEN_VALUE_BASE, &cac);
+
+  switch (args->rit) {
+	case REIZEN_INVALID:
+	  DERROR_PRINTF("received invalid reizen type");
+	  break;
+	case REIZEN_CONFIRM:
+	  client_reizen_confirm(args->c, &cac);
+	  break;
+	case REIZEN_PASSE:
+	  client_reizen_passe(args->c, &cac);
+	  break;
+	case REIZEN_NEXT:
+	  client_reizen_next(args->c, 0, &cac);
+	  break;
+	default:
+	  client_reizen_next(args->c, args->rit - REIZEN_VALUE_BASE, &cac);
   }
 
   free(args);
 }
 
-static void 
+static void
 execute_reizen(client *c, reizen_input_type rit) {
   async_callback acb;
   exec_reizen_wrapper_args *args;
@@ -407,25 +500,16 @@ io_handle_event(client *c, event *e) {
   switch (e->type) {
 	case EVENT_DISTRIBUTE_CARDS:
 	  printf("Your hand: ");
-	  print_card_collection(c, &c->cs.my_hand, CARD_SORT_MODE_ID,
+	  print_card_collection(c, &c->cs.my_hand, CARD_SORT_MODE_PREGAME_HAND,
 							CARD_COLOR_MODE_ONLY_CARD_COLOR);
+	  printf("\n");
+	  print_reizen_info(c, e);
 	  break;
 	case EVENT_REIZEN_NUMBER:
 	case EVENT_REIZEN_CONFIRM:
 	case EVENT_REIZEN_PASSE:
-	  printf("event=%s, acting_player=%d, rphase=%s, waiting_teller=%d, "
-			 "reizwert=%u, winner=%d",
-			 event_name_table[e->type], e->acting_player,
-			 reiz_phase_name_table[c->cs.sgs.rs.rphase],
-			 c->cs.sgs.rs.waiting_teller, c->cs.sgs.rs.reizwert,
-			 c->cs.sgs.rs.winner);
-	  break;
 	case EVENT_REIZEN_DONE:
-	  if (c->cs.ist_alleinspieler)
-		printf("You are playing alone");
-	  else
-		printf("You are playing with %s",
-			   c->pls[c->cs.sgs.active_players[c->cs.my_partner]]->name);
+	  print_reizen_info(c, e);
 	  break;
 	case EVENT_PLAY_CARD:
 	  card_get_name(&e->card, buf);
@@ -472,12 +556,14 @@ stop_client(client *c) {
 
 // Assuming cmd is commando, result is clobberable
 #define MATCH_NUM_ARGS(command_name, num) \
-      if (command_check_arg_length(cmd, num, &result) || result) 
-#define MATCH_NUM_ARGS_END(command_name, num) { \
-		fprintf(stderr, "Expected " #num " args for " #command_name  " , but got %zu\n",\
-				cmd->args_length);\
-		goto command_cleanup;\
-	  }\
+  if (!command_check_arg_length(cmd, num, &result) && result)
+#define MATCH_NUM_ARGS_END(command_name, num) \
+  { \
+	fprintf(stderr, \
+			"Expected " #num " args for " #command_name " , but got %zu\n", \
+			cmd->args_length); \
+	goto command_cleanup; \
+  }
 
 void *
 handle_console_input(void *v) {
@@ -489,6 +575,7 @@ handle_console_input(void *v) {
 
   for (;;) {
 	printf("> ");
+	fflush(stderr);
 	fflush(stdout);
 
 	// getline uses realloc on the given buffer, thus free is not required
@@ -517,26 +604,29 @@ handle_console_input(void *v) {
 
 	// ready
 	if (!command_equals(cmd, &result, 1, "ready") && result) {
-	  MATCH_NUM_ARGS(ready, 0) {
-		execute_ready(c);
-	  } else MATCH_NUM_ARGS_END(ready, 0);
+	  MATCH_NUM_ARGS(ready, 0) { execute_ready(c); }
+	  else MATCH_NUM_ARGS_END(ready, 0);
 	}
 
-    // reizen <"number" | next | (weg | passe) | ja> 
+	// reizen <"number" | next | (weg | passe) | ja>
 	else if (!command_equals(cmd, &result, 1, "reizen") && result) {
 	  MATCH_NUM_ARGS(reizen, 1) {
-		if (!command_arg_equals(cmd, 0, 0, &result, 2, "ja", "j") && result) 
+		if (!command_arg_equals(cmd, 0, 0, &result, 2, "ja", "j") && result)
 		  execute_reizen(c, REIZEN_CONFIRM);
-		else if (!command_arg_equals(cmd, 0, 0, &result, 5, "weg", "passe", 
-		  							 "w", "p", "nein") && result)
+		else if (!command_arg_equals(cmd, 0, 0, &result, 5, "weg", "passe", "w",
+									 "p", "nein")
+				 && result)
 		  execute_reizen(c, REIZEN_PASSE);
-		else if (!command_arg_equals(cmd, 0, 0, &result, 2, "next", "n") && result)
+		else if (!command_arg_equals(cmd, 0, 0, &result, 2, "next", "n")
+				 && result)
 		  execute_reizen(c, REIZEN_NEXT);
-	  	else if (!command_parse_arg_u16(cmd, 0, 0, 18, -1, &reizwert))
+		else if (!command_parse_arg_u16(cmd, 0, 0, 18, -1, &reizwert))
 		  execute_reizen(c, REIZEN_VALUE_BASE + reizwert);
-		else 
-		  dprintf(2, "Usage: reizen <\"number\" | next | (weg | passe) | ja>");
-	  } else MATCH_NUM_ARGS_END(reizen, 1);
+		else
+		  fprintf(stderr,
+				  "Usage: reizen <\"number\" | next | (weg | passe) | ja>\n");
+	  }
+	  else MATCH_NUM_ARGS_END(reizen, 1);
 	}
 
 	// play <card index>
@@ -573,10 +663,10 @@ handle_console_input(void *v) {
 
 	// unknown command
 	else {
-	  fprintf(stderr, "Unknown command: %s", cmd->command);
+	  fprintf(stderr, "Unknown command: %s\n", cmd->command);
 	}
 
-   command_cleanup:
+  command_cleanup:
 	command_free(cmd);
   }
 

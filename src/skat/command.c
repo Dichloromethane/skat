@@ -87,12 +87,13 @@ command_arg_equals(const command *cmd, int print_errors, size_t index,
   }
 
   int equals = 0;
+  const char *const arg = cmd->args[index];
 
   va_list ap;
   va_start(ap, name_count);
   for (size_t i = 0; i < name_count; ++i) {
 	const char *const str = va_arg(ap, char *);
-	equals = !strcmp(cmd->command, str);
+	equals = !strcmp(arg, str);
 	if (equals)
 	  break;
   }

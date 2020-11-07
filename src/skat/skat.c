@@ -305,6 +305,9 @@ static const uint8_t skat_stiche_buf_lookup[3][3] = {{0, 1, 1},
 
 static game_phase
 finish_reizen(skat_server_state *ss, server *s, event *e) {
+  e->answer_to = -1;
+  e->type = EVENT_REIZEN_DONE;
+
   ss->sgs.rs.rphase = REIZ_PHASE_DONE;
   ss->sgs.rs.waiting_teller = 1;
 
@@ -318,7 +321,6 @@ finish_reizen(skat_server_state *ss, server *s, event *e) {
 	for (int ap = 0; ap < 3; ap++)
 	  ss->stiche[ap] = &ss->stiche_buf[ap];
 
-	e->type = EVENT_REIZEN_DONE;
 	e->alleinspieler = ss->sgs.alleinspieler;
 	e->reizwert_final = ss->sgs.rs.reizwert;
 
@@ -338,7 +340,6 @@ finish_reizen(skat_server_state *ss, server *s, event *e) {
 			  &ss->stiche_buf[skat_stiche_buf_lookup[ss->sgs.alleinspieler]
 													[ap]];
 
-	e->type = EVENT_REIZEN_DONE;
 	e->alleinspieler = ss->sgs.alleinspieler;
 	e->reizwert_final = ss->sgs.rs.reizwert;
 
@@ -479,10 +480,11 @@ apply_action_reizen(skat_server_state *ss, action *a, player *pl, server *s) {
 
 	  if (ss->sgs.rs.rphase == REIZ_PHASE_MITTELHAND_TO_VORHAND) {
 		ss->sgs.rs.rphase = REIZ_PHASE_HINTERHAND_TO_WINNER;
-		ss->sgs.rs.winner = ss->sgs.rs.waiting_teller;
+		ss->sgs.rs.winner = !ss->sgs.rs.waiting_teller;
 		ss->sgs.rs.waiting_teller = 1;
+		return GAME_PHASE_REIZEN;
 	  } else if (ss->sgs.rs.rphase == REIZ_PHASE_HINTERHAND_TO_WINNER) {
-		if (ss->sgs.rs.waiting_teller)
+		if (!ss->sgs.rs.waiting_teller)
 		  ss->sgs.rs.winner = 2;
 		ss->sgs.rs.waiting_teller = 1;
 
@@ -679,10 +681,10 @@ skat_client_handle_reizen_events(skat_client_state *cs, event *e, client *c) {
 	case EVENT_REIZEN_PASSE:
 	  if (rs->rphase == REIZ_PHASE_MITTELHAND_TO_VORHAND) {
 		rs->rphase = REIZ_PHASE_HINTERHAND_TO_WINNER;
-		rs->winner = rs->waiting_teller;
+		rs->winner = !rs->waiting_teller;
 		rs->waiting_teller = 1;
 	  } else if (rs->rphase == REIZ_PHASE_HINTERHAND_TO_WINNER) {
-		if (rs->waiting_teller)
+		if (!rs->waiting_teller)
 		  rs->winner = 2;
 		rs->waiting_teller = 1;
 

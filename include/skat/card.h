@@ -37,7 +37,8 @@ int card_get_score(const card_id *, uint8_t *);
 
 typedef enum card_sort_mode {
   CARD_SORT_MODE_ID,
-  CARD_SORT_MODE_HAND,
+  CARD_SORT_MODE_PREGAME_HAND,
+  CARD_SORT_MODE_INGAME_HAND,
   CARD_SORT_MODE_STICHE
 } card_sort_mode;
 
