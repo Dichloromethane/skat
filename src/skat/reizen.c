@@ -6,7 +6,8 @@
 #include "skat/card.h"
 #include "skat/skat.h"
 
-const uint16_t reizwerte[63] = {
+#define REIZWERTE_LENGTH (63)
+const uint16_t reizwerte[REIZWERTE_LENGTH] = {
 		18,  20,  22,  23,  24,  27,  30,  33,  35,  36,  40,  44,  45,
 		46,  48,  50,  54,  55,  59,  60,  63,  66,  70,  72,  77,  80,
 		81,  84,  88,  90,  96,  99,  100, 108, 110, 117, 120, 121, 126,
@@ -20,6 +21,22 @@ const uint8_t spielwert_null = 23;
 const uint8_t spielwert_null_hand = 35;
 const uint8_t spielwert_null_ouvert = 46;
 const uint8_t spielwert_null_hand_ouvert = 59;
+
+uint16_t
+reizen_get_next_reizwert(reiz_state *rs) {
+  if (rs->rphase == REIZ_PHASE_INVALID || rs->rphase == REIZ_PHASE_DONE)
+	return 0;
+
+  uint16_t prev = 0, cur;
+  for (size_t i = 0; i < REIZWERTE_LENGTH; i++) {
+	cur = reizwerte[i];
+	if (rs->reizwert >= prev && rs->reizwert < cur)
+	  return cur;
+	prev = cur;
+  }
+
+  return 0;
+}
 
 static int8_t
 reizen_count_spitzen(const game_rules *const gr,

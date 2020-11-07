@@ -48,6 +48,7 @@ typedef struct reiz_state {
 
 typedef struct skat_server_state skat_server_state;
 
+uint16_t reizen_get_next_reizwert(reiz_state *rs);
 uint16_t reizen_get_game_value(skat_server_state *cs, int won, int schneider,
 							   int schwarz);
 
