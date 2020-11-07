@@ -7,7 +7,7 @@ WARNINGS=-Wall -Wextra -Wno-unused-parameter -Wno-unknown-pragmas
 
 CPPFLAGS=-MMD -MP -pthread $(INCLUDEDIR_FLAGS) -D _GNU_SOURCE # -I /usr/include/libpng16
 #CFLAGS=-O3 -ftree-vectorize -mcpu=native -mtune=native -flto $(EXTRA_CFLAGS)
-CFLAGS=-std=gnu17 -O0 -ggdb3 -flto #-fsanitize=address
+CFLAGS=-std=gnu17 -O0 -ggdb3 -fasynchronous-unwind-tables #-fsanitize=address
 
 LDFLAGS=
 
