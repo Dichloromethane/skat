@@ -39,6 +39,7 @@ GAME_PHASE_HDR_TABLE_BEGIN
   GAME_PHASE(BETWEEN_ROUNDS),
   GAME_PHASE(REIZEN),
   GAME_PHASE(SKAT_AUFNEHMEN),
+  GAME_PHASE(SPIELANSAGE),
   GAME_PHASE(PLAY_STICH_C1),
   GAME_PHASE(PLAY_STICH_C2),
   GAME_PHASE(PLAY_STICH_C3),
@@ -76,7 +77,7 @@ typedef struct shared_game_state {
 typedef struct skat_client_state {
   shared_game_state sgs;
   card_collection my_hand;
-  card_collection my_stiche;
+  card_collection my_stiche; // TODO: remove this
   int my_gupid;              // gupid
   int my_active_player_index;// active_player
   int my_partner;            // active_player

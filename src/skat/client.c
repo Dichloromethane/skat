@@ -274,7 +274,7 @@ client_play_card(client *c, card_id cid, client_action_callback *cac) {
 	DERROR_PRINTF("Could not play the given card index %u as you do not have "
 				  "it on hand",
 				  cid);
-    client_release_state_lock(c);
+	client_release_state_lock(c);
 	return;
   }
 
@@ -288,7 +288,7 @@ client_play_card(client *c, card_id cid, client_action_callback *cac) {
   conn_enqueue_action(&c->c2s.c, &a);
 }
 
-void 
+void
 client_reizen_confirm(client *c, client_action_callback *cac) {
   action a;
 
@@ -301,7 +301,7 @@ client_reizen_confirm(client *c, client_action_callback *cac) {
   conn_enqueue_action(&c->c2s.c, &a);
 }
 
-void 
+void
 client_reizen_passe(client *c, client_action_callback *cac) {
   action a;
 
@@ -314,8 +314,9 @@ client_reizen_passe(client *c, client_action_callback *cac) {
   conn_enqueue_action(&c->c2s.c, &a);
 }
 
-void 
-client_reizen_next(client *c, int next_reizwert, client_action_callback *cac) {
+void
+client_reizen_number(client *c, int next_reizwert,
+					 client_action_callback *cac) {
   action a;
 
   memset(&a, '\0', sizeof(a));
@@ -324,7 +325,6 @@ client_reizen_next(client *c, int next_reizwert, client_action_callback *cac) {
 
   if (next_reizwert == 0)
 	next_reizwert = reizen_get_next_reizwert(&c->cs.sgs.rs);
-  
 
   client_release_state_lock(c);
 
@@ -333,6 +333,48 @@ client_reizen_next(client *c, int next_reizwert, client_action_callback *cac) {
   a.reizwert = (uint16_t) next_reizwert;
 
   DEBUG_PRINTF("Enqueueing reizen number action w/ number %d", next_reizwert);
+  conn_enqueue_action(&c->c2s.c, &a);
+}
+
+void
+client_skat_take(client *c, client_action_callback *cac) {
+  action a;
+
+  memset(&a, '\0', sizeof(a));
+
+  a.type = ACTION_SKAT_TAKE;
+  a.id = ll_client_action_callback_insert(&c->ll_cac, cac);
+
+  DEBUG_PRINTF("Enqueueing skat take action");
+  conn_enqueue_action(&c->c2s.c, &a);
+}
+
+void
+client_skat_leave(client *c, client_action_callback *cac) {
+  action a;
+
+  memset(&a, '\0', sizeof(a));
+
+  a.type = ACTION_SKAT_LEAVE;
+  a.id = ll_client_action_callback_insert(&c->ll_cac, cac);
+
+  DEBUG_PRINTF("Enqueueing skat leave action");
+  conn_enqueue_action(&c->c2s.c, &a);
+}
+
+void
+client_skat_press(client *c, card_id cid1, card_id cid2,
+				  client_action_callback *cac) {
+  action a;
+
+  memset(&a, '\0', sizeof(a));
+
+  a.type = ACTION_SKAT_PRESS;
+  a.id = ll_client_action_callback_insert(&c->ll_cac, cac);
+  a.skat_press_cards[0] = cid1;
+  a.skat_press_cards[1] = cid2;
+
+  DEBUG_PRINTF("Enqueueing skat press action");
   conn_enqueue_action(&c->c2s.c, &a);
 }
 

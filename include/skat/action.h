@@ -33,6 +33,9 @@ ACTION_HDR_TABLE_BEGIN
   ACTION(REIZEN_NUMBER),
   ACTION(REIZEN_CONFIRM),
   ACTION(REIZEN_PASSE),
+  ACTION(SKAT_TAKE),
+  ACTION(SKAT_LEAVE),
+  ACTION(SKAT_PRESS),
   ACTION(PLAY_CARD)
 ACTION_HDR_TABLE_END
 
@@ -49,6 +52,7 @@ typedef struct {
   union {
 	card_id card;
 	uint16_t reizwert;
+	card_id skat_press_cards[2];
   };
 } action;
 

@@ -39,6 +39,9 @@ EVENT_HDR_TABLE_BEGIN
   EVENT(REIZEN_CONFIRM),
   EVENT(REIZEN_PASSE),
   EVENT(REIZEN_DONE),
+  EVENT(SKAT_TAKE),
+  EVENT(SKAT_LEAVE),
+  EVENT(SKAT_PRESS),
   EVENT(PLAY_CARD),
   EVENT(STICH_DONE),
   EVENT(ROUND_DONE)
@@ -55,15 +58,16 @@ typedef struct {
   union {
 	int current_active_players[3];// indexed by ap, contains gupid
 	card_collection hand;
-	card_id skat[2];
-	card_id card;
-	int score_round[3];// indexed by ap
-	int stich_winner;  // gupid
 	uint16_t reizwert;
 	struct {
 	  int alleinspieler;// ap
 	  uint16_t reizwert_final;
 	};
+	card_id skat[2];
+	card_id skat_press_cards[2];
+	card_id card;
+	int stich_winner;  // gupid
+	int score_round[3];// indexed by ap
   };
 } event;
 

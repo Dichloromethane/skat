@@ -65,15 +65,17 @@ int
 card_collection_add_card_array(card_collection *col,
 							   const card_id *const cid_array,
 							   const size_t array_size) {
+  card_collection tmp = *col;
   for (size_t i = 0; i < array_size; i++) {
-	int error = card_collection_add_card(col, &cid_array[i]);
+	int error = card_collection_add_card(&tmp, &cid_array[i]);
 	if (error) {
 	  DERROR_PRINTF("Error %d while trying to add card %u to collection %#x",
-					error, cid_array[i], *col);
+					error, cid_array[i], tmp);
 	  return 1;
 	}
   }
 
+  *col = tmp;
   return 0;
 }
 
@@ -94,6 +96,24 @@ card_collection_remove_card(card_collection *col, const card_id *const cid) {
 }
 
 int
+card_collection_remove_card_array(card_collection *col,
+								  const card_id *cid_array, size_t array_size) {
+  card_collection tmp = *col;
+  for (size_t i = 0; i < array_size; i++) {
+	int error = card_collection_remove_card(&tmp, &cid_array[i]);
+	if (error) {
+	  DERROR_PRINTF(
+			  "Error %d while trying to remove card %u from collection %#x",
+			  error, cid_array[i], tmp);
+	  return 1;
+	}
+  }
+
+  *col = tmp;
+  return 0;
+}
+
+int
 card_collection_get_card_count(const card_collection *const col,
 							   uint8_t *const count) {
   *count = __builtin_popcount(*col);
@@ -102,8 +122,8 @@ card_collection_get_card_count(const card_collection *const col,
 
 // XXX: very inefficient
 int
-card_collection_get_card(const card_collection *const col, const uint8_t *const idx,
-						 card_id *const result_cid) {
+card_collection_get_card(const card_collection *const col,
+						 const uint8_t *const idx, card_id *const result_cid) {
   unsigned int found = 0;
 
   for (uint8_t card_index = 0; card_index < 32; card_index++) {

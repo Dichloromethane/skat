@@ -38,7 +38,7 @@ print_card_collection(const client *const c, const card_collection *const cc,
   if (card_collection_get_card_count(cc, &count))
 	return;
 
-  card_id *cid_array = malloc(count * sizeof(card_id));
+  card_id cid_array[count];// VLAaaaaaaaaaaaaaaaahhhhhhhhhhhh
 
   uint8_t j = 0;
   for (uint8_t i = 0; i < count; i++) {
@@ -58,19 +58,19 @@ print_card_collection(const client *const c, const card_collection *const cc,
   char buf[4];
   card card;
   for (uint8_t i = 0; i < j; i++) {
-	card_id cid = cid_array[i];
+	card_id *cid = &cid_array[i];
 
-	int error = card_get(&cid, &card);
+	int error = card_get(cid, &card);
 	if (error)
 	  continue;
 
-	error = card_get_name(&cid, buf);
+	error = card_get_name(cid, buf);
 	if (error)
 	  continue;
 
 	if (color_mode == CARD_COLOR_MODE_PLAYABLE) {
 	  int is_playable;
-	  error = stich_card_legal(&c->cs.sgs.gr, &c->cs.sgs.curr_stich, &cid, cc,
+	  error = stich_card_legal(&c->cs.sgs.gr, &c->cs.sgs.curr_stich, cid, cc,
 							   &is_playable);
 	  if (error)
 		continue;
@@ -79,14 +79,14 @@ print_card_collection(const client *const c, const card_collection *const cc,
 			 is_playable ? PLAYABLE_COLOR : NOT_PLAYABLE_COLOR,
 			 (card.cc == COLOR_KREUZ || card.cc == COLOR_PIK) ? BLACK_CARD_COLOR
 															  : RED_CARD_COLOR,
-			 buf, cid);
+			 buf, *cid);
 	} else if (color_mode == CARD_COLOR_MODE_ONLY_CARD_COLOR) {
 	  printf(" %s%s(%d)" COLOR_CLEAR,
 			 (card.cc == COLOR_KREUZ || card.cc == COLOR_PIK) ? BLACK_CARD_COLOR
 															  : RED_CARD_COLOR,
-			 buf, cid);
+			 buf, *cid);
 	} else {
-	  printf(" %s(%d)", buf, cid);
+	  printf(" %s(%d)", buf, *cid);
 	}
   }
 }
@@ -203,11 +203,15 @@ print_reizen_info(client *c, event *e) {
   }
 
   if (e->type == EVENT_REIZEN_DONE) {
-	if (c->cs.ist_alleinspieler)
-	  printf("You are playing alone.");
-	else
-	  printf("You are playing with %s.",
+	if (c->cs.ist_alleinspieler) {
+	  printf("You are playing alone.\n");
+	  printf("Take or leave the skat.");
+	} else {
+	  printf("You are playing with %s.\n",
 			 c->pls[c->cs.sgs.active_players[c->cs.my_partner]]->name);
+	  printf("Waiting for %s to take or leave the skat.",
+			 c->pls[c->cs.sgs.active_players[c->cs.sgs.alleinspieler]]->name);
+	}
   }
 }
 
@@ -221,6 +225,7 @@ print_info_exec(void *p) {
   stich *last_stich = &c->cs.sgs.last_stich;
   stich *stich = &c->cs.sgs.curr_stich;
   card_collection *hand = &c->cs.my_hand;
+  // TODO: remove this
   card_collection *won_stiche = &c->cs.my_stiche;
 
   printf("--\n\n--------------------------\n");
@@ -346,7 +351,8 @@ execute_reizen_wrapper(void *v) {
 
   switch (args->rit) {
 	case REIZEN_INVALID:
-	  DERROR_PRINTF("received invalid reizen type");
+	  DERROR_PRINTF("received invalid reizen input type");
+	  assert(0);
 	  break;
 	case REIZEN_CONFIRM:
 	  client_reizen_confirm(args->c, &cac);
@@ -355,10 +361,10 @@ execute_reizen_wrapper(void *v) {
 	  client_reizen_passe(args->c, &cac);
 	  break;
 	case REIZEN_NEXT:
-	  client_reizen_next(args->c, 0, &cac);
+	  client_reizen_number(args->c, 0, &cac);
 	  break;
 	default:
-	  client_reizen_next(args->c, args->rit - REIZEN_VALUE_BASE, &cac);
+	  client_reizen_number(args->c, args->rit - REIZEN_VALUE_BASE, &cac);
   }
 
   free(args);
@@ -378,6 +384,114 @@ execute_reizen(client *c, reizen_input_type rit) {
   exec_async(&c->acq, &acb);
 }
 
+typedef enum {
+  SKAT_INVALID = 0,
+  SKAT_TAKE,
+  SKAT_LEAVE,
+  SKAT_PRESS
+} skat_input_type;
+
+typedef struct {
+  client *c;
+  skat_input_type sit;
+  card_id cid1;
+  card_id cid2;
+} exec_skat_wrapper_args;
+
+typedef struct {
+  client_action_callback_hdr hdr;
+} client_skat_callback_args;
+
+static void
+client_skat_callback(void *v) {
+  client_skat_callback_args *csca;
+  csca = v;
+  client *c = csca->hdr.c;
+
+  if (csca->hdr.e.type == EVENT_ILLEGAL_ACTION) {
+	printf("--\nBig unluck! You tried to modify the skat, but that was "
+		   "illegal. Dirty cheater!\n> ");
+	goto end;
+  }
+
+  printf("--\n");
+
+  client_acquire_state_lock(c);
+
+  switch (csca->hdr.e.type) {
+	case EVENT_SKAT_TAKE:
+	  printf("YOU took the skat. It contained:");
+	  print_card_array(csca->hdr.e.skat, 2);
+	  printf("\nYour hand:");
+	  print_card_collection(c, &c->cs.my_hand, CARD_SORT_MODE_PREGAME_HAND,
+							CARD_COLOR_MODE_ONLY_CARD_COLOR);
+	  break;
+	case EVENT_SKAT_LEAVE:
+	  printf("YOU left the skat.\n");
+	  printf("Please make your Spielansage mit Hand");
+	  break;
+	case EVENT_SKAT_PRESS:
+	  printf("YOU pressed:");
+	  print_card_array(csca->hdr.e.skat_press_cards, 2);
+	  printf("\nPlease make your Spielansage ohne Hand");
+	  break;
+	default:
+	  DERROR_PRINTF("received invalid skat event");
+	  assert(0);
+	  break;
+  }
+
+  printf("\n> ");
+
+  client_release_state_lock(c);
+end:
+  fflush(stdout);
+  free(csca);
+}
+
+static void
+execute_skat_wrapper(void *v) {
+  exec_skat_wrapper_args *args = v;
+  client_action_callback cac;
+  client_skat_callback_args *csca;
+  csca = malloc(sizeof(*csca));
+  cac.args = csca;
+  cac.f = client_skat_callback;
+
+  switch (args->sit) {
+	case SKAT_TAKE:
+	  client_skat_take(args->c, &cac);
+	  break;
+	case SKAT_LEAVE:
+	  client_skat_leave(args->c, &cac);
+	  break;
+	case SKAT_PRESS:
+	  client_skat_press(args->c, args->cid1, args->cid2, &cac);
+	  break;
+	default:
+	  DERROR_PRINTF("received invalid skat input type");
+	  assert(0);
+	  break;
+  }
+
+  free(args);
+}
+
+static void
+execute_skat(client *c, skat_input_type sit, card_id cid1, card_id cid2) {
+  async_callback acb;
+  exec_skat_wrapper_args *args;
+
+  args = malloc(sizeof(exec_skat_wrapper_args));
+  args->c = c;
+  args->sit = sit;
+  args->cid1 = cid1;
+  args->cid2 = cid2;
+
+  acb = (async_callback){.do_stuff = execute_skat_wrapper, .data = args};
+
+  exec_async(&c->acq, &acb);
+}
 
 typedef struct {
   client_action_callback_hdr hdr;
@@ -499,7 +613,7 @@ io_handle_event(client *c, event *e) {
   printf("--\n");
   switch (e->type) {
 	case EVENT_DISTRIBUTE_CARDS:
-	  printf("Your hand: ");
+	  printf("Your hand:");
 	  print_card_collection(c, &c->cs.my_hand, CARD_SORT_MODE_PREGAME_HAND,
 							CARD_COLOR_MODE_ONLY_CARD_COLOR);
 	  printf("\n");
@@ -510,6 +624,18 @@ io_handle_event(client *c, event *e) {
 	case EVENT_REIZEN_PASSE:
 	case EVENT_REIZEN_DONE:
 	  print_reizen_info(c, e);
+	  break;
+	case EVENT_SKAT_TAKE:
+	  printf("%s took the skat.\n", c->pls[e->acting_player]->name);
+	  printf("Waiting for press.");
+	  break;
+	case EVENT_SKAT_LEAVE:
+	  printf("%s left the skat.\n", c->pls[e->acting_player]->name);
+	  printf("Waiting for Spielansage mit Hand.");
+	  break;
+	case EVENT_SKAT_PRESS:
+	  printf("%s pressed two cards.\n", c->pls[e->acting_player]->name);
+	  printf("Waiting for Spielansage ohne Hand.");
 	  break;
 	case EVENT_PLAY_CARD:
 	  card_get_name(&e->card, buf);
@@ -605,7 +731,7 @@ handle_console_input(void *v) {
 	// ready
 	if (!command_equals(cmd, &result, 1, "ready") && result) {
 	  MATCH_NUM_ARGS(ready, 0) { execute_ready(c); }
-	  else MATCH_NUM_ARGS_END(ready, 0);
+	  else MATCH_NUM_ARGS_END(ready, 0)
 	}
 
 	// reizen <"number" | next | (weg | passe) | ja>
@@ -626,7 +752,37 @@ handle_console_input(void *v) {
 		  fprintf(stderr,
 				  "Usage: reizen <\"number\" | next | (weg | passe) | ja>\n");
 	  }
-	  else MATCH_NUM_ARGS_END(reizen, 1);
+	  else MATCH_NUM_ARGS_END(reizen, 1)
+	}
+
+	// TODO: print usage on error, smartly
+	// skat <take | leave | press <cid1> <cid2>>
+	else if (!command_equals(cmd, &result, 1, "skat") && result) {
+	  MATCH_NUM_ARGS(reizen, 1) {
+		if (!command_arg_equals(cmd, 0, 0, &result, 2, "take", "t") && result)
+		  execute_skat(c, SKAT_TAKE, 0, 0);
+		else if (!command_arg_equals(cmd, 0, 0, &result, 2, "leave", "l")
+				 && result)
+		  execute_skat(c, SKAT_LEAVE, 0, 0);
+		else
+		  fprintf(stderr, "Usage: skat <take | leave | press <cid1> <cid2>\n");
+	  }
+	  else MATCH_NUM_ARGS(reizen, 3) {
+		if (!command_arg_equals(cmd, 1, 0, &result, 2, "press", "p")
+			&& result) {
+		  card_id cid1, cid2;
+		  if (!command_parse_arg_u8(cmd, 1, 1, 0, CARD_ID_MAX, &cid1)
+			  && !command_parse_arg_u8(cmd, 1, 2, 0, CARD_ID_MAX, &cid2)) {
+			execute_skat(c, SKAT_PRESS, cid1, cid2);
+		  } else {
+			fprintf(stderr,
+					"Usage: skat <take | leave | press <cid1> <cid2>\n");
+		  }
+		} else {
+		  fprintf(stderr, "Usage: skat <take | leave | press <cid1> <cid2>\n");
+		}
+	  }
+	  else MATCH_NUM_ARGS_END(reizen, "1 or 3")
 	}
 
 	// play <card index>

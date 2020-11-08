@@ -278,19 +278,6 @@ apply_action_between_rounds(skat_server_state *ss, action *a, player *pl,
 	  ss->sgs.rs.winner = -1;
 
 	  return GAME_PHASE_REIZEN;
-
-	  // TODO: take this code to skat aufnehmen
-	  /*e.type = EVENT_TEMP_REIZEN_DONE;
-	  memset(e.skat, '\0', sizeof(e.skat));
-
-	  void mask_skat(event * ev, player * pl) {
-		if (ss->sgs.alleinspieler == pl->ap)
-		  memcpy(ev->skat, ss->skat, sizeof(ev->skat));
-	  }
-
-	  server_distribute_event(s, &e, mask_skat);
-
-	  return GAME_PHASE_PLAY_STICH_C1;*/
 	default:
 	  DEBUG_PRINTF("Trying to use undefined action %s in state %s",
 				   action_name_table[a->type],
@@ -504,6 +491,79 @@ apply_action_reizen(skat_server_state *ss, action *a, player *pl, server *s) {
   }
 }
 
+static game_phase
+apply_action_skat_aufnehmen(skat_server_state *ss, action *a, player *pl,
+							server *s) {
+  if (ss->sgs.alleinspieler == -1 || ss->sgs.alleinspieler != pl->ap) {
+	DEBUG_PRINTF("Invalid skat actor");
+	return GAME_PHASE_INVALID;
+  }
+
+  event e;
+  e.answer_to = a->id;
+  e.acting_player = pl->gupid;
+  switch (a->type) {
+	case ACTION_SKAT_TAKE:
+	  ss->sgs.took_skat = 1;
+	  card_collection_add_card_array(&ss->player_hands[ss->sgs.alleinspieler],
+									 ss->skat, 2);
+
+	  e.type = EVENT_SKAT_TAKE;
+	  memset(e.skat, '\0', sizeof(e.skat));
+
+	  void mask_skat(event * ev, player * pl) {
+		if (ss->sgs.alleinspieler == pl->ap)
+		  memcpy(ev->skat, ss->skat, sizeof(ev->skat));
+	  }
+
+	  server_distribute_event(s, &e, mask_skat);
+
+	  return GAME_PHASE_SKAT_AUFNEHMEN;
+	case ACTION_SKAT_LEAVE:
+	  ss->sgs.took_skat = 0;
+	  card_collection_add_card_array(&ss->stiche_buf[ss->sgs.alleinspieler],
+									 ss->skat, 2);
+
+	  e.type = EVENT_SKAT_LEAVE;
+
+	  server_distribute_event(s, &e, NULL);
+
+	  return GAME_PHASE_SPIELANSAGE;
+	case ACTION_SKAT_PRESS:
+	  (void) 0;// label hack to create a local variable
+	  card_collection tmp = ss->player_hands[ss->sgs.alleinspieler];
+	  if (card_collection_remove_card_array(&tmp, a->skat_press_cards, 2)) {
+		DEBUG_PRINTF("Cannot press cards %d & %d", a->skat_press_cards[0],
+					 a->skat_press_cards[1]);
+		return GAME_PHASE_INVALID;
+	  }
+
+	  card_collection_add_card_array(&ss->stiche_buf[ss->sgs.alleinspieler],
+									 a->skat_press_cards, 2);
+
+	  ss->player_hands[ss->sgs.alleinspieler] = tmp;
+
+	  e.type = EVENT_SKAT_PRESS;
+
+	  memset(e.skat, '\0', sizeof(e.skat_press_cards));
+
+	  void mask_skat_press_cards(event * ev, player * pl) {
+		if (ss->sgs.alleinspieler == pl->ap)
+		  memcpy(ev->skat_press_cards, a->skat_press_cards,
+				 sizeof(ev->skat_press_cards));
+	  }
+
+	  server_distribute_event(s, &e, mask_skat_press_cards);
+
+	  return GAME_PHASE_SPIELANSAGE;
+	default:
+	  DEBUG_PRINTF("Trying to use undefined action %s in state %s",
+				   action_name_table[a->type],
+				   game_phase_name_table[ss->sgs.cgphase]);
+	  return GAME_PHASE_INVALID;
+  }
+}
+
 static int
 next_active_player(int player, int off) {
   return (player + off) % 3;
@@ -616,6 +676,8 @@ apply_action(skat_server_state *ss, action *a, player *pl, server *s) {
 	  return apply_action_between_rounds(ss, a, pl, s);
 	case GAME_PHASE_REIZEN:
 	  return apply_action_reizen(ss, a, pl, s);
+	case GAME_PHASE_SKAT_AUFNEHMEN:
+	  return apply_action_skat_aufnehmen(ss, a, pl, s);
 	case GAME_PHASE_PLAY_STICH_C1:
 	  return apply_action_stich(ss, a, pl, s, 0);
 	case GAME_PHASE_PLAY_STICH_C2:
@@ -748,6 +810,38 @@ skat_client_handle_reizen_events(skat_client_state *cs, event *e, client *c) {
   }
 }
 
+static int
+skat_client_handle_skat_events(skat_client_state *cs, event *e, client *c) {
+  if (cs->sgs.cgphase != GAME_PHASE_SKAT_AUFNEHMEN) {
+	DERROR_PRINTF("Trying to apply event %s, while in invalid game state %s",
+				  event_name_table[e->type],
+				  game_phase_name_table[cs->sgs.cgphase]);
+	return 0;
+  }
+
+  switch (e->type) {
+	case EVENT_SKAT_TAKE:
+	  cs->sgs.took_skat = 1;
+	  if (cs->ist_alleinspieler)
+		card_collection_add_card_array(&cs->my_hand, e->skat, 2);
+	  return 1;
+	case EVENT_SKAT_LEAVE:
+	  cs->sgs.took_skat = 0;
+	  cs->sgs.cgphase = GAME_PHASE_SPIELANSAGE;
+	  return 1;
+	case EVENT_SKAT_PRESS:
+	  if (cs->ist_alleinspieler)
+		card_collection_remove_card_array(&cs->my_hand, e->skat_press_cards, 2);
+	  cs->sgs.cgphase = GAME_PHASE_SPIELANSAGE;
+	  return 1;
+	default:
+	  DERROR_PRINTF("Trying to apply event %s, while handling skat events, "
+					"this should not happen",
+					event_name_table[e->type]);
+	  return 0;
+  }
+}
+
 int
 skat_client_state_apply(skat_client_state *cs, event *e, client *c) {
   DTODO_PRINTF("Insert sanity checks.");
@@ -804,6 +898,10 @@ skat_client_state_apply(skat_client_state *cs, event *e, client *c) {
 	case EVENT_REIZEN_PASSE:
 	case EVENT_REIZEN_DONE:
 	  return skat_client_handle_reizen_events(cs, e, c);
+	case EVENT_SKAT_TAKE:
+	case EVENT_SKAT_LEAVE:
+	case EVENT_SKAT_PRESS:
+	  return skat_client_handle_skat_events(cs, e, c);
 	case EVENT_PLAY_CARD:
 	  card_get_name(&e->card, card_name_buf);
 	  DEBUG_PRINTF("%s (%d) played card %s", c->pls[e->acting_player]->name,
@@ -855,6 +953,7 @@ skat_client_state_apply(skat_client_state *cs, event *e, client *c) {
 	  if (cs->my_gupid == e->stich_winner
 		  || (!cs->ist_alleinspieler
 			  && cs->sgs.active_players[cs->my_partner] == e->stich_winner)) {
+		// TODO: remove this
 		card_collection_add_card_array(&cs->my_stiche, cs->sgs.curr_stich.cs,
 									   3);
 	  }
@@ -906,6 +1005,7 @@ skat_resync_player(skat_server_state *ss, skat_client_state *cs, player *pl) {
   if (cs->my_active_player_index >= 0) {
 	card_collection *stichp = ss->stiche[cs->my_active_player_index];
 	if (stichp != NULL)
+	  // TODO: remove this
 	  cs->my_stiche = *stichp;
   }
 

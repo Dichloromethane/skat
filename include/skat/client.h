@@ -58,7 +58,12 @@ void client_play_card(client *c, card_id cid, client_action_callback *);
 
 void client_reizen_confirm(client *, client_action_callback *);
 void client_reizen_passe(client *, client_action_callback *);
-void client_reizen_next(client *, int next_reizwert, client_action_callback *);
+void client_reizen_number(client *c, int next_reizwert,
+						  client_action_callback *cac);
+
+void client_skat_take(client *, client_action_callback *);
+void client_skat_leave(client *, client_action_callback *);
+void client_skat_press(client *, card_id, card_id, client_action_callback *);
 
 void client_init(client *c, char *host, int port, char *name);
 void client_run(client *c, int resume);
