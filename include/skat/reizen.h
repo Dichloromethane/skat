@@ -90,4 +90,5 @@ uint16_t reizen_get_game_value(skat_server_state *cs, int won, int schneider,
 
 // spielansage
 // spiel <kreuz | pik | herz | karo | grand> [hand] [schneider] [schwarz]
-// [ouvert | offen] spiel <null> [hand] [ouvert | offen]
+// [ouvert | offen]
+// spiel <null> [hand] [ouvert | offen]

@@ -111,6 +111,36 @@ command_check_arg_length(const command *cmd, size_t expected_args,
 }
 
 int
+command_args_contain(const command *cmd, size_t index, int *result,
+					 size_t *result_index, size_t name_count, ...) {
+  if (cmd->args_length == 0) {
+	*result = 0;
+	return 0;
+  }
+
+  int equals = 0;
+
+  va_list ap;
+  va_start(ap, name_count);
+  for (size_t i = 0; i < name_count; ++i) {
+	const char *const str = va_arg(ap, char *);
+	for (size_t j = 0; j < cmd->args_length; ++j) {
+	  const char *const arg = cmd->args[j];
+	  equals = !strcmp(arg, str);
+	  if (equals) {
+		*result_index = j;
+		goto end_loop;
+	  }
+	}
+  }
+end_loop:
+  va_end(ap);
+
+  *result = equals;
+  return 0;
+}
+
+int
 command_parse_arg_u64(const command *cmd, int print_errors, size_t index,
 					  uint64_t min, uint64_t max, uint64_t *result) {
   if (index >= cmd->args_length) {

@@ -225,8 +225,6 @@ print_info_exec(void *p) {
   stich *last_stich = &c->cs.sgs.last_stich;
   stich *stich = &c->cs.sgs.curr_stich;
   card_collection *hand = &c->cs.my_hand;
-  // TODO: remove this
-  card_collection *won_stiche = &c->cs.my_stiche;
 
   printf("--\n\n--------------------------\n");
 
@@ -281,13 +279,6 @@ print_info_exec(void *p) {
 	printf("Your hand:");
 	print_card_collection(c, hand, CARD_SORT_MODE_INGAME_HAND,
 						  CARD_COLOR_MODE_PLAYABLE);
-	printf("\n");
-
-	unsigned int score;
-	card_collection_get_score(won_stiche, &score);
-	printf("Your stiche(score=%u):", score);
-	print_card_collection(c, won_stiche, CARD_SORT_MODE_STICHE,
-						  CARD_COLOR_MODE_ONLY_CARD_COLOR);
 	printf("\n");
   }
 

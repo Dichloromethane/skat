@@ -18,6 +18,8 @@ int command_arg_equals(const command *cmd, int print_errors, size_t index,
 					   int *result, size_t name_count, ...);
 int command_check_arg_length(const command *cmd, size_t expected_args,
 							 int *result);
+int command_args_contain(const command *cmd, size_t index, int *result,
+						 size_t *result_index, size_t name_count, ...);
 
 int command_parse_arg_u64(const command *cmd, int print_errors, size_t index,
 						  uint64_t min, uint64_t max, uint64_t *result);

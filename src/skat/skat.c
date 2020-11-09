@@ -887,7 +887,6 @@ skat_client_state_apply(skat_client_state *cs, event *e, client *c) {
 	  cs->sgs.rs.reizwert = 0;
 	  cs->sgs.rs.winner = -1;
 
-	  card_collection_empty(&cs->my_stiche);
 	  cs->my_partner = -1;
 	  cs->ist_alleinspieler = -1;
 
@@ -950,14 +949,6 @@ skat_client_state_apply(skat_client_state *cs, event *e, client *c) {
 		}
 	  }
 
-	  if (cs->my_gupid == e->stich_winner
-		  || (!cs->ist_alleinspieler
-			  && cs->sgs.active_players[cs->my_partner] == e->stich_winner)) {
-		// TODO: remove this
-		card_collection_add_card_array(&cs->my_stiche, cs->sgs.curr_stich.cs,
-									   3);
-	  }
-
 	  if (cs->sgs.stich_num++ < 9)
 		cs->sgs.cgphase = GAME_PHASE_PLAY_STICH_C1;
 	  else
@@ -1002,13 +993,6 @@ skat_resync_player(skat_server_state *ss, skat_client_state *cs, player *pl) {
   cs->my_gupid = pl->gupid;
   cs->my_active_player_index = pl->ap;
 
-  if (cs->my_active_player_index >= 0) {
-	card_collection *stichp = ss->stiche[cs->my_active_player_index];
-	if (stichp != NULL)
-	  // TODO: remove this
-	  cs->my_stiche = *stichp;
-  }
-
   if (cs->my_active_player_index == -1) {
 	cs->ist_alleinspieler = -1;
 	cs->my_partner = -1;
@@ -1032,6 +1016,7 @@ skat_resync_player(skat_server_state *ss, skat_client_state *cs, player *pl) {
 	  cs->my_partner = 3;
   }
 
+  // TODO: implement schieberamsch
   if (cs->ist_alleinspieler == 1 && cs->sgs.gr.type != GAME_TYPE_RAMSCH) {
 	memcpy(cs->skat, ss->skat, sizeof(cs->skat));
   }
