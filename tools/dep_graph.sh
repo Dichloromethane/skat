@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 
-print_graph=""
-include_libs=""
+print_graph=0
+include_libs=0
 output_file="dep_graph.png"
 source_dirs=()
 
 while getopts "pls:o:" name; do
-  case "$name" in
+  case "${name}" in
   p)
     print_graph=1
     ;;
@@ -37,14 +37,14 @@ fi
     {
       cd "$source_dir" || exit 1
       grep -rH --include="*.c" --include="*.h" "^#include \""
-      if test "x$include_libs" != "x"; then
+      if [ $include_libs -gt 0 ]; then
         grep -rH --include="*.c" --include="*.h" "^#include <"
       fi
     } | sed -n "s/\(.*\):#include [\"<]\(.*\)[\">]/\t\"\1\" -> \"\2\";/p"
   done
 
   echo "}"
-} | if test "x$print_graph" = "x"; then
+} | if [ "${print_graph}" -ge 0 ]; then
   dot -T png -o "$output_file"
 else
   cat
