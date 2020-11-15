@@ -5,6 +5,7 @@
 #include "skat/card.h"
 #include "skat/card_collection.h"
 #include "skat/player.h"
+#include "skat/game_rules.h"
 #include <stdlib.h>
 
 #ifndef STRINGIFY
@@ -44,7 +45,8 @@ EVENT_HDR_TABLE_BEGIN
   EVENT(SKAT_PRESS),
   EVENT(PLAY_CARD),
   EVENT(STICH_DONE),
-  EVENT(ROUND_DONE)
+  EVENT(ROUND_DONE),
+  EVENT(GAME_CALLED)
 EVENT_HDR_TABLE_END
 
 #ifndef EVENT_HDR_TO_STRING
@@ -68,6 +70,7 @@ typedef struct {
 	card_id card;
 	int stich_winner;  // gupid
 	int score_round[3];// indexed by ap
+	game_rules gr;
   };
 } event;
 

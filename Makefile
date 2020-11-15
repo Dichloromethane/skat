@@ -3,7 +3,7 @@
 
 CC=gcc
 
-WARNINGS=-Wall -Wextra -Wno-unused-parameter -Wno-unknown-pragmas
+WARNINGS=-Wall -Wextra -Wno-unused-parameter -Wno-unknown-pragmas -Wfatal-errors
 
 CPPFLAGS=-MMD -MP -pthread $(INCLUDEDIR_FLAGS) -D _GNU_SOURCE # -I /usr/include/libpng16
 #CFLAGS=-O3 -ftree-vectorize -mcpu=native -mtune=native -flto $(EXTRA_CFLAGS)

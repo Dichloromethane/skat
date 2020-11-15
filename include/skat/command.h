@@ -4,6 +4,16 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#define FOR_EACH_ARG_I(cmd, var, start, block) \
+	for (size_t var = start; var < cmd->args_length; var++)  \
+	  block 
+
+#define FOR_EACH_ARG(cmd, var, start, block) \
+    FOR_EACH_ARG_I(cmd, i_, start, {\
+	  char *var = cmd->args[i_];\
+	  do block while(0);\
+	})
+
 typedef struct {
   char *command;
   size_t args_length;

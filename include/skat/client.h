@@ -55,6 +55,7 @@ void client_notify_leave(client *, payload_notify_leave *);
 
 void client_ready(client *c, client_action_callback *);
 void client_play_card(client *c, card_id cid, client_action_callback *);
+void client_set_gamerules(client *c, game_rules gr, client_action_callback *);
 
 void client_reizen_confirm(client *, client_action_callback *);
 void client_reizen_passe(client *, client_action_callback *);

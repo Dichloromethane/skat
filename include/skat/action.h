@@ -2,6 +2,7 @@
 #define ACTION_HDR
 
 #include "skat/card.h"
+#include "skat/game_rules.h"
 #include <stdint.h>
 
 #ifndef STRINGIFY
@@ -36,7 +37,8 @@ ACTION_HDR_TABLE_BEGIN
   ACTION(SKAT_TAKE),
   ACTION(SKAT_LEAVE),
   ACTION(SKAT_PRESS),
-  ACTION(PLAY_CARD)
+  ACTION(PLAY_CARD),
+  ACTION(CALL_GAME)
 ACTION_HDR_TABLE_END
 
 
@@ -53,6 +55,7 @@ typedef struct {
 	card_id card;
 	uint16_t reizwert;
 	card_id skat_press_cards[2];
+	game_rules gr;
   };
 } action;
 

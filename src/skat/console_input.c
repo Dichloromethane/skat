@@ -91,6 +91,49 @@ print_card_collection(const client *const c, const card_collection *const cc,
   }
 }
 
+static void
+print_game_rules_info(client *c) {
+  game_rules *gr = &c->cs.sgs.gr;
+  printf("The game is ");
+  switch(gr->type) {
+	case GAME_TYPE_NULL:
+	  printf("Null");
+	  break;
+	case GAME_TYPE_GRAND:
+	  printf("Grand");
+	  break;
+	case GAME_TYPE_COLOR:
+	  switch(gr->trumpf) {
+		case COLOR_KREUZ: 
+		  printf("Kreuz");
+		  break;
+		case COLOR_PIK:
+		  printf("Pik");
+		  break;
+		case COLOR_HERZ:
+		  printf("Herz");
+		  break;
+		case COLOR_KARO:
+		  printf("Karo");
+		  break;
+		default:
+		  printf("Dafuq");
+	  }
+	  break;
+	default:
+	  printf("Defuq");
+  }
+
+  if (gr->hand)
+	printf(" Hand");
+  if (gr->schneider_angesagt)
+	printf(" Schneider");
+  if (gr->schwarz_angesagt)
+	printf(" Schwarz");
+  if (gr->ouvert)
+	printf(" Ouvert");
+}
+
 typedef enum {
   PRINT_PLAYER_TURN_SHOW_HAND_MODE_ALWAYS,
   PRINT_PLAYER_TURN_SHOW_HAND_MODE_DEFAULT,
@@ -176,7 +219,7 @@ print_reizen_info(client *c, event *e) {
 	if (is_teller) {
 	  printf("YOU are saying, %s is listening.\n", listener->name);
 	  if (rs->waiting_teller)
-		printf("It is YOUR turn. Go higher then %u or pass.", rs->reizwert);
+		printf("It is YOUR turn. Go higher than %u or pass.", rs->reizwert);
 	  else
 		printf("Waiting for listener to confirm or pass at %u.", rs->reizwert);
 	} else if (is_listener) {
@@ -224,7 +267,6 @@ print_info_exec(void *p) {
   game_phase phase = c->cs.sgs.cgphase;
   stich *last_stich = &c->cs.sgs.last_stich;
   stich *stich = &c->cs.sgs.curr_stich;
-  card_collection *hand = &c->cs.my_hand;
 
   printf("--\n\n--------------------------\n");
 
@@ -232,17 +274,7 @@ print_info_exec(void *p) {
 		 c->pls[c->cs.my_gupid]->name, c->cs.my_gupid,
 		 c->cs.my_active_player_index);
 
-  printf("You are playing with:");
-  for (int i = 0; i < 4; i++) {
-	player *pl = c->pls[i];
-	if (pl == NULL)
-	  continue;
-	printf(" %s[gupid=%d, active_player=%d]", pl->name, pl->gupid, pl->ap);
-  }
-  printf("\n");
-
-  printf("Game Phase: %s, Type: %d, Trumpf: %d\n", game_phase_name_table[phase],
-		 c->cs.sgs.gr.type, c->cs.sgs.gr.trumpf);
+  printf("Game Phase: %s\n", game_phase_name_table[phase]);
 
   if (phase == GAME_PHASE_REIZEN) {
 	printf("rphase=%s, waiting_teller=%d, reizwert=%u, winner=%d\n",
@@ -252,6 +284,9 @@ print_info_exec(void *p) {
   } else if (phase == GAME_PHASE_PLAY_STICH_C1
 			 || phase == GAME_PHASE_PLAY_STICH_C2
 			 || phase == GAME_PHASE_PLAY_STICH_C3) {
+ 	print_game_rules_info(c);
+  	printf("\n");
+
 	if (c->cs.ist_alleinspieler) {
 	  printf("You are playing alone, the skat was:");
 	  print_card_array(c->cs.skat, 2);
@@ -273,12 +308,7 @@ print_info_exec(void *p) {
 	print_card_array(stich->cs, stich->played_cards);
 	printf("\n");
 
-	print_player_turn(c, PRINT_PLAYER_TURN_SHOW_HAND_MODE_NEVER);
-	printf("\n");
-
-	printf("Your hand:");
-	print_card_collection(c, hand, CARD_SORT_MODE_INGAME_HAND,
-						  CARD_COLOR_MODE_PLAYABLE);
+	print_player_turn(c, PRINT_PLAYER_TURN_SHOW_HAND_MODE_ALWAYS);
 	printf("\n");
   }
 
@@ -520,6 +550,78 @@ execute_ready(client *c) {
   exec_async(&c->acq, &acb);
 }
 
+/* Begin execute set gamerules logic
+   -------------------------------- */
+
+struct client_set_gamerules_args {
+  client *c;
+  game_rules gr;
+};
+
+typedef struct {
+  client_action_callback_hdr hdr;
+} client_set_gamerules_callback_args;
+
+static void
+client_set_gamerules_callback(void *v) {
+  __label__ end;
+  client_set_gamerules_callback_args *args = v;
+
+  client_acquire_state_lock(args->hdr.c);
+
+  printf("--\n");
+
+  if (args->hdr.e.type == EVENT_ILLEGAL_ACTION) {
+	printf("You tried to cheat by calling an illegal game! Luckily for you, we didn't insta-loose the game for you");
+	goto end;
+  }
+
+  print_game_rules_info(args->hdr.c);
+  printf("\nThe game is on.\n"); 
+
+  print_player_turn(args->hdr.c, PRINT_PLAYER_TURN_SHOW_HAND_MODE_DEFAULT);
+  
+ end:
+  printf("\n> ");
+  fflush(stdout);
+  client_release_state_lock(args->hdr.c);
+  free(args); //TODO: Prevent malloc thread drift by using a custom allocator for these queues
+}
+
+static void
+client_set_gamerules_wrapper(void *v) {
+  struct client_set_gamerules_args *args = v;
+  client_action_callback cac;
+
+  client_set_gamerules_callback_args *cach =
+		  malloc(sizeof(client_set_gamerules_callback_args));
+  cac.args = cach;
+  cac.f = client_set_gamerules_callback;
+  client_set_gamerules(args->c, args->gr, &cac);
+  free(args);
+}
+
+static void
+execute_set_gamerules(client *c, game_rules *gr) {
+  async_callback acb;
+
+  struct client_set_gamerules_args *args =
+		  malloc(sizeof(struct client_set_gamerules_args));
+  args->c = c;
+  args->gr = *gr;
+
+  acb = (async_callback){.do_stuff = client_set_gamerules_wrapper, .data = args};
+
+  exec_async(&c->acq, &acb);
+}
+
+/* -------------------------------- 
+   End execute set gamerules logic */
+
+
+/* Begin execute play card logic
+   -------------------------------- */
+
 struct client_play_card_args {
   client *c;
   card_id cid;
@@ -575,15 +677,6 @@ client_play_card_wrapper(void *v) {
 }
 
 static void
-execute_print_info(client *c) {
-  async_callback acb;
-
-  acb = (async_callback){.do_stuff = print_info_exec, .data = c};
-
-  exec_async(&c->acq, &acb);
-}
-
-static void
 execute_play_card(client *c, card_id cid) {
   async_callback acb;
 
@@ -597,11 +690,26 @@ execute_play_card(client *c, card_id cid) {
   exec_async(&c->acq, &acb);
 }
 
+/* --------------------------------
+   End execute play card logic */
+
+static void
+execute_print_info(client *c) {
+  async_callback acb;
+
+  acb = (async_callback){.do_stuff = print_info_exec, .data = c};
+
+  exec_async(&c->acq, &acb);
+}
+
 void
 io_handle_event(client *c, event *e) {
   char buf[4];
 
   printf("--\n");
+
+  client_acquire_state_lock(c);
+
   switch (e->type) {
 	case EVENT_DISTRIBUTE_CARDS:
 	  printf("Your hand:");
@@ -640,6 +748,11 @@ io_handle_event(client *c, event *e) {
 		print_card_array(c->cs.sgs.last_stich.cs,
 						 c->cs.sgs.last_stich.played_cards);
 	  break;
+	case EVENT_GAME_CALLED:
+	  print_game_rules_info(c);
+	  printf("\n");
+	  print_player_turn(c, PRINT_PLAYER_TURN_SHOW_HAND_MODE_DEFAULT);
+	  break; 
 	case EVENT_STICH_DONE:
 	  if (e->stich_winner == c->cs.my_gupid) {
 		printf("You won the Stich! \\o/");
@@ -657,8 +770,9 @@ io_handle_event(client *c, event *e) {
 	  printf("Something (%s) happened", event_name_table[e->type]);
   }
   goto skip;
-
+  // Ha, unreachable
 skip:
+  client_release_state_lock(c);
   printf("\n> ");
   fflush(stdout);
 }
@@ -774,6 +888,65 @@ handle_console_input(void *v) {
 		}
 	  }
 	  else MATCH_NUM_ARGS_END(reizen, "1 or 3")
+	}
+
+    // spiel <color> {modifier}
+
+	else if (!command_equals(cmd, &result, 1, "spiel") && result) {
+	  game_rules/*z?*/ gr;
+	  memset (&gr, '\0', sizeof gr);
+	  if (cmd->args_length < 1) {
+		fprintf(stderr, "Usage: spiel <color> {modifier}\n");
+		goto command_cleanup;
+	  }
+
+	  if (!command_arg_equals(cmd, 0, 0, &result, 2, "null", "n") && result) {
+		gr.type = GAME_TYPE_NULL;
+		FOR_EACH_ARG_I(cmd, i, 1, {
+		  if (!command_arg_equals(cmd, 0, i, &result, 2, "hand", "h") && result) {
+			gr.hand = 1;
+		  } else if (!command_arg_equals(cmd, 0, i, &result, 4, "ouvert", "overt", "ov", "o") && result) {
+			gr.ouvert = 1;
+		  }
+		});
+	  }
+	  /* XXX: */
+	  else if ((!command_arg_equals(cmd, 0, 0, &result, 2, "grand", "g") 
+		        && result && (gr.type = GAME_TYPE_GRAND))
+		  || (!command_arg_equals(cmd, 0, 0, &result, 2, "kreuz", "kr") 
+		      && result && (gr.type = GAME_TYPE_COLOR) && (gr.trumpf = COLOR_KREUZ))
+		  || (!command_arg_equals(cmd, 0, 0, &result, 2, "pik", "p") 
+		      && result && (gr.type = GAME_TYPE_COLOR) && (gr.trumpf = COLOR_PIK)) 
+		  || (!command_arg_equals(cmd, 0, 0, &result, 2, "herz", "h") 
+		      && result && (gr.type = GAME_TYPE_COLOR) && (gr.trumpf = COLOR_HERZ)) 
+		  || (!command_arg_equals(cmd, 0, 0, &result, 2, "karo", "ka") 
+		      && result && (gr.type = GAME_TYPE_COLOR) && (gr.trumpf = COLOR_KARO))) {
+		FOR_EACH_ARG_I(cmd, i, 1, {
+		  if (!command_arg_equals(cmd, 0, i, &result, 4, "ouvert", "overt", "ov", "o") && result) {
+			gr.ouvert = 1;
+			goto schwarz;
+		  } else if (!command_arg_equals(cmd, 0, i, &result, 2, "schwarz", "schw") && result) {
+		   schwarz:
+			gr.schwarz_angesagt = 1;
+			goto schneider;
+		  } else if (!command_arg_equals(cmd, 0, i, &result, 2, "schneider", "schn") && result) {
+		   schneider:
+			gr.schneider_angesagt = 1;
+			goto hand;
+		  } else if (!command_arg_equals(cmd, 0, i, &result, 2, "hand", "h") && result) {
+		   hand:
+			gr.hand = 1;
+		  } else {
+			fprintf(stderr, "Illegal modifier %s encountered in spiel command\n", cmd->args[i]);
+			goto command_cleanup;
+		  }
+		});
+	  } else {
+		fprintf(stderr, "Unknown spiel type %s found\n", cmd->args[0]);
+		goto command_cleanup;
+	  }
+	  execute_set_gamerules(c, &gr);
+	  goto command_cleanup;
 	}
 
 	// play <card index>

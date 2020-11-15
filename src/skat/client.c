@@ -289,6 +289,20 @@ client_play_card(client *c, card_id cid, client_action_callback *cac) {
 }
 
 void
+client_set_gamerules(client *c, game_rules gr, client_action_callback *cac) {
+  action a;
+
+  memset(&a, '\0', sizeof(a));
+
+  a.type = ACTION_CALL_GAME;
+  a.id = ll_client_action_callback_insert(&c->ll_cac, cac);
+  a.gr = gr;
+
+  DEBUG_PRINTF("Enqueueing call game action");
+  conn_enqueue_action(&c->c2s.c, &a);
+}
+
+void
 client_reizen_confirm(client *c, client_action_callback *cac) {
   action a;
 
