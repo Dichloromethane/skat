@@ -293,6 +293,7 @@ static const uint8_t skat_stiche_buf_lookup[3][3] = {{0, 1, 1},
 static game_phase
 finish_reizen(skat_server_state *ss, server *s, event *e) {
   e->answer_to = -1;
+  e->acting_player = -1;
   e->type = EVENT_REIZEN_DONE;
 
   ss->sgs.rs.rphase = REIZ_PHASE_DONE;
@@ -565,7 +566,8 @@ apply_action_skat_aufnehmen(skat_server_state *ss, action *a, player *pl,
 }
 
 static game_phase
-apply_action_spielansage(skat_server_state *ss, action *a, player *pl, server *s) {
+apply_action_spielansage(skat_server_state *ss, action *a, player *pl,
+						 server *s) {
   event e;
   int tmp;
   card_color col;
@@ -578,10 +580,11 @@ apply_action_spielansage(skat_server_state *ss, action *a, player *pl, server *s
   e.answer_to = a->id;
   e.acting_player = pl->gupid;
 
-  switch(a->type) {
+  switch (a->type) {
 	case ACTION_CALL_GAME:
 	  if (ss->sgs.took_skat && a->gr.hand) {
-		DEBUG_PRINTF("WOW, stupid idiot, you can't play hand if you already took the skat. Bonk.");
+		DEBUG_PRINTF("WOW, stupid idiot, you can't play hand if you already "
+					 "took the skat. Bonk.");
 		return GAME_PHASE_INVALID;
 	  }
 
@@ -590,26 +593,27 @@ apply_action_spielansage(skat_server_state *ss, action *a, player *pl, server *s
 		return GAME_PHASE_INVALID;
 	  }
 
-      switch (a->gr.type) {
+	  switch (a->gr.type) {
 		case GAME_TYPE_GRAND:
 		  if (a->gr.trumpf != COLOR_INVALID)
 			return GAME_PHASE_INVALID;
 		  goto skip_color_check;
 		case GAME_TYPE_COLOR:
-		  col = a->gr.trumpf; 
-		  if (col != COLOR_KREUZ && col != COLOR_PIK && col != COLOR_HERZ && col != COLOR_KARO)
+		  col = a->gr.trumpf;
+		  if (col != COLOR_KREUZ && col != COLOR_PIK && col != COLOR_HERZ
+			  && col != COLOR_KARO)
 			return GAME_PHASE_INVALID;
 
-		 skip_color_check:
-	      tmp = a->gr.hand | (a->gr.schneider_angesagt << 1)
-		  	    | (a->gr.schwarz_angesagt << 2) | (a->gr.ouvert << 3);
-	  
-	      if (tmp & (tmp + 1))
-		    return GAME_PHASE_INVALID;
+		skip_color_check:
+		  tmp = a->gr.hand | (a->gr.schneider_angesagt << 1)
+				| (a->gr.schwarz_angesagt << 2) | (a->gr.ouvert << 3);
+
+		  if (tmp & (tmp + 1))
+			return GAME_PHASE_INVALID;
 		  break;
 		case GAME_TYPE_NULL:
 		  if (a->gr.trumpf != COLOR_INVALID)
-		    return GAME_PHASE_INVALID;
+			return GAME_PHASE_INVALID;
 		  if (a->gr.schwarz_angesagt || a->gr.schneider_angesagt)
 			return GAME_PHASE_INVALID;
 		  break;
@@ -617,13 +621,13 @@ apply_action_spielansage(skat_server_state *ss, action *a, player *pl, server *s
 		default:
 		  return GAME_PHASE_INVALID;
 	  }
-      
+
 	  ss->sgs.gr = a->gr;
 
 	  e.type = EVENT_GAME_CALLED;
 	  e.gr = a->gr;
 	  server_distribute_event(s, &e, NULL);
-     
+
 	  return GAME_PHASE_PLAY_STICH_C1;
 	default:
 	  DEBUG_PRINTF("Trying to use undefined action %s in state %s",
@@ -972,7 +976,7 @@ skat_client_state_apply(skat_client_state *cs, event *e, client *c) {
 	case EVENT_SKAT_LEAVE:
 	case EVENT_SKAT_PRESS:
 	  return skat_client_handle_skat_events(cs, e, c);
-    case EVENT_GAME_CALLED:
+	case EVENT_GAME_CALLED:
 	  cs->sgs.gr = e->gr;
 	  cs->sgs.cgphase = GAME_PHASE_PLAY_STICH_C1;
 	  return 1;

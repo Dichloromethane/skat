@@ -95,7 +95,7 @@ static void
 print_game_rules_info(client *c) {
   game_rules *gr = &c->cs.sgs.gr;
   printf("The game is ");
-  switch(gr->type) {
+  switch (gr->type) {
 	case GAME_TYPE_NULL:
 	  printf("Null");
 	  break;
@@ -103,8 +103,8 @@ print_game_rules_info(client *c) {
 	  printf("Grand");
 	  break;
 	case GAME_TYPE_COLOR:
-	  switch(gr->trumpf) {
-		case COLOR_KREUZ: 
+	  switch (gr->trumpf) {
+		case COLOR_KREUZ:
 		  printf("Kreuz");
 		  break;
 		case COLOR_PIK:
@@ -248,7 +248,13 @@ print_reizen_info(client *c, event *e) {
   if (e->type == EVENT_REIZEN_DONE) {
 	if (c->cs.ist_alleinspieler) {
 	  printf("You are playing alone.\n");
-	  printf("Take or leave the skat.");
+	  if (c->cs.sgs.gr.type != GAME_TYPE_RAMSCH) {
+		printf("Take or leave the skat.");
+	  } else {
+		// TODO: implement schieberamsch
+		printf("Ramsch time!\n");
+		print_player_turn(c, PRINT_PLAYER_TURN_SHOW_HAND_MODE_DEFAULT);
+	  }
 	} else {
 	  printf("You are playing with %s.\n",
 			 c->pls[c->cs.sgs.active_players[c->cs.my_partner]]->name);
@@ -284,8 +290,8 @@ print_info_exec(void *p) {
   } else if (phase == GAME_PHASE_PLAY_STICH_C1
 			 || phase == GAME_PHASE_PLAY_STICH_C2
 			 || phase == GAME_PHASE_PLAY_STICH_C3) {
- 	print_game_rules_info(c);
-  	printf("\n");
+	print_game_rules_info(c);
+	printf("\n");
 
 	if (c->cs.ist_alleinspieler) {
 	  printf("You are playing alone, the skat was:");
@@ -572,20 +578,22 @@ client_set_gamerules_callback(void *v) {
   printf("--\n");
 
   if (args->hdr.e.type == EVENT_ILLEGAL_ACTION) {
-	printf("You tried to cheat by calling an illegal game! Luckily for you, we didn't insta-loose the game for you");
+	printf("You tried to cheat by calling an illegal game! Luckily for you, we "
+		   "didn't insta-loose the game for you");
 	goto end;
   }
 
   print_game_rules_info(args->hdr.c);
-  printf("\nThe game is on.\n"); 
+  printf("\nThe game is on.\n");
 
   print_player_turn(args->hdr.c, PRINT_PLAYER_TURN_SHOW_HAND_MODE_DEFAULT);
-  
- end:
+
+end:
   printf("\n> ");
   fflush(stdout);
   client_release_state_lock(args->hdr.c);
-  free(args); //TODO: Prevent malloc thread drift by using a custom allocator for these queues
+  free(args);// TODO: Prevent malloc thread drift by using a custom allocator
+			 // for these queues
 }
 
 static void
@@ -610,12 +618,13 @@ execute_set_gamerules(client *c, game_rules *gr) {
   args->c = c;
   args->gr = *gr;
 
-  acb = (async_callback){.do_stuff = client_set_gamerules_wrapper, .data = args};
+  acb = (async_callback){.do_stuff = client_set_gamerules_wrapper,
+						 .data = args};
 
   exec_async(&c->acq, &acb);
 }
 
-/* -------------------------------- 
+/* --------------------------------
    End execute set gamerules logic */
 
 
@@ -752,7 +761,7 @@ io_handle_event(client *c, event *e) {
 	  print_game_rules_info(c);
 	  printf("\n");
 	  print_player_turn(c, PRINT_PLAYER_TURN_SHOW_HAND_MODE_DEFAULT);
-	  break; 
+	  break;
 	case EVENT_STICH_DONE:
 	  if (e->stich_winner == c->cs.my_gupid) {
 		printf("You won the Stich! \\o/");
@@ -890,11 +899,11 @@ handle_console_input(void *v) {
 	  else MATCH_NUM_ARGS_END(reizen, "1 or 3")
 	}
 
-    // spiel <color> {modifier}
+	// spiel <color> {modifier}
 
 	else if (!command_equals(cmd, &result, 1, "spiel") && result) {
-	  game_rules/*z?*/ gr;
-	  memset (&gr, '\0', sizeof gr);
+	  game_rules /*z?*/ gr;
+	  memset(&gr, '\0', sizeof gr);
 	  if (cmd->args_length < 1) {
 		fprintf(stderr, "Usage: spiel <color> {modifier}\n");
 		goto command_cleanup;
@@ -903,41 +912,57 @@ handle_console_input(void *v) {
 	  if (!command_arg_equals(cmd, 0, 0, &result, 2, "null", "n") && result) {
 		gr.type = GAME_TYPE_NULL;
 		FOR_EACH_ARG_I(cmd, i, 1, {
-		  if (!command_arg_equals(cmd, 0, i, &result, 2, "hand", "h") && result) {
+		  if (!command_arg_equals(cmd, 0, i, &result, 2, "hand", "h")
+			  && result) {
 			gr.hand = 1;
-		  } else if (!command_arg_equals(cmd, 0, i, &result, 4, "ouvert", "overt", "ov", "o") && result) {
+		  } else if (!command_arg_equals(cmd, 0, i, &result, 4, "ouvert",
+										 "overt", "ov", "o")
+					 && result) {
 			gr.ouvert = 1;
 		  }
 		});
 	  }
 	  /* XXX: */
-	  else if ((!command_arg_equals(cmd, 0, 0, &result, 2, "grand", "g") 
-		        && result && (gr.type = GAME_TYPE_GRAND))
-		  || (!command_arg_equals(cmd, 0, 0, &result, 2, "kreuz", "kr") 
-		      && result && (gr.type = GAME_TYPE_COLOR) && (gr.trumpf = COLOR_KREUZ))
-		  || (!command_arg_equals(cmd, 0, 0, &result, 2, "pik", "p") 
-		      && result && (gr.type = GAME_TYPE_COLOR) && (gr.trumpf = COLOR_PIK)) 
-		  || (!command_arg_equals(cmd, 0, 0, &result, 2, "herz", "h") 
-		      && result && (gr.type = GAME_TYPE_COLOR) && (gr.trumpf = COLOR_HERZ)) 
-		  || (!command_arg_equals(cmd, 0, 0, &result, 2, "karo", "ka") 
-		      && result && (gr.type = GAME_TYPE_COLOR) && (gr.trumpf = COLOR_KARO))) {
+	  else if ((!command_arg_equals(cmd, 0, 0, &result, 2, "grand", "g")
+				&& result && (gr.type = GAME_TYPE_GRAND))
+			   || (!command_arg_equals(cmd, 0, 0, &result, 2, "kreuz", "kr")
+				   && result && (gr.type = GAME_TYPE_COLOR)
+				   && (gr.trumpf = COLOR_KREUZ))
+			   || (!command_arg_equals(cmd, 0, 0, &result, 2, "pik", "p")
+				   && result && (gr.type = GAME_TYPE_COLOR)
+				   && (gr.trumpf = COLOR_PIK))
+			   || (!command_arg_equals(cmd, 0, 0, &result, 2, "herz", "h")
+				   && result && (gr.type = GAME_TYPE_COLOR)
+				   && (gr.trumpf = COLOR_HERZ))
+			   || (!command_arg_equals(cmd, 0, 0, &result, 2, "karo", "ka")
+				   && result && (gr.type = GAME_TYPE_COLOR)
+				   && (gr.trumpf = COLOR_KARO))) {
 		FOR_EACH_ARG_I(cmd, i, 1, {
-		  if (!command_arg_equals(cmd, 0, i, &result, 4, "ouvert", "overt", "ov", "o") && result) {
+		  if (!command_arg_equals(cmd, 0, i, &result, 4, "ouvert", "overt",
+								  "ov", "o")
+			  && result) {
 			gr.ouvert = 1;
 			goto schwarz;
-		  } else if (!command_arg_equals(cmd, 0, i, &result, 2, "schwarz", "schw") && result) {
-		   schwarz:
+		  } else if (!command_arg_equals(cmd, 0, i, &result, 2, "schwarz",
+										 "schw")
+					 && result) {
+		  schwarz:
 			gr.schwarz_angesagt = 1;
 			goto schneider;
-		  } else if (!command_arg_equals(cmd, 0, i, &result, 2, "schneider", "schn") && result) {
-		   schneider:
+		  } else if (!command_arg_equals(cmd, 0, i, &result, 2, "schneider",
+										 "schn")
+					 && result) {
+		  schneider:
 			gr.schneider_angesagt = 1;
 			goto hand;
-		  } else if (!command_arg_equals(cmd, 0, i, &result, 2, "hand", "h") && result) {
-		   hand:
+		  } else if (!command_arg_equals(cmd, 0, i, &result, 2, "hand", "h")
+					 && result) {
+		  hand:
 			gr.hand = 1;
 		  } else {
-			fprintf(stderr, "Illegal modifier %s encountered in spiel command\n", cmd->args[i]);
+			fprintf(stderr,
+					"Illegal modifier %s encountered in spiel command\n",
+					cmd->args[i]);
 			goto command_cleanup;
 		  }
 		});
