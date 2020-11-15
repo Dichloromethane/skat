@@ -1,5 +1,6 @@
 #pragma once
 
+#include <stddef.h>
 #include <stdint.h>
 
 typedef enum card_color {
@@ -27,14 +28,6 @@ typedef struct card {
   card_color cc;// color
 } card;
 
-typedef uint8_t card_id;
-#define CARD_ID_MAX (72)
-
-int card_get_id(const card *, card_id *);
-int card_get(const card_id *, card *);
-int card_get_name(const card_id *, char *);
-int card_get_score(const card_id *, uint8_t *);
-
 typedef enum card_sort_mode {
   CARD_SORT_MODE_ID,
   CARD_SORT_MODE_PREGAME_HAND,
@@ -43,10 +36,17 @@ typedef enum card_sort_mode {
 } card_sort_mode;
 
 typedef struct game_rules game_rules;
-
 typedef struct {
   const game_rules *const gr;
   const card_sort_mode *const mode;
 } card_compare_args;
+
+typedef uint8_t card_id;
+#define CARD_ID_MAX (72)
+
+int card_get_id(const card *, card_id *);
+int card_get(const card_id *, card *);
+int card_get_name(const card_id *, char *);
+int card_get_score(const card_id *, uint8_t *);
 
 int card_compare(const card_id *, const card_id *, const card_compare_args *);

@@ -1,144 +1,12 @@
 #include "skat/console_input.h"
 #include "skat/card.h"
-#include "skat/card_collection.h"
-#include "skat/client.h"
+#include "skat/card_printer.h"
 #include "skat/command.h"
+#include "skat/game_rules.h"
 #include "skat/util.h"
-#include <errno.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <string.h>
-
-static void
-print_card_array(const card_id *const arr, const size_t length) {
-  char buf[4];
-
-  for (size_t i = 0; i < length; i++) {
-	card_get_name(&arr[i], buf);
-	printf(" %s(%d)", buf, arr[i]);
-  }
-}
-
-typedef enum card_color_mode {
-  CARD_COLOR_MODE_NONE,
-  CARD_COLOR_MODE_ONLY_CARD_COLOR,
-  CARD_COLOR_MODE_PLAYABLE
-} card_color_mode;
-
-#define RED_CARD_COLOR     "\e[31;1m"
-#define BLACK_CARD_COLOR   "\e[30;1m"
-#define PLAYABLE_COLOR     "\e[4m"
-#define NOT_PLAYABLE_COLOR ""
-
-static void
-print_card_collection(const client *const c, const card_collection *const cc,
-					  const card_sort_mode sort_mode,
-					  const card_color_mode color_mode) {
-  uint8_t count;
-  if (card_collection_get_card_count(cc, &count))
-	return;
-
-  card_id cid_array[count];// VLAaaaaaaaaaaaaaaaahhhhhhhhhhhh
-
-  uint8_t j = 0;
-  for (uint8_t i = 0; i < count; i++) {
-	card_id cid;
-	if (card_collection_get_card(cc, &i, &cid))
-	  continue;
-
-	cid_array[j++] = cid;
-  }
-
-  card_compare_args args =
-		  (card_compare_args){.gr = &c->cs.sgs.gr, .mode = &sort_mode};
-
-  qsort_r(cid_array, j, sizeof(card_id),
-		  (int (*)(const void *, const void *, void *)) card_compare, &args);
-
-  char buf[4];
-  card card;
-  for (uint8_t i = 0; i < j; i++) {
-	card_id *cid = &cid_array[i];
-
-	int error = card_get(cid, &card);
-	if (error)
-	  continue;
-
-	error = card_get_name(cid, buf);
-	if (error)
-	  continue;
-
-	if (color_mode == CARD_COLOR_MODE_PLAYABLE) {
-	  int is_playable;
-	  error = stich_card_legal(&c->cs.sgs.gr, &c->cs.sgs.curr_stich, cid, cc,
-							   &is_playable);
-	  if (error)
-		continue;
-
-	  printf(" %s%s%s(%d)" COLOR_CLEAR,
-			 is_playable ? PLAYABLE_COLOR : NOT_PLAYABLE_COLOR,
-			 (card.cc == COLOR_KREUZ || card.cc == COLOR_PIK) ? BLACK_CARD_COLOR
-															  : RED_CARD_COLOR,
-			 buf, *cid);
-	} else if (color_mode == CARD_COLOR_MODE_ONLY_CARD_COLOR) {
-	  printf(" %s%s(%d)" COLOR_CLEAR,
-			 (card.cc == COLOR_KREUZ || card.cc == COLOR_PIK) ? BLACK_CARD_COLOR
-															  : RED_CARD_COLOR,
-			 buf, *cid);
-	} else {
-	  printf(" %s(%d)", buf, *cid);
-	}
-  }
-}
-
-static void
-print_game_rules_info(client *c) {
-  game_rules *gr = &c->cs.sgs.gr;
-  printf("The game is ");
-  switch (gr->type) {
-	case GAME_TYPE_NULL:
-	  printf("Null");
-	  break;
-	case GAME_TYPE_GRAND:
-	  printf("Grand");
-	  break;
-	case GAME_TYPE_COLOR:
-	  switch (gr->trumpf) {
-		case COLOR_KREUZ:
-		  printf("Kreuz");
-		  break;
-		case COLOR_PIK:
-		  printf("Pik");
-		  break;
-		case COLOR_HERZ:
-		  printf("Herz");
-		  break;
-		case COLOR_KARO:
-		  printf("Karo");
-		  break;
-		default:
-		  printf("Dafuq");
-	  }
-	  break;
-	default:
-	  printf("Defuq");
-  }
-
-  if (gr->hand)
-	printf(" Hand");
-  if (gr->schneider_angesagt)
-	printf(" Schneider");
-  if (gr->schwarz_angesagt)
-	printf(" Schwarz");
-  if (gr->ouvert)
-	printf(" Ouvert");
-}
-
-typedef enum {
-  PRINT_PLAYER_TURN_SHOW_HAND_MODE_ALWAYS,
-  PRINT_PLAYER_TURN_SHOW_HAND_MODE_DEFAULT,
-  PRINT_PLAYER_TURN_SHOW_HAND_MODE_NEVER
-} print_player_turn_show_hand_mode;
 
 static void
 print_player_turn(const client *const c,
@@ -156,7 +24,8 @@ print_player_turn(const client *const c,
   if ((is_my_turn && mode != PRINT_PLAYER_TURN_SHOW_HAND_MODE_NEVER)
 	  || mode == PRINT_PLAYER_TURN_SHOW_HAND_MODE_ALWAYS) {
 	printf(" Your cards:");
-	print_card_collection(c, &c->cs.my_hand, CARD_SORT_MODE_INGAME_HAND,
+	print_card_collection(&c->cs.sgs, &c->cs.my_hand,
+						  CARD_SORT_MODE_INGAME_HAND,
 						  is_my_turn ? CARD_COLOR_MODE_PLAYABLE
 									 : CARD_COLOR_MODE_ONLY_CARD_COLOR);
   }
@@ -290,13 +159,11 @@ print_info_exec(void *p) {
   } else if (phase == GAME_PHASE_PLAY_STICH_C1
 			 || phase == GAME_PHASE_PLAY_STICH_C2
 			 || phase == GAME_PHASE_PLAY_STICH_C3) {
-	print_game_rules_info(c);
+	print_game_rules_info(&c->cs.sgs.gr);
 	printf("\n");
 
 	if (c->cs.ist_alleinspieler) {
-	  printf("You are playing alone, the skat was:");
-	  print_card_array(c->cs.skat, 2);
-	  printf("\n");
+	  printf("You are playing alone\n");
 	} else {
 	  printf("You are playing with %s\n",
 			 c->pls[c->cs.sgs.active_players[c->cs.my_partner]]->name);
@@ -306,12 +173,15 @@ print_info_exec(void *p) {
 	  printf("Last Stich (num=%d, vorhand=%s, winner=%s):", c->cs.sgs.stich_num,
 			 c->pls[c->cs.sgs.active_players[last_stich->vorhand]]->name,
 			 c->pls[c->cs.sgs.active_players[last_stich->winner]]->name);
-	  print_card_array(last_stich->cs, last_stich->played_cards);
+	  print_card_array(&c->cs.sgs, NULL, last_stich->cs,
+					   last_stich->played_cards,
+					   CARD_COLOR_MODE_ONLY_CARD_COLOR);
 	  printf("\n");
 	}
 	printf("Current Stich (num=%d, vorhand=%s):", c->cs.sgs.stich_num,
 		   c->pls[c->cs.sgs.active_players[stich->vorhand]]->name);
-	print_card_array(stich->cs, stich->played_cards);
+	print_card_array(&c->cs.sgs, NULL, stich->cs, stich->played_cards,
+					 CARD_COLOR_MODE_ONLY_CARD_COLOR);
 	printf("\n");
 
 	print_player_turn(c, PRINT_PLAYER_TURN_SHOW_HAND_MODE_ALWAYS);
@@ -323,23 +193,6 @@ print_info_exec(void *p) {
 
   client_release_state_lock(c);
 }
-
-typedef enum {
-  REIZEN_INVALID = 0,
-  REIZEN_CONFIRM,
-  REIZEN_PASSE,
-  REIZEN_NEXT,
-  REIZEN_VALUE_BASE
-} reizen_input_type;
-
-typedef struct {
-  client *c;
-  reizen_input_type rit;
-} exec_reizen_wrapper_args;
-
-typedef struct {
-  client_action_callback_hdr hdr;
-} client_reizen_callback_args;
 
 static void
 client_reizen_callback(void *v) {
@@ -411,24 +264,6 @@ execute_reizen(client *c, reizen_input_type rit) {
   exec_async(&c->acq, &acb);
 }
 
-typedef enum {
-  SKAT_INVALID = 0,
-  SKAT_TAKE,
-  SKAT_LEAVE,
-  SKAT_PRESS
-} skat_input_type;
-
-typedef struct {
-  client *c;
-  skat_input_type sit;
-  card_id cid1;
-  card_id cid2;
-} exec_skat_wrapper_args;
-
-typedef struct {
-  client_action_callback_hdr hdr;
-} client_skat_callback_args;
-
 static void
 client_skat_callback(void *v) {
   client_skat_callback_args *csca;
@@ -448,9 +283,11 @@ client_skat_callback(void *v) {
   switch (csca->hdr.e.type) {
 	case EVENT_SKAT_TAKE:
 	  printf("YOU took the skat. It contained:");
-	  print_card_array(csca->hdr.e.skat, 2);
+	  print_card_array(&csca->hdr.c->cs.sgs, NULL, csca->hdr.e.skat, 2,
+					   CARD_COLOR_MODE_ONLY_CARD_COLOR);
 	  printf("\nYour hand:");
-	  print_card_collection(c, &c->cs.my_hand, CARD_SORT_MODE_PREGAME_HAND,
+	  print_card_collection(&csca->hdr.c->cs.sgs, &c->cs.my_hand,
+							CARD_SORT_MODE_PREGAME_HAND,
 							CARD_COLOR_MODE_ONLY_CARD_COLOR);
 	  break;
 	case EVENT_SKAT_LEAVE:
@@ -459,7 +296,8 @@ client_skat_callback(void *v) {
 	  break;
 	case EVENT_SKAT_PRESS:
 	  printf("YOU pressed:");
-	  print_card_array(csca->hdr.e.skat_press_cards, 2);
+	  print_card_array(&csca->hdr.c->cs.sgs, NULL, csca->hdr.e.skat_press_cards,
+					   2, CARD_COLOR_MODE_ONLY_CARD_COLOR);
 	  printf("\nPlease make your Spielansage ohne Hand");
 	  break;
 	default:
@@ -520,10 +358,6 @@ execute_skat(client *c, skat_input_type sit, card_id cid1, card_id cid2) {
   exec_async(&c->acq, &acb);
 }
 
-typedef struct {
-  client_action_callback_hdr hdr;
-} client_ready_callback_args;
-
 static void
 client_ready_callback(void *v) {
   client_ready_callback_args *args = v;
@@ -559,15 +393,6 @@ execute_ready(client *c) {
 /* Begin execute set gamerules logic
    -------------------------------- */
 
-struct client_set_gamerules_args {
-  client *c;
-  game_rules gr;
-};
-
-typedef struct {
-  client_action_callback_hdr hdr;
-} client_set_gamerules_callback_args;
-
 static void
 client_set_gamerules_callback(void *v) {
   __label__ end;
@@ -583,7 +408,7 @@ client_set_gamerules_callback(void *v) {
 	goto end;
   }
 
-  print_game_rules_info(args->hdr.c);
+  print_game_rules_info(&args->hdr.c->cs.sgs.gr);
   printf("\nThe game is on.\n");
 
   print_player_turn(args->hdr.c, PRINT_PLAYER_TURN_SHOW_HAND_MODE_DEFAULT);
@@ -631,15 +456,6 @@ execute_set_gamerules(client *c, game_rules *gr) {
 /* Begin execute play card logic
    -------------------------------- */
 
-struct client_play_card_args {
-  client *c;
-  card_id cid;
-};
-
-typedef struct {
-  client_action_callback_hdr hdr;
-} client_play_card_callback_args;
-
 static void
 client_play_card_callback(void *v) {
   __label__ end;
@@ -658,12 +474,22 @@ client_play_card_callback(void *v) {
   char buf[4];
   card_get_name(&args->hdr.e.card, buf);
   printf("Successfully played card %s. Cards currently on table:", buf);
-  if (args->hdr.c->cs.sgs.curr_stich.played_cards > 0)
-	print_card_array(args->hdr.c->cs.sgs.curr_stich.cs,
-					 args->hdr.c->cs.sgs.curr_stich.played_cards);
-  else
-	print_card_array(args->hdr.c->cs.sgs.last_stich.cs,
-					 args->hdr.c->cs.sgs.last_stich.played_cards);
+  if (args->hdr.c->cs.sgs.curr_stich.played_cards > 0) {
+	print_card_array(&args->hdr.c->cs.sgs, NULL,
+					 args->hdr.c->cs.sgs.curr_stich.cs,
+					 args->hdr.c->cs.sgs.curr_stich.played_cards,
+					 CARD_COLOR_MODE_ONLY_CARD_COLOR);
+  } else {
+	print_card_array(&args->hdr.c->cs.sgs, NULL,
+					 args->hdr.c->cs.sgs.last_stich.cs,
+					 args->hdr.c->cs.sgs.last_stich.played_cards,
+					 CARD_COLOR_MODE_ONLY_CARD_COLOR);
+  }
+
+  if (args->hdr.c->cs.sgs.curr_stich.played_cards < 3) {
+	printf("\n");
+	print_player_turn(args->hdr.c, PRINT_PLAYER_TURN_SHOW_HAND_MODE_DEFAULT);
+  }
 
 end:
   printf("\n> ");
@@ -722,7 +548,8 @@ io_handle_event(client *c, event *e) {
   switch (e->type) {
 	case EVENT_DISTRIBUTE_CARDS:
 	  printf("Your hand:");
-	  print_card_collection(c, &c->cs.my_hand, CARD_SORT_MODE_PREGAME_HAND,
+	  print_card_collection(&c->cs.sgs, &c->cs.my_hand,
+							CARD_SORT_MODE_PREGAME_HAND,
 							CARD_COLOR_MODE_ONLY_CARD_COLOR);
 	  printf("\n");
 	  print_reizen_info(c, e);
@@ -749,16 +576,21 @@ io_handle_event(client *c, event *e) {
 	  card_get_name(&e->card, buf);
 	  printf("Card %s played. Cards currently on table:", buf);
 	  if (c->cs.sgs.curr_stich.played_cards > 0) {
-		print_card_array(c->cs.sgs.curr_stich.cs,
-						 c->cs.sgs.curr_stich.played_cards);
+		print_card_array(&c->cs.sgs, NULL, c->cs.sgs.curr_stich.cs,
+						 c->cs.sgs.curr_stich.played_cards,
+						 CARD_COLOR_MODE_ONLY_CARD_COLOR);
+	  } else {
+		print_card_array(&c->cs.sgs, NULL, c->cs.sgs.last_stich.cs,
+						 c->cs.sgs.last_stich.played_cards,
+						 CARD_COLOR_MODE_ONLY_CARD_COLOR);
+	  }
+	  if (c->cs.sgs.curr_stich.played_cards < 3) {
 		printf("\n");
 		print_player_turn(c, PRINT_PLAYER_TURN_SHOW_HAND_MODE_DEFAULT);
-	  } else
-		print_card_array(c->cs.sgs.last_stich.cs,
-						 c->cs.sgs.last_stich.played_cards);
+	  }
 	  break;
 	case EVENT_GAME_CALLED:
-	  print_game_rules_info(c);
+	  print_game_rules_info(&c->cs.sgs.gr);
 	  printf("\n");
 	  print_player_turn(c, PRINT_PLAYER_TURN_SHOW_HAND_MODE_DEFAULT);
 	  break;
@@ -830,7 +662,7 @@ handle_console_input(void *v) {
 	command *cmd;
 	int error = command_create(&cmd, line, read);
 	if (error) {
-	  printf("Invalid command (error %d): %s", error, line);
+	  printf("Invalid command (error %d): '%s'", error, line);
 	  continue;
 	}
 

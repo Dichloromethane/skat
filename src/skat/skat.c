@@ -1094,11 +1094,6 @@ skat_resync_player(skat_server_state *ss, skat_client_state *cs, player *pl) {
 	else
 	  cs->my_partner = 3;
   }
-
-  // TODO: implement schieberamsch
-  if (cs->ist_alleinspieler == 1 && cs->sgs.gr.type != GAME_TYPE_RAMSCH) {
-	memcpy(cs->skat, ss->skat, sizeof(cs->skat));
-  }
 }
 
 void

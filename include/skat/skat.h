@@ -81,7 +81,6 @@ typedef struct skat_client_state {
   int my_active_player_index;// active_player
   int my_partner;            // active_player
   int ist_alleinspieler;
-  card_id skat[2];
 } skat_client_state;
 
 typedef struct skat_server_state {

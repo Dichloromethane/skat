@@ -18,3 +18,5 @@ typedef struct game_rules {
   unsigned schwarz_angesagt : 1;
   unsigned ouvert : 1;
 } game_rules;
+
+void print_game_rules_info(const game_rules *gr);
