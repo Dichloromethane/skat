@@ -1,0 +1,20 @@
+name: build
+
+on: ["push", "pull_request"]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out the Repository
+        uses: actions/checkout@master
+
+      - name: Install dependencies
+        run: |
+          apt-get update
+          apt-get install -y libglfw3-dev libfreetype-dev g++
+
+      - name: Run Build
+        run: |
+          make all
