@@ -4,7 +4,7 @@ on: ["push", "pull_request"]
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
 
     steps:
       - name: Check out the Repository
@@ -13,7 +13,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libglfw3-dev libfreetype6-dev g++
+          sudo apt-get install -y libglfw3-dev libfreetype-dev g++
 
       - name: Run Build
         run: |
