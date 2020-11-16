@@ -53,10 +53,10 @@ OBJ=$(SKAT_OBJ) $(SERVER_OBJ) $(CLIENT_OBJ)
 
 DEP=$(OBJ:.o=.d)
 
- 
+
 .PHONY: default all png clean distclean
 
-default: all 
+default: all
 
 all: skat_server skat_client
 
@@ -71,6 +71,12 @@ $(OBJ): $(BUILDDIR)%.o: $(SOURCEDIR)%.c Makefile | $(BUILDDIRS)
 
 $(BUILDDIRS):
 	mkdir -p $@
+
+bear: $(BUILDDIR)/compile_commands.json
+
+$(BUILDDIR)/compile_commands.json: $(BUILDDIR) Makefile
+	$(MAKE) clean
+	bear -o build/compile_commands.json $(MAKE) all
 
 distclean: clean
 	$(RM) skat_server skat_client

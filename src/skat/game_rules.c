@@ -1,5 +1,3 @@
-#pragma once
-
 #include "skat/game_rules.h"
 #include <stdio.h>
 

@@ -53,7 +53,8 @@ print_reizen_info(client *c, event *e) {
   } else if (rs->rphase == REIZ_PHASE_WINNER) {
 	teller_gupid = c->cs.sgs.active_players[rs->winner];
 	listener_gupid = -1;
-  }
+  } else
+    __builtin_unreachable();
 
   int is_actor = c->cs.my_gupid == e->acting_player;
   player *actor = e->acting_player == -1 ? NULL : c->pls[e->acting_player];
@@ -413,7 +414,7 @@ client_set_gamerules_callback(void *v) {
 
   print_player_turn(args->hdr.c, PRINT_PLAYER_TURN_SHOW_HAND_MODE_DEFAULT);
 
-end:
+ end:
   printf("\n> ");
   fflush(stdout);
   client_release_state_lock(args->hdr.c);
