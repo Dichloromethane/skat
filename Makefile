@@ -59,8 +59,8 @@ OBJ=$(SKAT_OBJ) $(SERVER_OBJ) $(CLIENT_OBJ)
 
 DEP=$(OBJ:.o=.d)
 
-REBUILDING_MARKER=$(BUILDDIR)/.rebuilding_marker
-REBUILDING_RULE=$(BUILDDIR)/.rebuilding_rule_marker
+REBUILDING_MARKER=$(BUILDDIR).rebuilding_marker
+REBUILDING_RULE=$(BUILDDIR).rebuilding_rule_marker
 ARTIFICIAL=$(REBUILDING_RULE) $(REBUILDING_MARKER)
 
 .PHONY: default all png clean distclean bear all_ cond
