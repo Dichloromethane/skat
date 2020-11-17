@@ -70,7 +70,9 @@ default: all
 all: cond
 
 NEW_SOURCES:=$(filter-out $(file <$(BEAR_REBUILD_FILE)), $(EVERYTHING))
-BEAR_TARGET:=$(if $(NEW_SOURCES), with_new_files, without_new_files)
+REMOVED_SOURCES:=$(filter-out $(EVERYTHING), $(file <$(BEAR_REBUILD_FILE)))
+CHANGED_SOURCES:=$(NEW_SOURCES)$(REMOVED_SOURCES)
+BEAR_TARGET:=$(if $(CHANGED_SOURCES), with_new_files, without_new_files)
 
 cond: $(BEAR_TARGET)
 
@@ -113,11 +115,12 @@ bear:: | $(BUILDDIRS)
 
 clean:
 	$(RM) $(DEP) $(OBJ)
+	$(RM) $(COMP_COMMANDS)
 	$(RM) $(ARTIFICIAL)
 
 distclean: clean
 	$(RM) -r $(BUILDDIRS)
-	$(RM) -r dep_graph.png
+	$(RM) dep_graph.png
 	$(RM) skat_server skat_client
 
 format: $(SOURCE) $(HEADER) $(XMACROS)
