@@ -72,11 +72,11 @@ $(OBJ): $(BUILDDIR)%.o: $(SOURCEDIR)%.c Makefile | $(BUILDDIRS)
 $(BUILDDIRS):
 	mkdir -p $@
 
-bear: $(BUILDDIR)/compile_commands.json
+bear: $(BUILDDIR)compile_commands.json
 
-$(BUILDDIR)/compile_commands.json: $(BUILDDIR) Makefile
+$(BUILDDIR)compile_commands.json: $(BUILDDIR) Makefile
 	$(MAKE) clean
-	bear -o build/compile_commands.json $(MAKE) all
+	bear -o $(BUILDDIR)compile_commands.json $(MAKE) all
 
 distclean: clean
 	$(RM) skat_server skat_client
