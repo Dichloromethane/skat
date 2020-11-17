@@ -39,6 +39,8 @@ SKAT_BUILDDIR=$(BUILDDIR)skat/
 SERVER_BUILDDIR=$(BUILDDIR)server/
 CLIENT_BUILDDIR=$(BUILDDIR)client/
 BUILDDIRS=$(SKAT_BUILDDIR) $(SERVER_BUILDDIR) $(CLIENT_BUILDDIR) $(BUILDDIR)
+COMP_COMMANDS=$(BUILDDIR)/compile_commands.json
+BEAR_REBUILD_FILE=$(BUILDDIR)/bear_sources
 
 SKAT_SOURCE=$(wildcard $(SKAT_SOURCEDIR)*.c)
 SERVER_SOURCE=$(wildcard $(SERVER_SOURCEDIR)*.c)
@@ -48,6 +50,8 @@ SOURCE=$(SKAT_SOURCE) $(SERVER_SOURCE) $(CLIENT_SOURCE)
 HEADER=$(wildcard $(addsuffix *.h,$(INCLUDEDIR))) $(wildcard $(SKAT_INCLUDEDIR)*.h) $(wildcard $(SERVER_INCLUDEDIR)*.h) $(wildcard $(CLIENT_INCLUDEDIR)*.h)
 XMACROS=$(wildcard $(XMACROSDIR)*.def)
 
+EVERYTHING=$(SOURCE) $(HEADER) $(XMACROS)
+
 SKAT_OBJ=$(patsubst $(SOURCEDIR)%,$(BUILDDIR)%,$(SKAT_SOURCE:.c=.o))
 SERVER_OBJ=$(patsubst $(SOURCEDIR)%,$(BUILDDIR)%,$(SERVER_SOURCE:.c=.o))
 CLIENT_OBJ=$(patsubst $(SOURCEDIR)%,$(BUILDDIR)%,$(CLIENT_SOURCE:.c=.o))
@@ -55,12 +59,26 @@ OBJ=$(SKAT_OBJ) $(SERVER_OBJ) $(CLIENT_OBJ)
 
 DEP=$(OBJ:.o=.d)
 
+REBUILDING_MARKER=$(BUILDDIR)/.rebuilding_marker
+REBUILDING_RULE=$(BUILDDIR)/.rebuilding_rule_marker
+ARTIFICIAL=$(REBUILDING_RULE) $(REBUILDING_MARKER)
 
-.PHONY: default all png clean distclean bear
+.PHONY: default all png clean distclean bear all_ cond
 
 default: all
 
-all: skat_server skat_client
+all: cond
+
+NEW_SOURCES:=$(filter-out $(file <$(BEAR_REBUILD_FILE)), $(EVERYTHING))
+BEAR_TARGET:=$(if $(NEW_SOURCES), with_new_files, without_new_files)
+
+cond: $(BEAR_TARGET)
+
+with_new_files: bear
+	echo "$(EVERYTHING)" > $(BEAR_REBUILD_FILE)
+without_new_files: comp_
+
+all_: skat_server skat_client
 
 skat_server: $(SKAT_OBJ) $(SERVER_OBJ)
 	$(CC) $(CFLAGS) $(LDFLAGS) $^ $(LDLIBS_SERVER) -o $@
@@ -74,17 +92,33 @@ $(OBJ): $(BUILDDIR)%.o: $(SOURCEDIR)%.c Makefile | $(BUILDDIRS)
 $(BUILDDIRS):
 	mkdir -p $@
 
-bear:
-	$(MAKE) clean
-	mkdir -p $(BUILDDIR)
-	bear -o $(BUILDDIR)compile_commands.json $(MAKE) all
+comp_:: $(COMP_COMMANDS)
+comp_:: $(REBUILDING_RULE)
+comp_:: delete_marker
 
-distclean: clean
-	$(RM) skat_server skat_client
+$(COMP_COMMANDS): Makefile 
+	$(MAKE) bear
+	touch $(REBUILDING_MARKER)
+	touch $(REBUILDING_RULE)
+$(REBUILDING_RULE): $(REBUILDING_MARKER)
+	$(MAKE) all_
+$(REBUILDING_MARKER):
+	touch $(REBUILDING_MARKER)
+delete_marker:
+	$(RM) $(REBUILDING_RULE) $(REBUILDING_MARKER)
+
+bear:: clean
+bear:: | $(BUILDDIRS)
+	bear -o $(COMP_COMMANDS) $(MAKE) all_
 
 clean:
-	$(RM) $(DEP) $(OBJ) dep_graph.png
-	rm -rf $(BUILDDIRS)
+	$(RM) $(DEP) $(OBJ)
+	$(RM) $(ARTIFICIAL)
+
+distclean: clean
+	$(RM) -r $(BUILDDIRS)
+	$(RM) -r dep_graph.png
+	$(RM) skat_server skat_client
 
 format: $(SOURCE) $(HEADER) $(XMACROS)
 	clang-format -i $^
