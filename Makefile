@@ -32,6 +32,8 @@ SKAT_SOURCEDIR=$(SOURCEDIR)skat/
 SERVER_SOURCEDIR=$(SOURCEDIR)server/
 CLIENT_SOURCEDIR=$(SOURCEDIR)client/
 
+# All build directories will be deleted when executing "clean".
+# Do NOT set this to the same directory as your code!
 BUILDDIR=build/
 SKAT_BUILDDIR=$(BUILDDIR)skat/
 SERVER_BUILDDIR=$(BUILDDIR)server/
@@ -54,7 +56,7 @@ OBJ=$(SKAT_OBJ) $(SERVER_OBJ) $(CLIENT_OBJ)
 DEP=$(OBJ:.o=.d)
 
 
-.PHONY: default all png clean distclean
+.PHONY: default all png clean distclean bear
 
 default: all
 
@@ -72,10 +74,9 @@ $(OBJ): $(BUILDDIR)%.o: $(SOURCEDIR)%.c Makefile | $(BUILDDIRS)
 $(BUILDDIRS):
 	mkdir -p $@
 
-bear: $(BUILDDIR)compile_commands.json
-
-$(BUILDDIR)compile_commands.json: $(BUILDDIR) Makefile
+bear:
 	$(MAKE) clean
+	mkdir -p $(BUILDDIR)
 	bear -o $(BUILDDIR)compile_commands.json $(MAKE) all
 
 distclean: clean
@@ -83,7 +84,7 @@ distclean: clean
 
 clean:
 	$(RM) $(DEP) $(OBJ) dep_graph.png
-	-rmdir $(BUILDDIRS)
+	rm -rf $(BUILDDIRS)
 
 format: $(SOURCE) $(HEADER) $(XMACROS)
 	clang-format -i $^
@@ -92,6 +93,6 @@ ctags: $(SOURCE) $(HEADER) $(XMACROS)
 	ctags --extra=+f --c-kinds=+p --tag-relative=yes -o .tags -R $^
 
 png:
-	./$(TOOLSDIR)dep_graph.sh -o dep_graph.png -s $(SOURCEDIR) -s $(INCLUDEDIR)
+	./$(TOOLSDIR)dep_graph.sh -o dep_graph.png -s $(SOURCEDIR) -s $(INCLUDEDIR) -s $(XMACROSDIR)
 
 -include $(DEP)
