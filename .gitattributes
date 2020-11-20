@@ -1,3 +1,6 @@
 *.sh text eol=lf
 Makefile text eol=lf
 .clang-format text eol=lf
+*.c diff=cpp
+*.h diff=cpp
+*.def diff=cpp
