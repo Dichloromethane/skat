@@ -3,6 +3,7 @@
 #include "conf.h"
 #include <assert.h>
 #include <pthread.h>
+#include <stdarg.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -15,6 +16,14 @@
 size_t util_rand_int(size_t min, size_t max);
 size_t round_to_next_pow2(size_t n);
 void perm(int *, int, int);
+
+#define THREAD_NAME_SIZE (16)
+
+int thread_get_name(pthread_t t, char *name_buffer);
+int thread_get_name_self(char *name_buffer);
+int thread_set_name_va(pthread_t t, const char *name_fmt, va_list ap);
+int thread_set_name(pthread_t t, const char *name_fmt, ...);
+int thread_set_name_self(const char *name_fmt, ...);
 
 #define COLOR_CLEAR "\e[0m"
 

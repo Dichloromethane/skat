@@ -1,5 +1,5 @@
-
 #include <assert.h>
+#include <pthread.h>
 
 /*
 Arguments:
@@ -81,16 +81,16 @@ void LL_PREFIX(create)(LL_TNAME *l) LL_COND_BLOCK({
 
 int LL_PREFIX(insert)(LL_TNAME *l, TYPE *t) LL_COND_BLOCK({
   int ret;
-  LL_T_ENTRY *new;
+  LL_T_ENTRY *new_entry;
 
   LL_LOCK(l);
 
   if (l->free_top == -1)
 	LL_PREFIX(resize_buffer)(l);
-  new = &l->buf[l->free_top];
+  new_entry = &l->buf[l->free_top];
   ret = l->free_top;
-  l->free_top = new->next;
-  *new = ((LL_T_ENTRY){.t = *t, .next = -2});
+  l->free_top = new_entry->next;
+  *new_entry = ((LL_T_ENTRY){.t = *t, .next = -2});
 
   LL_UNLOCK(l);
 

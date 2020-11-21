@@ -2,10 +2,15 @@
 
 #define NETWORK_PROTOCOL_VERSION (1u)
 
-#define DEFAULT_PORT            (55555)
-#define DEFAULT_HOST            "localhost"
-#define SERVER_REFRESH_RATE     (2)
-#define CLIENT_REFRESH_RATE     (2)
+#define DEFAULT_PORT (55555)
+#define DEFAULT_HOST "localhost"
+
+// in Hz
+#define SERVER_REFRESH_RATE (1)
+
+// in Hz
+#define CLIENT_REFRESH_RATE (1)
+
 #define CONSOLE_INPUT           1
 #define DISTRIBUTE_SORTED_CARDS 0
 

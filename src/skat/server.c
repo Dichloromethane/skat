@@ -135,20 +135,26 @@ server_disconnect_connection(server *s, connection_s2c *c) {
 
 void
 server_acquire_state_lock(server *s) {
-  DPRINTF_COND(DEBUG_LOCK, "Acquiring server state lock from thread %lu",
-			   pthread_self());
+  char thread_name_buf[THREAD_NAME_SIZE];
+  thread_get_name_self(thread_name_buf);
+
+  DPRINTF_COND(DEBUG_LOCK, "Acquiring server state lock from thread '%s'",
+			   thread_name_buf);
   pthread_mutex_lock(&s->lock);
-  DPRINTF_COND(DEBUG_LOCK, "Acquired server state lock from thread %lu",
-               pthread_self());
+  DPRINTF_COND(DEBUG_LOCK, "Acquired server state lock from thread '%s'",
+			   thread_name_buf);
 }
 
 void
 server_release_state_lock(server *s) {
-  DPRINTF_COND(DEBUG_LOCK, "Releasing server state lock from thread %lu",
-               pthread_self());
+  char thread_name_buf[THREAD_NAME_SIZE];
+  thread_get_name_self(thread_name_buf);
+
+  DPRINTF_COND(DEBUG_LOCK, "Releasing server state lock from thread '%s'",
+			   thread_name_buf);
   pthread_mutex_unlock(&s->lock);
-  DPRINTF_COND(DEBUG_LOCK, "Released server state lock from thread %lu",
-               pthread_self());
+  DPRINTF_COND(DEBUG_LOCK, "Released server state lock from thread '%s'",
+			   thread_name_buf);
 }
 
 size_t
@@ -266,6 +272,7 @@ server_handler(void *args) {
 			   hargs->conn_fd);
 
   pthread_create(&event_sender, NULL, server_conn_event_sender, conn);
+  thread_set_name(event_sender, "sv_evsdr %d", hargs->conn_fd);
 
   for (;;) {
 	if (!conn_handle_incoming_packages_server(hargs->s, conn)) {
@@ -301,7 +308,9 @@ server_listener(void *args) {
 	hargs->s = s;
 	hargs->conn_fd = conn_fd;
 	DEBUG_PRINTF("Received connection %d", conn_fd);
+
 	pthread_create(&handler_thread, NULL, server_handler, hargs);
+	thread_set_name(handler_thread, "svcn_hdlr %d", hargs->conn_fd);
   }
 }
 
@@ -333,6 +342,7 @@ server_start_conn_listener(server *s, int p) {
   }
 
   pthread_create(&s->conn_listener, NULL, server_listener, s);
+  thread_set_name(s->conn_listener, "sv_lstnr");
 }
 
 static void server_start_interrupt_handler_thread(server *s);
@@ -388,6 +398,7 @@ server_start_interrupt_handler_thread(server *s) {
   }
 
   pthread_create(&s->signal_listener, NULL, server_signal_handler, s);
+  thread_set_name(s->signal_listener, "sv_sig_lstnr");
 }
 
 void
@@ -396,6 +407,7 @@ server_init(server *s, int port) {
   memset(s, '\0', sizeof(server));
   pthread_mutex_init(&s->lock, NULL);
   s->port = port;
+  thread_set_name_self("sv_main");
   server_skat_state_init(&s->ss);
   server_start_interrupt_handler_thread(s);
 }
@@ -407,8 +419,8 @@ server_tick_wrap(void *s) {
 
 _Noreturn void
 server_run(server *s) {
-  ctimer_create(&s->tick_timer, s, server_tick_wrap,
-				(1000 * 1000 * 1000) / SERVER_REFRESH_RATE);// in Hz
+  long nsecs = (1000L * 1000L * 1000L) / SERVER_REFRESH_RATE;
+  ctimer_create(&s->tick_timer, "sv_tick", s, server_tick_wrap, nsecs);
 
   server_acquire_state_lock(s);
   server_start_conn_listener(s, s->port);

@@ -42,20 +42,26 @@ client_prepare_exit(client *c) {
 
 void
 client_acquire_state_lock(client *c) {
-  DPRINTF_COND(DEBUG_LOCK, "Acquiring client state lock from thread %lu",
-			   pthread_self());
+  char thread_name_buf[THREAD_NAME_SIZE];
+  thread_get_name_self(thread_name_buf);
+
+  DPRINTF_COND(DEBUG_LOCK, "Acquiring client state lock from thread '%s'",
+			   thread_name_buf);
   pthread_mutex_lock(&c->lock);
-  DPRINTF_COND(DEBUG_LOCK, "Acquired client state lock from thread %lu",
-			   pthread_self());
+  DPRINTF_COND(DEBUG_LOCK, "Acquired client state lock from thread '%s'",
+			   thread_name_buf);
 }
 
 void
 client_release_state_lock(client *c) {
-  DPRINTF_COND(DEBUG_LOCK, "Releasing client state lock from thread %lu",
-			   pthread_self());
+  char thread_name_buf[THREAD_NAME_SIZE];
+  thread_get_name_self(thread_name_buf);
+
+  DPRINTF_COND(DEBUG_LOCK, "Releasing client state lock from thread '%s'",
+			   thread_name_buf);
   pthread_mutex_unlock(&c->lock);
-  DPRINTF_COND(DEBUG_LOCK, "Released client state lock from thread %lu",
-			   pthread_self());
+  DPRINTF_COND(DEBUG_LOCK, "Released client state lock from thread '%s'",
+			   thread_name_buf);
 }
 
 typedef struct {
@@ -89,12 +95,14 @@ client_conn_thread(void *args) {
   }
 
   pthread_create(&action_sender, NULL, client_conn_action_sender, conn);
+  thread_set_name(action_sender, "cl_acsdr");
 
   for (;;) {
 	if (!conn_handle_incoming_packages_client(cargs->c, conn)) {
 	  goto ret;
 	}
   }
+
 ret:
   DERROR_PRINTF("Returning from function it shouldn't be possible to return "
 				"from. Damn");
@@ -157,6 +165,7 @@ start_client_conn(client *c, const char *host, int p, int resume) {
   args->resume = resume;
 
   pthread_create(&c->conn_thread, NULL, client_conn_thread, args);
+  thread_set_name(c->conn_thread, "clcn_hdlr");
 }
 
 _Noreturn static void *
@@ -173,11 +182,13 @@ client_exec_async_handler(void *args) {
 static void
 start_exec_async_thread(client *c) {
   pthread_create(&c->exec_async_handler, NULL, client_exec_async_handler, c);
+  thread_set_name(c->exec_async_handler, "cl_async_hdlr");
 }
 
 static void
 start_io_thread(client *c) {
   pthread_create(&c->io_handler, NULL, handle_console_input, c);
+  thread_set_name(c->io_handler, "cl_io_hdlr");
 }
 
 static int
@@ -492,6 +503,7 @@ client_start_interrupt_handler_thread(client *c) {
   }
 
   pthread_create(&c->signal_listener, NULL, client_signal_handler, c);
+  thread_set_name(c->signal_listener, "cl_sig_lstnr");
 }
 
 void
@@ -504,6 +516,7 @@ client_init(client *c, char *host, int port, char *name) {
   c->host = host;
   c->port = port;
   c->name = name;
+  thread_set_name_self("cl_main");
   client_skat_state_init(&c->cs);
   client_start_interrupt_handler_thread(c);
 }
@@ -517,8 +530,8 @@ _Noreturn void
 client_run(client *c, int resume) {
   ctimer t;
 
-  ctimer_create(&t, c, client_tick_wrap,
-				(1000 * 1000 * 1000) / CLIENT_REFRESH_RATE);// in Hz
+  long nsecs = (1000L * 1000L * 1000L) / CLIENT_REFRESH_RATE;
+  ctimer_create(&t, "cl_tick", c, client_tick_wrap, nsecs);
 
   DEBUG_PRINTF("Running client with with connection mode '%s'",
 			   resume ? "resume" : "new");

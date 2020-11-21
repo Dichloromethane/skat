@@ -2,6 +2,7 @@
 #include "skat/util.h"
 #include <pthread.h>
 #include <signal.h>
+#include <string.h>
 #include <time.h>
 
 static void
@@ -13,10 +14,14 @@ ctimer_tick(sigval_t sv) {
 }
 
 void
-ctimer_create(ctimer *t, void *arg, void (*timerf)(void *), int nsecs) {
+ctimer_create(ctimer *t, const char *name, void *arg, void (*timerf)(void *),
+			  long nsecs) {
   struct sigevent sev;
 
   DEBUG_PRINTF("Creating timer");
+
+  strncpy(t->name, name, THREAD_NAME_SIZE);
+  t->name[THREAD_NAME_SIZE - 1] = '\0';
 
   t->close = 0;
   t->timerf = timerf;
@@ -46,7 +51,7 @@ void
 ctimer_run(ctimer *t) {
   struct itimerspec itspec;
 
-  DEBUG_PRINTF("Setting timer to %d", t->nsecs);
+  DEBUG_PRINTF("Setting timer to %ld ns", t->nsecs);
   itspec.it_interval.tv_nsec = t->nsecs;
   itspec.it_interval.tv_sec = 0;
   itspec.it_value.tv_nsec = 0;
@@ -55,6 +60,8 @@ ctimer_run(ctimer *t) {
   ERRNO_CHECK(timer_settime(t->timer_id, 0, &itspec, NULL));
 
   pthread_create(&t->tid, NULL, ctimer_handler, t);
+  thread_set_name(t->tid, "%s", t->name);
+
   DEBUG_PRINTF("Started Timer");
 }
 
