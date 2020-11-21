@@ -6,10 +6,10 @@
 #define DEFAULT_HOST "localhost"
 
 // in Hz
-#define SERVER_REFRESH_RATE (1)
+#define SERVER_REFRESH_RATE (2)
 
 // in Hz
-#define CLIENT_REFRESH_RATE (1)
+#define CLIENT_REFRESH_RATE (2)
 
 #define CONSOLE_INPUT           1
 #define DISTRIBUTE_SORTED_CARDS 0

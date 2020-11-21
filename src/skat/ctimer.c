@@ -20,6 +20,11 @@ ctimer_create(ctimer *t, const char *name, void *arg, void (*timerf)(void *),
 
   DEBUG_PRINTF("Creating timer");
 
+  if (nsecs < 0 || nsecs > 999999999) {
+	DERROR_PRINTF("nsecs out of range");
+	exit(EXIT_FAILURE);
+  }
+
   strncpy(t->name, name, THREAD_NAME_SIZE);
   t->name[THREAD_NAME_SIZE - 1] = '\0';
 
