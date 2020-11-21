@@ -18,7 +18,7 @@ get_random_fd() {
   static int random_fd = -1;
 
   if (random_fd == -1) {
-	DEBUG_PRINTF("Opening /dev/urandom");
+	DEBUG_PRINTF("Opening '/dev/urandom'");
 	random_fd = open("/dev/urandom", O_RDONLY);
 	if (random_fd == -1) {
 	  perror("Error while accessing '/dev/urandom'");
