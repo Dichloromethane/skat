@@ -1,7 +1,11 @@
 #include "skat/skat.h"
+#include "skat/card_collection.h"
 #include "skat/client.h"
+#include "skat/game_rules.h"
 #include "skat/server.h"
 #include "skat/util.h"
+#include <stdbool.h>
+#include <stdint.h>
 #include <string.h>
 
 #undef SKAT_HDR
@@ -19,9 +23,96 @@ skat_state_notify_join(skat_server_state *ss, player *pl, server *s) {
   DTODO_PRINTF("TODO: implement notify_join");// TODO: implement
 }
 
+static int
+get_score_delta_normal_game(game_rules *gs, reiz_state *rs, uint64_t game_value,
+							bool *won, loss_type *lt) {
+  int grundwert;
+  // TODO: Make sense of the skat rules
+  if (!*won) {
+	return -2 * game_value;
+	*lt = LOSS_TYPE_LOST;
+  }
+  if (rs->reizwert > game_value) {
+	grundwert = reizen_get_grundwert(gs);
+	*won = false;
+	*lt = LOSS_TYPE_LOST_UEBERREIZT;
+	return -2 * div_ru(rs->reizwert, grundwert) * grundwert;
+  }
+  return game_value;
+}
+
 void
-skat_calculate_game_result(skat_server_state *ss, int *score) {
-  DTODO_PRINTF("TODO: implement calculate_game_result");// TODO: implement
+skat_calculate_game_result(skat_server_state *ss, round_result *rr) {
+  uint8_t result;
+  int result2 __attribute__((unused));
+  unsigned result3;
+  uint64_t game_value;
+  loss_type lt;
+  int as = ss->sgs.alleinspieler;
+  bool won, schneider, schwarz, durchmarsch;
+  switch (ss->sgs.gr.type) {
+	case GAME_TYPE_NULL:
+	  card_collection_get_card_count(ss->stiche[as], &result);
+	  won = !!result;
+	  game_value = reizen_get_game_value(ss, won, false, false);
+	  rr->spielwert = game_value;
+	  rr->round_winner = won ? as : -1;
+	  rr->schneider = 0;
+	  rr->schwarz = 0;
+	  memset(rr->round_score, '\0', sizeof rr->round_score);
+	  rr->round_score[as] = get_score_delta_normal_game(
+			  &ss->sgs.gr, &ss->sgs.rs, game_value, &won, &lt);
+	  rr->lt = lt;
+	  break;
+	case GAME_TYPE_GRAND:
+	case GAME_TYPE_COLOR:
+	  card_collection_get_score(ss->stiche[as], &result3);
+	  if ((schneider = result3 >= 90)) {
+		card_collection_get_card_count(ss->stiche[as], &result);
+		schwarz = result == 32;
+	  } else
+		schwarz = false;
+	  won = result3 > 60 && (schneider || !ss->sgs.gr.schneider_angesagt)
+			&& (schwarz || !ss->sgs.gr.schneider_angesagt);
+	  game_value = reizen_get_game_value(ss, won, schneider, schwarz);
+	  rr->spielwert = game_value;
+	  rr->round_winner = won ? as : -1;
+	  rr->schneider = schneider;
+	  rr->schwarz = schwarz;
+	  memset(rr->round_score, '\0', sizeof rr->round_score);
+	  rr->round_score[as] = get_score_delta_normal_game(
+			  &ss->sgs.gr, &ss->sgs.rs, game_value, &won, &lt);
+	  rr->lt = lt;
+	  break;
+	case GAME_TYPE_RAMSCH:
+	  memset(rr->round_score, '\0', sizeof rr->round_score);
+	  rr->spielwert = -1;
+	  rr->schneider = 0;
+	  rr->schwarz = 0;
+	  rr->round_winner = -1;
+	  durchmarsch = false;
+	  for (int i = 0; i < 3; i++) {
+		card_collection_get_card_count(ss->stiche[i], &result);
+		if (result == 30) { // The two cards in the skat don't count
+		  durchmarsch = true;
+		  rr->round_winner = i;
+		  rr->round_score[i] = 120;
+
+		  break;
+		}
+	  }
+	  if (durchmarsch)
+		break;
+	  for (int i = 0; i < 3; i++) {
+		// TODO: needs more virgins
+		//   Also add configuration options for ramsch rules
+		card_collection_get_score(ss->stiche[i], &result3);
+		rr->round_score[i] = -result3;
+	  }
+	  break;
+	default:
+	  __builtin_unreachable();
+  }
 }
 
 static void
@@ -717,13 +808,16 @@ apply_action_stich(skat_server_state *ss, action *a, player *pl, server *s,
 	  if (ss->sgs.stich_num++ < 9)
 		return GAME_PHASE_PLAY_STICH_C1;
 
-	  skat_calculate_game_result(ss, e.score_round);
+	  skat_calculate_game_result(ss, &e->rr);
+
+	  e.answer_to = -1;
+	  e.type = EVENT_ANNOUNCE_SCORES;
+	  server_distribute_event(s, e, NULL);
 
 	  for (int i = 0; i < 3; i++)
-		ss->sgs.score[ss->sgs.active_players[i]] += e.score_round[i];
+		ss->sgs.score[ss->sgs.active_players[i]] += e->rr.score_round[i];
 
-	  DTODO_PRINTF("Send scores");// TODO: send scores
-
+	  memcpy(e.score_total, ss->sgs.score, sizeof ss->sgs.score);
 	  e.answer_to = -1;
 	  e.type = EVENT_ROUND_DONE;
 	  server_distribute_event(s, &e, NULL);
@@ -1031,11 +1125,23 @@ skat_client_state_apply(skat_client_state *cs, event *e, client *c) {
 	  if (cs->sgs.stich_num++ < 9)
 		cs->sgs.cgphase = GAME_PHASE_PLAY_STICH_C1;
 	  else
-		cs->sgs.cgphase = GAME_PHASE_CLIENT_WAIT_ROUND_DONE;
+		cs->sgs.cgphase = GAME_PHASE_CLIENT_WAIT_ANNOUNCE_SCORES;
 
 	  cs->sgs.last_stich = cs->sgs.curr_stich;
 	  cs->sgs.curr_stich =
 			  (stich){.vorhand = cs->sgs.last_stich.winner, .winner = -1};
+
+	  return 1;
+	case EVENT_ANNOUNCE_SCORES:
+	  DEBUG_PRINTF("Scores are being announced, everyone is shivering with excitement");
+
+	  if (cs->sgs.cgphase != GAME_PHASE_CLIENT_WAIT_ANNOUNCE_SCORES) {
+		DERROR_PRINTF("Invalid game phase %s for ANNOUNCE_SCORES",
+					  game_phase_name_table[cs->sgs.cgphase]);
+		return 0;
+	  }
+
+	  cs->sgs.cgphase = GAME_PHASE_CLIENT_WAIT_ROUND_DONE;
 
 	  return 1;
 	case EVENT_ROUND_DONE:
@@ -1046,6 +1152,8 @@ skat_client_state_apply(skat_client_state *cs, event *e, client *c) {
 					  game_phase_name_table[cs->sgs.cgphase]);
 		return 0;
 	  }
+
+	  memcpy(cs->sgs.score, e->score_total, sizeof cs->sgs.score);
 
 	  cs->sgs.cgphase = GAME_PHASE_BETWEEN_ROUNDS;
 

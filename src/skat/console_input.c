@@ -54,7 +54,7 @@ print_reizen_info(client *c, event *e) {
 	teller_gupid = c->cs.sgs.active_players[rs->winner];
 	listener_gupid = -1;
   } else
-    __builtin_unreachable();
+	__builtin_unreachable();
 
   int is_actor = c->cs.my_gupid == e->acting_player;
   player *actor = e->acting_player == -1 ? NULL : c->pls[e->acting_player];
@@ -414,7 +414,7 @@ client_set_gamerules_callback(void *v) {
 
   print_player_turn(args->hdr.c, PRINT_PLAYER_TURN_SHOW_HAND_MODE_DEFAULT);
 
- end:
+end:
   printf("\n> ");
   fflush(stdout);
   client_release_state_lock(args->hdr.c);
@@ -529,6 +529,24 @@ execute_play_card(client *c, card_id cid) {
 /* --------------------------------
    End execute play card logic */
 
+
+static void
+print_event_announce(client *c, event *e) {
+  if (c->cs.sgs.gr.type != GAME_TYPE_RAMSCH) 
+	printf("The Spielwert was %d\n", e->rr.
+  if (c->cs.my_active_player_index == e->rr.round_winner) {
+	if (c->cs.sgs.gr.type == GAME_TYPE_RAMSCH) {
+	  if (e->rr.lt == LOSS_TYPE_WON_DURCHMARSCH)
+	    printf("You won this round in a durchmarsch");
+	} else if (c->cs.ist_alleinspieler) {
+	  printf("You won this round");
+	} else
+	  printf("You won this game with your partner\n");
+  } else if (e->rr.round_winner != -1) {
+	printf("You lost the game");
+  }
+}
+
 static void
 execute_print_info(client *c) {
   async_callback acb;
@@ -590,6 +608,8 @@ io_handle_event(client *c, event *e) {
 		print_player_turn(c, PRINT_PLAYER_TURN_SHOW_HAND_MODE_DEFAULT);
 	  }
 	  break;
+	case EVENT_ANNOUNCE_SCORES:
+	  print_event_announce(c, e);
 	case EVENT_GAME_CALLED:
 	  print_game_rules_info(&c->cs.sgs.gr);
 	  printf("\n");

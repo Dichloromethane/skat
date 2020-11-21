@@ -94,11 +94,13 @@ $(OBJ): $(BUILDDIR)%.o: $(SOURCEDIR)%.c Makefile | $(BUILDDIRS)
 $(BUILDDIRS):
 	mkdir -p $@
 
+.DELETE_ON_ERROR: $(ARTIFICIAL)
+
 comp_:: $(COMP_COMMANDS)
 comp_:: $(REBUILDING_RULE)
 comp_:: delete_marker
 
-$(COMP_COMMANDS): Makefile 
+$(COMP_COMMANDS): Makefile
 	$(MAKE) bear
 	touch $(REBUILDING_MARKER)
 	touch $(REBUILDING_RULE)

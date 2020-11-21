@@ -101,6 +101,12 @@ end:
   return mit ? spitzen : -spitzen;
 }
 
+int
+reizen_get_grundwert(game_rules const *gr) {
+  return gr->type == GAME_TYPE_GRAND ? grundwert_grand
+									 : grundwerte_color[gr->trumpf - 1];
+}
+
 // Do NOT use for ramschen
 uint16_t
 reizen_get_game_value(skat_server_state *ss, int won, int schneider,
@@ -119,9 +125,7 @@ reizen_get_game_value(skat_server_state *ss, int won, int schneider,
 	return spielwert_null;
   }
 
-  uint64_t grundwert = ss->sgs.gr.type == GAME_TYPE_GRAND
-							   ? grundwert_grand
-							   : grundwerte_color[ss->sgs.gr.trumpf - 1];
+  int grundwert = reizen_get_grundwert(&ss->sgs.gr);
 
   int8_t s_spitzen =
 		  reizen_count_spitzen(&ss->sgs.gr, &ss->initial_alleinspieler_hand);

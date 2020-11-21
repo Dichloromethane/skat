@@ -4,8 +4,9 @@
 #include "skat/action.h"
 #include "skat/card.h"
 #include "skat/card_collection.h"
-#include "skat/player.h"
 #include "skat/game_rules.h"
+#include "skat/player.h"
+#include "skat/reizen.h"
 #include <stdlib.h>
 
 #ifndef STRINGIFY
@@ -21,7 +22,7 @@
   #undef EVENT_HDR_TABLE_END
   #define EVENT_HDR_TABLE_BEGIN char *event_name_table[] = {
   #define FIRST_EVENT(x) EVENT(x)
-  #define EVENT(x) [EVENT_ ## x] = "EVENT_" #x 
+  #define EVENT(x) [EVENT_ ## x] = "EVENT_" #x
   #define EVENT_HDR_TABLE_END , (void *)0};
 #else
   #define EVENT_HDR_TABLE_BEGIN typedef enum {
@@ -45,6 +46,7 @@ EVENT_HDR_TABLE_BEGIN
   EVENT(SKAT_PRESS),
   EVENT(PLAY_CARD),
   EVENT(STICH_DONE),
+  EVENT(ANNOUNCE_SCORES),
   EVENT(ROUND_DONE),
   EVENT(GAME_CALLED)
 EVENT_HDR_TABLE_END
@@ -69,8 +71,9 @@ typedef struct {
 	card_id skat_press_cards[2];
 	card_id card;
 	int stich_winner;  // gupid
-	int score_round[3];// indexed by ap
+	int score_total[4];// indexed by gupid
 	game_rules gr;
+	round_result rr;
   };
 } event;
 
