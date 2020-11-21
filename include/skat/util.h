@@ -27,7 +27,7 @@ void perm(int *, int, int);
 #define DERROR_PRINTF(fmt, ...) \
   DEBUG_PRINTF_LABEL(ERROR_C("ERROR"), fmt, ##__VA_ARGS__)
 #define DTODO_PRINTF(fmt, ...) \
-  DEBUG_PRINTF_LABEL(TODO_C("TODO "), fmt, ##__VA_ARGS__)
+  DEBUG_PRINTF_LABEL(TODO_C("TODO"), fmt, ##__VA_ARGS__)
 #define DEBUG_PRINTF(fmt, ...) DEBUG_PRINTF_LABEL("DEBUG", fmt, ##__VA_ARGS__)
 
 #define DPRINTF_COND(cond, ...) \
@@ -39,16 +39,13 @@ void perm(int *, int, int);
 #if defined(HAS_DEBUG_PRINTF) && HAS_DEBUG_PRINTF
 extern pthread_mutex_t debug_printf_lock;
 
-#define DEBUG_PRINTF_RAW(fmt, ...) dprintf(2, fmt, ##__VA_ARGS__)
+#define DEBUG_PRINTF_RAW(fmt, ...) fprintf(stderr, fmt, ##__VA_ARGS__)
 #define DEBUG_PRINTF_LABEL(label, fmt, ...) \
   do { \
-	char *debug_pr_123456789; \
-	asprintf(&debug_pr_123456789, "(%s:%d)", __func__, __LINE__); \
 	pthread_mutex_lock(&debug_printf_lock); \
-	DEBUG_PRINTF_RAW(label " %s\n     " fmt "\n", debug_pr_123456789, \
+	DEBUG_PRINTF_RAW(label " (%s:%d)\n     " fmt "\n", __func__, __LINE__, \
 					 ##__VA_ARGS__); \
 	pthread_mutex_unlock(&debug_printf_lock); \
-	free(debug_pr_123456789); \
   } while (0)
 
 #else
