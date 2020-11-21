@@ -77,10 +77,3 @@ extern pthread_mutex_t debug_printf_lock;
 	  perror(ERROR_C("ERROR ") str); \
   } while (0)
 #define ERRNO_CHECK(stmt) ERRNO_CHECK_STR(stmt, #stmt)
-
-#ifdef SYS_gettid
-// explicit syscall. Nice.
-#define gettid() ((pid_t) syscall(SYS_gettid))
-#else
-#error "SYS_gettid unavailable on this system"
-#endif

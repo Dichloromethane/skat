@@ -42,19 +42,19 @@ client_prepare_exit(client *c) {
 
 void
 client_acquire_state_lock(client *c) {
-  DPRINTF_COND(DEBUG_LOCK, "Acquiring client state lock from thread %ld",
+  DPRINTF_COND(DEBUG_LOCK, "Acquiring client state lock from thread %lu",
 			   pthread_self());
   pthread_mutex_lock(&c->lock);
-  DPRINTF_COND(DEBUG_LOCK, "Acquired client state lock from thread %ld",
+  DPRINTF_COND(DEBUG_LOCK, "Acquired client state lock from thread %lu",
 			   pthread_self());
 }
 
 void
 client_release_state_lock(client *c) {
-  DPRINTF_COND(DEBUG_LOCK, "Releasing client state lock from thread %ld",
+  DPRINTF_COND(DEBUG_LOCK, "Releasing client state lock from thread %lu",
 			   pthread_self());
   pthread_mutex_unlock(&c->lock);
-  DPRINTF_COND(DEBUG_LOCK, "Released client state lock from thread %ld",
+  DPRINTF_COND(DEBUG_LOCK, "Released client state lock from thread %lu",
 			   pthread_self());
 }
 

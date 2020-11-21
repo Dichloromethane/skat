@@ -135,20 +135,20 @@ server_disconnect_connection(server *s, connection_s2c *c) {
 
 void
 server_acquire_state_lock(server *s) {
-  DPRINTF_COND(DEBUG_LOCK, "Acquiring server state lock from thread %d",
-			   gettid());
+  DPRINTF_COND(DEBUG_LOCK, "Acquiring server state lock from thread %lu",
+			   pthread_self());
   pthread_mutex_lock(&s->lock);
-  DPRINTF_COND(DEBUG_LOCK, "Acquired server state lock from thread %d",
-			   gettid());
+  DPRINTF_COND(DEBUG_LOCK, "Acquired server state lock from thread %lu",
+               pthread_self());
 }
 
 void
 server_release_state_lock(server *s) {
-  DPRINTF_COND(DEBUG_LOCK, "Releasing server state lock from thread %d",
-			   gettid());
+  DPRINTF_COND(DEBUG_LOCK, "Releasing server state lock from thread %lu",
+               pthread_self());
   pthread_mutex_unlock(&s->lock);
-  DPRINTF_COND(DEBUG_LOCK, "Released server state lock from thread %d",
-			   gettid());
+  DPRINTF_COND(DEBUG_LOCK, "Released server state lock from thread %lu",
+               pthread_self());
 }
 
 size_t
