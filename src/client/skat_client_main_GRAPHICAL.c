@@ -27,7 +27,7 @@ static const GLFWvidmode *PRIMARY_MODE;
 
 static void
 error_callback(int error, const char *description) {
-  printf( "Error: %s (%d)\n", description, error);
+  printf("Error: %s (%d)\n", description, error);
 }
 
 static void
@@ -93,12 +93,24 @@ key_callback(GLFWwindow *window, int key, int scancode, int action, int mods) {
   int ctrl = (mods & GLFW_MOD_CONTROL) != 0;
   int alt = (mods & GLFW_MOD_ALT) != 0;
   int super = (mods & GLFW_MOD_SUPER) != 0;
+
+// GFLW < 3.3 does not have these modifiers
+#ifdef GLFW_MOD_CAPS_LOCK
   int caps_lock = (mods & GLFW_MOD_CAPS_LOCK) != 0;
+#else
+  int caps_lock = -1;
+#endif
+#ifdef GLFW_MOD_NUM_LOCK
   int num_lock = (mods & GLFW_MOD_NUM_LOCK) != 0;
+#else
+  int num_lock = -1;
+#endif
+
   printf("key_callback: key=%s (%d) scancode=%d action=%s mods=[shift=%d, "
 		 "ctrl=%d, alt=%d, super=%d, caps_lock=%d, num_lock=%d] (0x%x)\n",
 		 key_name, key, scancode, action_name, shift, ctrl, alt, super,
 		 caps_lock, num_lock, mods);
+
   if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
 	glfwSetWindowShouldClose(window, GLFW_TRUE);
   else if (key == GLFW_KEY_F11 && action == GLFW_PRESS) {
