@@ -85,7 +85,6 @@ server_get_free_connection(server *s, int *n) {
 	return NULL;
   pm = ~s->playermask;
   i = __builtin_ctz(pm);
-  s->playermask |= 1 << i;
   *n = i;
   return &s->conns[i];
 }
@@ -97,11 +96,18 @@ server_add_player_for_connection(server *s, player *pl, int gupid) {
   s->pls[gupid] = pl;
   pl->gupid = gupid;
   s->ncons++;
+  s->playermask |= 1 << gupid;
+}
+
+void
+server_resume_player_for_connection(server *s, int gupid) {
+  s->ncons++;
+  s->playermask |= 1 << gupid;
 }
 
 connection_s2c *
 server_get_connection_by_pname(server *s, char *pname, int *n) {
-  for(int i = 0; i < 4; i++) {
+  for (int i = 0; i < 4; i++) {
 	if (!s->pls[i])
 	  continue;
 	DEBUG_PRINTF("Comparing \"%s\" to \"%s\"", s->pls[i]->name, pname);
@@ -198,6 +204,16 @@ server_resync_player(server *s, player *pl, payload_resync **pl_rs) {
 	  offset += player_name_lengths[i];
 	}
   }
+
+  DEBUG_PRINTF(
+		  "Resync payload contents: names='%s', aps={ %d, %d, %d, %d }, "
+		  "name_lengths={ %zu, %zu, %zu, %zu }",
+		  (*pl_rs)->player_names, (*pl_rs)->active_player_indices[0],
+		  (*pl_rs)->active_player_indices[1],
+		  (*pl_rs)->active_player_indices[2],
+		  (*pl_rs)->active_player_indices[3], (*pl_rs)->player_name_lengths[0],
+		  (*pl_rs)->player_name_lengths[1], (*pl_rs)->player_name_lengths[2],
+		  (*pl_rs)->player_name_lengths[3]);
 
   return payload_size;
 }

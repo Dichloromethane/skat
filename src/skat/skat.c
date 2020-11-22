@@ -298,7 +298,7 @@ apply_action_between_rounds(skat_server_state *ss, action *a, player *pl,
 
 	  if (ss->sgs.active_players[0] == -1) {
 		for (int i = 0, j = 0; i < 4; i++)
-		  if ((s->playermask >> i) & 1)
+		  if (server_is_player_active(s, i))
 			ss->sgs.active_players[j++] = s->pls[i]->gupid;
 	  } else if (s->ncons == 3) {// we don't have a spectator
 		perm(ss->sgs.active_players, 3, 0x12);

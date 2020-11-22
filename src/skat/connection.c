@@ -213,11 +213,12 @@ establish_connection_server(server *s, int fd, pthread_t handler) {
 
 	CH_ASSERT(s2c = server_get_connection_by_pname(s, pl_resume->name, &gupid),
 			  &c, CONN_ERROR_NO_SUCH_PLAYER_NAME, err_release);
-	CH_ASSERT(!s2c->c.active, &c, CONN_ERROR_PLAYER_NAME_IN_USE,
-			  err_release);
+	CH_ASSERT(!s2c->c.active, &c, CONN_ERROR_PLAYER_NAME_IN_USE, err_release);
 
 	init_conn_s2c(s2c, &c);
 	s2c->c.active = 1;
+
+	server_resume_player_for_connection(s, gupid);
 
 	server_notify_join(s, gupid);
 

@@ -9,6 +9,13 @@
 #include <stdio.h>
 #include <string.h>
 
+static player *disconnected_player;
+
+__attribute__((constructor)) static void
+init_disconnected_player(void) {
+  disconnected_player = create_player(-1, -1, "DISCONNECTED");
+}
+
 static void
 print_player_turn(const client *const c,
 				  const print_player_turn_show_hand_mode mode) {
@@ -20,7 +27,8 @@ print_player_turn(const client *const c,
   if (is_my_turn)
 	printf("It is YOUR turn.");
   else
-	printf("It is %s's turn.", c->pls[player_turn]->name);
+	printf("It is %s's turn.",
+		   (c->pls[player_turn] ?: disconnected_player)->name);
 
   if ((is_my_turn && mode != PRINT_PLAYER_TURN_SHOW_HAND_MODE_NEVER)
 	  || mode == PRINT_PLAYER_TURN_SHOW_HAND_MODE_ALWAYS) {
@@ -58,13 +66,19 @@ print_reizen_info(client *c, event *e) {
 	__builtin_unreachable();
 
   int is_actor = c->cs.my_gupid == e->acting_player;
-  player *actor = e->acting_player == -1 ? NULL : c->pls[e->acting_player];
+  player *actor = e->acting_player == -1
+						  ? NULL
+						  : (c->pls[e->acting_player] ?: disconnected_player);
 
   int is_teller = c->cs.my_gupid == teller_gupid;
-  player *teller = teller_gupid == -1 ? NULL : c->pls[teller_gupid];
+  player *teller = teller_gupid == -1
+						   ? NULL
+						   : (c->pls[teller_gupid] ?: disconnected_player);
 
   int is_listener = c->cs.my_gupid == listener_gupid;
-  player *listener = listener_gupid == -1 ? NULL : c->pls[listener_gupid];
+  player *listener = listener_gupid == -1
+							 ? NULL
+							 : (c->pls[listener_gupid] ?: disconnected_player);
 
   if (e->type == EVENT_REIZEN_NUMBER) {
 	if (is_actor)
@@ -128,18 +142,15 @@ print_reizen_info(client *c, event *e) {
 	  }
 	} else {
 	  printf("You are playing with %s.\n",
-			 c->pls[c->cs.sgs.active_players[c->cs.my_partner]]->name);
+			 (c->pls[c->cs.sgs.active_players[c->cs.my_partner]]
+					  ?: disconnected_player)
+					 ->name);
 	  printf("Waiting for %s to take or leave the skat.",
-			 c->pls[c->cs.sgs.active_players[c->cs.sgs.alleinspieler]]->name);
+			 (c->pls[c->cs.sgs.active_players[c->cs.sgs.alleinspieler]]
+					  ?: disconnected_player)
+					 ->name);
 	}
   }
-}
-
-static player *disconnected_player;
-
-__attribute__((constructor)) static void
-init_disconnected_player(void) {
-  disconnected_player = create_player(-1, -1, "DISCONNECTED");
 }
 
 static void
@@ -183,20 +194,28 @@ print_info_exec(void *p) {
 	  printf("You are playing alone\n");
 	} else {
 	  printf("You are playing with %s\n",
-			 (c->pls[c->cs.sgs.active_players[c->cs.my_partner]] ?: disconnected_player)->name);
+			 (c->pls[c->cs.sgs.active_players[c->cs.my_partner]]
+					  ?: disconnected_player)
+					 ->name);
 	}
 
 	if (c->cs.sgs.stich_num > 0) {
 	  printf("Last Stich (num=%d, vorhand=%s, winner=%s):", c->cs.sgs.stich_num,
-			 (c->pls[c->cs.sgs.active_players[last_stich->vorhand]] ?: disconnected_player)->name,
-			 (c->pls[c->cs.sgs.active_players[last_stich->winner]] ?: disconnected_player)->name);
+			 (c->pls[c->cs.sgs.active_players[last_stich->vorhand]]
+					  ?: disconnected_player)
+					 ->name,
+			 (c->pls[c->cs.sgs.active_players[last_stich->winner]]
+					  ?: disconnected_player)
+					 ->name);
 	  print_card_array(&c->cs.sgs, NULL, last_stich->cs,
 					   last_stich->played_cards,
 					   CARD_COLOR_MODE_ONLY_CARD_COLOR);
 	  printf("\n");
 	}
 	printf("Current Stich (num=%d, vorhand=%s):", c->cs.sgs.stich_num,
-		   (c->pls[c->cs.sgs.active_players[stich->vorhand]] ?: disconnected_player)->name);
+		   (c->pls[c->cs.sgs.active_players[stich->vorhand]]
+					?: disconnected_player)
+				   ->name);
 	print_card_array(&c->cs.sgs, NULL, stich->cs, stich->played_cards,
 					 CARD_COLOR_MODE_ONLY_CARD_COLOR);
 	printf("\n");
@@ -549,7 +568,8 @@ print_event_announce(client *c, event *e) {
 #define player_name_lookup(ap) \
   c->cs.my_active_player_index == ap \
 		  ? "YOU" \
-		  : c->pls[c->cs.sgs.active_players[ap]]->name
+		  : (c->pls[c->cs.sgs.active_players[ap]] ?: disconnected_player) \
+					->name
 
   if (c->cs.sgs.gr.type != GAME_TYPE_RAMSCH) {
 	printf("This round is over. The Spielwert was %d", e->rr.spielwert);
@@ -636,15 +656,18 @@ io_handle_event(client *c, event *e) {
 	  print_reizen_info(c, e);
 	  break;
 	case EVENT_SKAT_TAKE:
-	  printf("%s took the skat.\n", c->pls[e->acting_player]->name);
+	  printf("%s took the skat.\n",
+			 (c->pls[e->acting_player] ?: disconnected_player)->name);
 	  printf("Waiting for press.");
 	  break;
 	case EVENT_SKAT_LEAVE:
-	  printf("%s left the skat.\n", c->pls[e->acting_player]->name);
+	  printf("%s left the skat.\n",
+			 (c->pls[e->acting_player] ?: disconnected_player)->name);
 	  printf("Waiting for Spielansage mit Hand.");
 	  break;
 	case EVENT_SKAT_PRESS:
-	  printf("%s pressed two cards.\n", c->pls[e->acting_player]->name);
+	  printf("%s pressed two cards.\n",
+			 (c->pls[e->acting_player] ?: disconnected_player)->name);
 	  printf("Waiting for Spielansage ohne Hand.");
 	  break;
 	case EVENT_GAME_CALLED:
