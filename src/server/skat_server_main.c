@@ -20,14 +20,14 @@ main(int argc, char **argv) {
 		if (errno == 0 && *remaining == '\0' && port >= 0 && port < USHRT_MAX) {
 		  break;
 		}
-		fprintf(stderr, "Invalid port: %s\n", optarg);
+		printf("Invalid port: %s\n", optarg);
 		if (errno != 0) {
 		  perror("strtol");
 		}
 
 		__attribute__((fallthrough));
 	  default:
-		fprintf(stderr, "Usage: %s [-p port]\n", argv[0]);
+		printf("Usage: %s [-p port]\n", argv[0]);
 		exit(EXIT_FAILURE);
 	}
   }

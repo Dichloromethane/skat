@@ -713,9 +713,8 @@ stop_client(client *c) {
   if (!command_check_arg_length(cmd, num, &result) && result)
 #define MATCH_NUM_ARGS_END(command_name, num) \
   { \
-	fprintf(stderr, \
-			"Expected " #num " args for " #command_name " , but got %zu\n", \
-			cmd->args_length); \
+	printf("Expected " #num " args for " #command_name " , but got %zu\n", \
+		   cmd->args_length); \
 	goto command_cleanup; \
   }
 
@@ -777,8 +776,7 @@ handle_console_input(void *v) {
 		else if (!command_parse_arg_u16(cmd, 0, 0, 18, -1, &reizwert))
 		  execute_reizen(c, REIZEN_VALUE_BASE + reizwert);
 		else
-		  fprintf(stderr,
-				  "Usage: reizen <\"number\" | next | (weg | passe) | ja>\n");
+		  printf("Usage: reizen <\"number\" | next | (weg | passe) | ja>\n");
 	  }
 	  else MATCH_NUM_ARGS_END(reizen, 1)
 	}
@@ -793,7 +791,7 @@ handle_console_input(void *v) {
 				 && result)
 		  execute_skat(c, SKAT_LEAVE, 0, 0);
 		else
-		  fprintf(stderr, "Usage: skat <take | leave | press <cid1> <cid2>\n");
+		  printf("Usage: skat <take | leave | press <cid1> <cid2>\n");
 	  }
 	  else MATCH_NUM_ARGS(reizen, 3) {
 		if (!command_arg_equals(cmd, 1, 0, &result, 2, "press", "p")
@@ -803,23 +801,21 @@ handle_console_input(void *v) {
 			  && !command_parse_arg_u8(cmd, 1, 2, 0, CARD_ID_MAX, &cid2)) {
 			execute_skat(c, SKAT_PRESS, cid1, cid2);
 		  } else {
-			fprintf(stderr,
-					"Usage: skat <take | leave | press <cid1> <cid2>\n");
+			printf("Usage: skat <take | leave | press <cid1> <cid2>\n");
 		  }
 		} else {
-		  fprintf(stderr, "Usage: skat <take | leave | press <cid1> <cid2>\n");
+		  printf("Usage: skat <take | leave | press <cid1> <cid2>\n");
 		}
 	  }
 	  else MATCH_NUM_ARGS_END(reizen, "1 or 3")
 	}
 
 	// spiel <color> {modifier}
-
 	else if (!command_equals(cmd, &result, 1, "spiel") && result) {
 	  game_rules /*z?*/ gr;
 	  memset(&gr, '\0', sizeof gr);
 	  if (cmd->args_length < 1) {
-		fprintf(stderr, "Usage: spiel <color> {modifier}\n");
+		printf("Usage: spiel <color> {modifier}\n");
 		goto command_cleanup;
 	  }
 
@@ -874,14 +870,13 @@ handle_console_input(void *v) {
 		  hand:
 			gr.hand = 1;
 		  } else {
-			fprintf(stderr,
-					"Illegal modifier %s encountered in spiel command\n",
-					cmd->args[i]);
+			printf("Illegal modifier %s encountered in spiel command\n",
+				   cmd->args[i]);
 			goto command_cleanup;
 		  }
 		});
 	  } else {
-		fprintf(stderr, "Unknown spiel type %s found\n", cmd->args[0]);
+		printf("Unknown spiel type %s found\n", cmd->args[0]);
 		goto command_cleanup;
 	  }
 	  execute_set_gamerules(c, &gr);
@@ -891,8 +886,8 @@ handle_console_input(void *v) {
 	// play <card index>
 	else if (!command_equals(cmd, &result, 1, "play") && result) {
 	  if (command_check_arg_length(cmd, 1, &result) || !result) {
-		fprintf(stderr, "Expected exactly 1 arg for play, but got %zu\n",
-				cmd->args_length);
+		printf("Expected exactly 1 arg for play, but got %zu\n",
+			   cmd->args_length);
 	  } else {
 		card_id cid;
 		if (!command_parse_arg_u8(cmd, 1, 0, 0, CARD_ID_MAX, &cid))
@@ -903,8 +898,8 @@ handle_console_input(void *v) {
 	// info
 	else if (!command_equals(cmd, &result, 1, "info") && result) {
 	  if (command_check_arg_length(cmd, 0, &result) || !result) {
-		fprintf(stderr, "Expected exactly 0 args for info, but got %zu\n",
-				cmd->args_length);
+		printf("Expected exactly 0 args for info, but got %zu\n",
+			   cmd->args_length);
 	  } else {
 		execute_print_info(c);
 	  }
@@ -913,16 +908,30 @@ handle_console_input(void *v) {
 	// exit
 	else if (!command_equals(cmd, &result, 2, "exit", "quit") && result) {
 	  if (command_check_arg_length(cmd, 0, &result) || !result) {
-		fprintf(stderr, "Expected exactly 0 args for exit, but got %zu\n",
-				cmd->args_length);
+		printf("Expected exactly 0 args for exit, but got %zu\n",
+			   cmd->args_length);
 	  } else {
 		stop_client(c);
 	  }
 	}
 
+	// help
+	else if (!command_equals(cmd, &result, 2, "help", "?") && result) {
+	  printf("Commands:\n");
+	  printf("\thelp\n");
+	  printf("\tready\n");
+	  printf("\treizen\n");
+	  printf("\tskat\n");
+	  printf("\tspiel\n");
+	  printf("\tplay\n");
+	  printf("\tinfo\n");
+	  printf("\texit\n");
+	}
+
 	// unknown command
 	else {
-	  fprintf(stderr, "Unknown command: %s\n", cmd->command);
+	  printf("Unknown command: %s\nUse 'help' for list of commands",
+			 cmd->command);
 	}
 
   command_cleanup:

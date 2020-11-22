@@ -81,8 +81,8 @@ command_arg_equals(const command *cmd, int print_errors, size_t index,
 				   int *result, size_t name_count, ...) {
   if (index >= cmd->args_length) {
 	if (print_errors)
-	  fprintf(stderr, "Invalid arg index: got %zu but length was %zu\n", index,
-			  cmd->args_length);
+	  printf("Invalid arg index: got %zu but length was %zu\n", index,
+			 cmd->args_length);
 	return 1;
   }
 
@@ -144,8 +144,8 @@ int
 command_parse_arg_u64(const command *cmd, int print_errors, size_t index,
 					  uint64_t min, uint64_t max, uint64_t *result) {
   if (index >= cmd->args_length) {
-	fprintf(stderr, "Invalid arg index: got %zu but length was %zu\n", index,
-			cmd->args_length);
+	printf("Invalid arg index: got %zu but length was %zu\n", index,
+		   cmd->args_length);
 	return 1;
   }
 
@@ -153,7 +153,7 @@ command_parse_arg_u64(const command *cmd, int print_errors, size_t index,
 
   if (arg[0] == '\0') {
 	if (print_errors)
-	  fprintf(stderr, "Invalid arg, got NULL\n");
+	  printf("Invalid arg, got NULL\n");
 	return 2;
   }
 
@@ -163,20 +163,18 @@ command_parse_arg_u64(const command *cmd, int print_errors, size_t index,
 
   if (errno != 0) {
 	if (print_errors)
-	  fprintf(stderr, "Unable to parse arg '%s': %s\n", arg, strerror(errno));
+	  printf("Unable to parse arg '%s': %s\n", arg, strerror(errno));
 	return 3;
   } else if (end[0] != '\0') {
 	if (print_errors)
-	  fprintf(stderr,
-			  "Unable to parse arg '%s' fully, still left to parse: '%s'\n",
-			  arg, end);
+	  printf("Unable to parse arg '%s' fully, still left to parse: '%s'\n", arg,
+			 end);
 	return 4;
   } else if (result_ < min || result_ > max) {
 	if (print_errors)
-	  fprintf(stderr,
-			  "Parsed arg '%llu' is out of range, min is %" PRIu64
-			  " and max is %" PRIu64 "\n",
-			  result_, min, max);
+	  printf("Parsed arg '%llu' is out of range, min is %" PRIu64
+			 " and max is %" PRIu64 "\n",
+			 result_, min, max);
 	return 5;
   }
 
@@ -229,8 +227,8 @@ int
 command_parse_arg_i64(const command *cmd, int print_errors, size_t index,
 					  int64_t min, int64_t max, int64_t *result) {
   if (index >= cmd->args_length) {
-	fprintf(stderr, "Invalid arg index: got %zu but length was %zu\n", index,
-			cmd->args_length);
+	printf("Invalid arg index: got %zu but length was %zu\n", index,
+		   cmd->args_length);
 	return 1;
   }
 
@@ -238,7 +236,7 @@ command_parse_arg_i64(const command *cmd, int print_errors, size_t index,
 
   if (arg[0] == '\0') {
 	if (print_errors)
-	  fprintf(stderr, "Invalid arg, got NULL\n");
+	  printf("Invalid arg, got NULL\n");
 	return 2;
   }
 
@@ -248,20 +246,18 @@ command_parse_arg_i64(const command *cmd, int print_errors, size_t index,
 
   if (errno != 0) {
 	if (print_errors)
-	  fprintf(stderr, "Unable to parse arg '%s': %s\n", arg, strerror(errno));
+	  printf("Unable to parse arg '%s': %s\n", arg, strerror(errno));
 	return 3;
   } else if (end[0] != '\0') {
 	if (print_errors)
-	  fprintf(stderr,
-			  "Unable to parse arg '%s' fully, still left to parse: '%s'\n",
-			  arg, end);
+	  printf("Unable to parse arg '%s' fully, still left to parse: '%s'\n", arg,
+			 end);
 	return 4;
   } else if (result_ < min || result_ > max) {
 	if (print_errors)
-	  fprintf(stderr,
-			  "Parsed arg '%lld' is out of range, min is %" PRId64
-			  " and max is %" PRId64 "\n",
-			  result_, min, max);
+	  printf("Parsed arg '%lld' is out of range, min is %" PRId64
+			 " and max is %" PRId64 "\n",
+			 result_, min, max);
 	return 5;
   }
 
@@ -317,8 +313,8 @@ command_parse_arg_ld(const command *const cmd, int print_errors,
 					 const long double max, long double *const result) {
   if (index >= cmd->args_length) {
 	if (print_errors)
-	  fprintf(stderr, "Invalid arg index: got %zu but length was %zu\n", index,
-			  cmd->args_length);
+	  printf("Invalid arg index: got %zu but length was %zu\n", index,
+			 cmd->args_length);
 	return 1;
   }
 
@@ -326,7 +322,7 @@ command_parse_arg_ld(const command *const cmd, int print_errors,
 
   if (arg[0] == '\0') {
 	if (print_errors)
-	  fprintf(stderr, "Invalid arg, got NULL\n");
+	  printf("Invalid arg, got NULL\n");
 	return 2;
   }
 
@@ -336,19 +332,17 @@ command_parse_arg_ld(const command *const cmd, int print_errors,
 
   if (errno != 0) {
 	if (print_errors)
-	  fprintf(stderr, "Unable to parse arg '%s': %s\n", arg, strerror(errno));
+	  printf("Unable to parse arg '%s': %s\n", arg, strerror(errno));
 	return 3;
   } else if (end[0] != '\0') {
 	if (print_errors)
-	  fprintf(stderr,
-			  "Unable to parse arg '%s' fully, still left to parse: '%s'\n",
-			  arg, end);
+	  printf("Unable to parse arg '%s' fully, still left to parse: '%s'\n", arg,
+			 end);
 	return 4;
   } else if (result_ < min || result_ > max) {
 	if (print_errors)
-	  fprintf(stderr,
-			  "Parsed arg '%Lf' is out of range, min is %Lf and max is %Lf\n",
-			  result_, min, max);
+	  printf("Parsed arg '%Lf' is out of range, min is %Lf and max is %Lf\n",
+			 result_, min, max);
 	return 5;
   }
 

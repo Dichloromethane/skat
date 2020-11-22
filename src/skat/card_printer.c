@@ -28,8 +28,8 @@ print_card_array(const shared_game_state *const sgs,
 
 	if (color_mode == CARD_COLOR_MODE_PLAYABLE) {
 	  if (cc == NULL) {
-		fprintf(stderr, "Cannot determine if cards are playable without a card "
-						"collection\n");
+		printf("Cannot determine if cards are playable without a card "
+			   "collection\n");
 		return;
 	  }
 

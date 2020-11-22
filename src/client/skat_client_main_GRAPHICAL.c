@@ -27,7 +27,7 @@ static const GLFWvidmode *PRIMARY_MODE;
 
 static void
 error_callback(int error, const char *description) {
-  fprintf(stderr, "Error: %s (%d)\n", description, error);
+  printf( "Error: %s (%d)\n", description, error);
 }
 
 static void

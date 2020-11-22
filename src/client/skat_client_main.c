@@ -11,7 +11,7 @@
 
 static void
 print_usage(const char *const name) {
-  fprintf(stderr, "Usage: %s [-r] [-g] [-f] [-h host] [-p port] name\n", name);
+  printf("Usage: %s [-r] [-g] [-f] [-h host] [-p port] name\n", name);
 }
 
 int start_GRAPHICAL(int fullscreen);
@@ -46,9 +46,9 @@ main(int argc, char **argv) {
 		if (errno == 0 && *remaining == '\0' && port >= 0 && port < USHRT_MAX) {
 		  break;
 		}
-		fprintf(stderr, "Invalid port: %s\n", optarg);
+		printf("Invalid port: %s\n", optarg);
 		if (errno != 0) {
-		  perror("strtol");
+		  printf("strol: %s\n", strerror(errno));
 		}
 
 		__attribute__((fallthrough));
@@ -59,14 +59,14 @@ main(int argc, char **argv) {
   }
 
   if (optind >= argc) {
-	fprintf(stderr, "Expected name after options\n");
+	printf("Expected name after options\n");
 	print_usage(argv[0]);
 	exit(EXIT_FAILURE);
   }
 
   char *name = argv[optind];
   if (strlen(name) + 1 >= PLAYER_MAX_NAME_LENGTH) {
-	fprintf(stderr, "Name was too long\n");
+	printf("Name was too long\n");
 	print_usage(argv[0]);
 	exit(EXIT_FAILURE);
   }
