@@ -52,7 +52,7 @@ On Debian the following packages must be installed:
 ## tools
 
 It is possible to display the dependencies between the classes.
-For this purpose the script dev_graph.sh in the tools folder can be used.
+For this purpose the script dep_graph.sh in the tools folder can be used.
 
 Requirements:
 
