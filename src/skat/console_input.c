@@ -931,7 +931,7 @@ handle_console_input(void *v) {
 
 	// unknown command
 	else {
-	  printf("Unknown command: %s\nUse 'help' for list of commands",
+	  printf("Unknown command: %s\nUse 'help' for list of commands\n",
 			 cmd->command);
 	}
 
