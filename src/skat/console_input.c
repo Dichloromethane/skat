@@ -725,6 +725,7 @@ handle_console_input(void *v) {
   size_t line_size = 0;
 
   DEBUG_PRINTF("Started console input thread");
+  printf("Welcome to Skat. Type 'help' for help!\n");
 
   for (;;) {
 	printf("> ");
