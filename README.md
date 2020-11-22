@@ -52,6 +52,29 @@ On Debian the following packages must be installed:
 
 ---
 
+## Setup graphics in WSL
+
+You will need an XServer in Windows. We recommend [VcXsrv](https://sourceforge.net/projects/vcxsrv/).
+
+Start it like this:
+![Step 1](doc/vcxsrv_1.png)
+![Step 2](doc/vcxsrv_2.png)
+![Step 3](doc/vcxsrv_3.png)
+
+Then you need this in your `.bashrc`:
+```sh
+export DISPLAY=$(awk '/nameserver / {print $2; exit}' /etc/resolv.conf 2>/dev/null):0.0
+```
+This will set the `DISPLAY` environment variable to `<IP of your windows machine>:0.0`.
+
+Then you can start the graphical client with 
+```sh
+./skat_client -g <NAME>
+```
+
+
+--
+
 ## tools
 
 It is possible to display the dependencies between the classes.

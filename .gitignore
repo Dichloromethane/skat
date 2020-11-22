@@ -11,5 +11,7 @@
 *.png
 *.log
 
+!/doc/**
+
 /skat_client
 /skat_server
