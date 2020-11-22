@@ -37,14 +37,14 @@ fi
     {
       cd "$source_dir" || exit 1
       grep -rH --include="*.c" --include="*.h" "^#include \""
-      if [ $include_libs -gt 0 ]; then
+      if [ "$include_libs" -ne 0 ]; then
         grep -rH --include="*.c" --include="*.h" "^#include <"
       fi
     } | sed -n "s/\(.*\):#include [\"<]\(.*\)[\">]/\t\"\1\" -> \"\2\";/p"
   done
 
   echo "}"
-} | if [ "${print_graph}" -ge 0 ]; then
+} | if [ "${print_graph}" -ne 0 ]; then
   dot -T png -o "$output_file"
 else
   cat
