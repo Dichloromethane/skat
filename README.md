@@ -19,7 +19,7 @@ For easy installation on Debian the following steps must be executed:
 
 ```sh
 apt update
-apt install -y libglfw3-dev libfreetype-dev g++
+apt install -y libglfw3-dev libfreetype-dev build-essential
 make all
 ```
 
@@ -45,7 +45,7 @@ On Debian the following packages must be installed:
 
 - libglfw3-dev
 - libfreetype-dev
-- g++
+- build-essential
 
 ---
 
