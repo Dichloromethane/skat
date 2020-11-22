@@ -58,12 +58,15 @@ Requirements:
 
 - package **graphviz** on Debian
 
+Options:
+
+- `-p [FLAG]` _print_graph_ instead of creating an image, the structure is printed in JSON format
+- `-l [FLAG]` _include_libs_ when creating the graph the libraries are displayed in addition to the own classes
+
 Arguments:
 
-- -p _print_graph_ instead of creating an image, the structure is printed in JSON format
-- -l _include_libs_ when creating the graph the libraries are displayed in addition to the own classes
-- -s _source_dirs_ the specified directory is added to the list of directories to be output. Helpful if you only need the dependencies of a directory
-- -o _output_file_ With this option it is possible to overwrite the output file name.
+- `-s [DIRECTORY_LIST]` _source_dirs_ the specified directory is added to the list of directories to be output. Helpful if you only need the dependencies of a directory
+- `-o [FILEPATH]` _output_file_ With this option it is possible to overwrite the output file name.
 
 Example:
 
