@@ -101,13 +101,18 @@ server_add_player_for_connection(server *s, player *pl, int gupid) {
 
 connection_s2c *
 server_get_connection_by_pname(server *s, char *pname, int *n) {
-  FOR_EACH_ACTIVE(s, i, {
+  for(int i = 0; i < 4; i++) {
+	if (!s->pls[i])
+	  continue;
+	DEBUG_PRINTF("Comparing \"%s\" to \"%s\"", s->pls[i]->name, pname);
 	if (!strncmp(s->pls[i]->name, pname, s->pls[i]->name_length)) {
 	  if (n)
 		*n = i;
+	  DEBUG_PRINTF("Found 'em");
 	  return &s->conns[i];
 	}
-  });
+  };
+  DEBUG_PRINTF("Didn't find 'em");
   return NULL;
 }
 

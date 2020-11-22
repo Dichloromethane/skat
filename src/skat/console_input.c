@@ -3,6 +3,7 @@
 #include "skat/card_printer.h"
 #include "skat/command.h"
 #include "skat/game_rules.h"
+#include "skat/player.h"
 #include "skat/util.h"
 #include <stddef.h>
 #include <stdio.h>
@@ -134,6 +135,13 @@ print_reizen_info(client *c, event *e) {
   }
 }
 
+static player *disconnected_player;
+
+__attribute__((constructor)) static void
+init_disconnected_player(void) {
+  disconnected_player = create_player(-1, -1, "DISCONNECTED");
+}
+
 static void
 print_info_exec(void *p) {
   client *c = p;
@@ -175,20 +183,20 @@ print_info_exec(void *p) {
 	  printf("You are playing alone\n");
 	} else {
 	  printf("You are playing with %s\n",
-			 c->pls[c->cs.sgs.active_players[c->cs.my_partner]]->name);
+			 (c->pls[c->cs.sgs.active_players[c->cs.my_partner]] ?: disconnected_player)->name);
 	}
 
 	if (c->cs.sgs.stich_num > 0) {
 	  printf("Last Stich (num=%d, vorhand=%s, winner=%s):", c->cs.sgs.stich_num,
-			 c->pls[c->cs.sgs.active_players[last_stich->vorhand]]->name,
-			 c->pls[c->cs.sgs.active_players[last_stich->winner]]->name);
+			 (c->pls[c->cs.sgs.active_players[last_stich->vorhand]] ?: disconnected_player)->name,
+			 (c->pls[c->cs.sgs.active_players[last_stich->winner]] ?: disconnected_player)->name);
 	  print_card_array(&c->cs.sgs, NULL, last_stich->cs,
 					   last_stich->played_cards,
 					   CARD_COLOR_MODE_ONLY_CARD_COLOR);
 	  printf("\n");
 	}
 	printf("Current Stich (num=%d, vorhand=%s):", c->cs.sgs.stich_num,
-		   c->pls[c->cs.sgs.active_players[stich->vorhand]]->name);
+		   (c->pls[c->cs.sgs.active_players[stich->vorhand]] ?: disconnected_player)->name);
 	print_card_array(&c->cs.sgs, NULL, stich->cs, stich->played_cards,
 					 CARD_COLOR_MODE_ONLY_CARD_COLOR);
 	printf("\n");

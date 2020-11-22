@@ -135,8 +135,8 @@ establish_connection_server(server *s, int fd, pthread_t handler) {
 
   // TODO: remove this so we can actually resume a player or add a new player in
   // between rounds
-  CH_ASSERT(s->ss.sgs.cgphase == GAME_PHASE_SETUP, &c,
-			CONN_ERROR_INVALID_JOIN_TIME, err);
+  /* CH_ASSERT(s->ss.sgs.cgphase == GAME_PHASE_SETUP, &c,
+			CONN_ERROR_INVALID_JOIN_TIME, err);*/
 
   if (p.type == PACKAGE_JOIN) {
 	payload_join *pl_join = p.payload.pl_j;
@@ -213,7 +213,7 @@ establish_connection_server(server *s, int fd, pthread_t handler) {
 
 	CH_ASSERT(s2c = server_get_connection_by_pname(s, pl_resume->name, &gupid),
 			  &c, CONN_ERROR_NO_SUCH_PLAYER_NAME, err_release);
-	CH_ASSERT(!s2c->c.active, &s2c->c, CONN_ERROR_PLAYER_NAME_IN_USE,
+	CH_ASSERT(!s2c->c.active, &c, CONN_ERROR_PLAYER_NAME_IN_USE,
 			  err_release);
 
 	init_conn_s2c(s2c, &c);
