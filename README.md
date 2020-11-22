@@ -60,7 +60,7 @@ Requirements:
 
 Options:
 
-- `-p [FLAG]` _print_graph_ instead of creating an image, the structure is printed in JSON format
+- `-p [FLAG]` _print_graph_ instead of creating an image, the structure is printed in DOT format
 - `-l [FLAG]` _include_libs_ when creating the graph the libraries are displayed in addition to the own classes
 
 Arguments:

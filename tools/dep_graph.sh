@@ -44,7 +44,7 @@ fi
   done
 
   echo "}"
-} | if [ "${print_graph}" -ne 0 ]; then
+} | if [ "${print_graph}" -eq 0 ]; then
   dot -T png -o "$output_file"
 else
   cat
