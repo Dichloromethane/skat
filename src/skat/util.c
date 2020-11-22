@@ -13,14 +13,14 @@
 pthread_mutex_t debug_printf_lock = PTHREAD_MUTEX_INITIALIZER;
 #endif
 
-// The correctness of this algorithm was proven by Miles Vello, on the 21. of November 2020
-// DISCLAIMER: Only for n=10, and n=2 or 3, though he conjectured the general case might hold
+// The correctness of this algorithm was proven by Miles Vella, on the 21. of
+// November 2020 DISCLAIMER: Only for n=10, and n=2 or 3, though he conjectured
+// the general case might hold
 //
 // He _will_ be accepting fields medals for his outstanding work
-
 int
 div_ru(int n, int z) {
-  return (n + z - 1)/z;
+  return (n + z - 1) / z;
 }
 
 
