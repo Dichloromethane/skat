@@ -1,8 +1,8 @@
 #ifndef REIZEN_HDR
 #define REIZEN_HDR
 
-#include <stdint.h>
 #include "skat/game_rules.h"
+#include <stdint.h>
 
 #ifndef STRINGIFY
 #define STRINGIFY_   #x
@@ -58,14 +58,15 @@ int reizen_get_grundwert(game_rules const *gr);
 
 typedef enum {
   LOSS_TYPE_INVALID = 0,
-  LOSS_TYPE_WON, // ERROR: Success
+  LOSS_TYPE_WON,// ERROR: Success
   LOSS_TYPE_WON_DURCHMARSCH,
+  LOSS_TYPE_RAMSCH,
   LOSS_TYPE_LOST,
   LOSS_TYPE_LOST_UEBERREIZT
 } loss_type;
 
 typedef struct {
-  int round_winner; /* indexed by ap */
+  int round_winner;   /* indexed by ap */
   int round_score[3]; /* indexed by ap */
   int spielwert;
   int lt : 4; /* loss type */

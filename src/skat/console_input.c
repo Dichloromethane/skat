@@ -150,6 +150,14 @@ print_info_exec(void *p) {
 		 c->pls[c->cs.my_gupid]->name, c->cs.my_gupid,
 		 c->cs.my_active_player_index);
 
+  printf("Current scores:\n");
+  for (int i = 0; i < 4; ++i) {
+	player *pl = c->pls[i];
+	if (pl)
+	  printf("\t%s: %d\n", pl->gupid == c->cs.my_gupid ? "YOU" : pl->name,
+			 c->cs.sgs.score[i]);
+  }
+
   printf("Game Phase: %s\n", game_phase_name_table[phase]);
 
   if (phase == GAME_PHASE_REIZEN) {
@@ -480,16 +488,15 @@ client_play_card_callback(void *v) {
 					 args->hdr.c->cs.sgs.curr_stich.cs,
 					 args->hdr.c->cs.sgs.curr_stich.played_cards,
 					 CARD_COLOR_MODE_ONLY_CARD_COLOR);
+	if (args->hdr.c->cs.sgs.stich_num < 10) {
+	  printf("\n");
+	  print_player_turn(args->hdr.c, PRINT_PLAYER_TURN_SHOW_HAND_MODE_DEFAULT);
+	}
   } else {
 	print_card_array(&args->hdr.c->cs.sgs, NULL,
 					 args->hdr.c->cs.sgs.last_stich.cs,
 					 args->hdr.c->cs.sgs.last_stich.played_cards,
 					 CARD_COLOR_MODE_ONLY_CARD_COLOR);
-  }
-
-  if (args->hdr.c->cs.sgs.curr_stich.played_cards < 3) {
-	printf("\n");
-	print_player_turn(args->hdr.c, PRINT_PLAYER_TURN_SHOW_HAND_MODE_DEFAULT);
   }
 
 end:
@@ -529,21 +536,62 @@ execute_play_card(client *c, card_id cid) {
 /* --------------------------------
    End execute play card logic */
 
-
 static void
 print_event_announce(client *c, event *e) {
-  if (c->cs.sgs.gr.type != GAME_TYPE_RAMSCH) 
-	printf("The Spielwert was %d\n", e->rr.
-  if (c->cs.my_active_player_index == e->rr.round_winner) {
+#define player_name_lookup(ap) \
+  c->cs.my_active_player_index == ap \
+		  ? "YOU" \
+		  : c->pls[c->cs.sgs.active_players[ap]]->name
+
+  if (c->cs.sgs.gr.type != GAME_TYPE_RAMSCH) {
+	printf("This round is over. The Spielwert was %d", e->rr.spielwert);
+	if (e->rr.schwarz)
+	  printf("The Gegenpartei was played schwarz\n");
+	else if (e->rr.schneider)
+	  printf("The Gegenpartei was played into schneider\n");
+	else
+	  printf("\n");
+  } else
+	printf("This round of Ramschen is over\n");
+
+  if (e->rr.round_winner != -1) {// there is a specific winner
+	const char *winner_name = player_name_lookup(e->rr.round_winner);
+
 	if (c->cs.sgs.gr.type == GAME_TYPE_RAMSCH) {
 	  if (e->rr.lt == LOSS_TYPE_WON_DURCHMARSCH)
-	    printf("You won this round in a durchmarsch");
-	} else if (c->cs.ist_alleinspieler) {
-	  printf("You won this round");
-	} else
-	  printf("You won this game with your partner\n");
-  } else if (e->rr.round_winner != -1) {
-	printf("You lost the game");
+		printf("%s won this round in a durchmarsch\n", winner_name);
+	  else
+		printf("ERROR: %s somehow won a ramsch without durchmarsch?\n",
+			   winner_name);
+	} else {
+	  printf("%s won this round\n", winner_name);
+	}
+  } else if (c->cs.sgs.gr.type != GAME_TYPE_RAMSCH) {// the gegenpartei won
+	const char *winner1_name = NULL, *winner2_name = NULL;
+	switch (c->cs.sgs.alleinspieler) {
+	  case 0:
+		winner1_name = player_name_lookup(1);
+		winner2_name = player_name_lookup(2);
+		break;
+	  case 1:
+		winner1_name = player_name_lookup(0);
+		winner2_name = player_name_lookup(2);
+		break;
+	  case 2:
+		winner1_name = player_name_lookup(0);
+		winner2_name = player_name_lookup(1);
+		break;
+	  default:
+		winner1_name = winner2_name = "ERROR";
+		break;
+	}
+
+	printf("%s and %s won this round\n", winner1_name, winner2_name);
+  }
+
+  printf("Scores for current round:\n");
+  for (int i = 0; i < 3; ++i) {
+	printf("\t%s: %d\n", player_name_lookup(i), e->rr.round_score[i]);
   }
 }
 
@@ -591,6 +639,11 @@ io_handle_event(client *c, event *e) {
 	  printf("%s pressed two cards.\n", c->pls[e->acting_player]->name);
 	  printf("Waiting for Spielansage ohne Hand.");
 	  break;
+	case EVENT_GAME_CALLED:
+	  print_game_rules_info(&c->cs.sgs.gr);
+	  printf("\n");
+	  print_player_turn(c, PRINT_PLAYER_TURN_SHOW_HAND_MODE_DEFAULT);
+	  break;
 	case EVENT_PLAY_CARD:
 	  card_get_name(&e->card, buf);
 	  printf("Card %s played. Cards currently on table:", buf);
@@ -608,13 +661,6 @@ io_handle_event(client *c, event *e) {
 		print_player_turn(c, PRINT_PLAYER_TURN_SHOW_HAND_MODE_DEFAULT);
 	  }
 	  break;
-	case EVENT_ANNOUNCE_SCORES:
-	  print_event_announce(c, e);
-	case EVENT_GAME_CALLED:
-	  print_game_rules_info(&c->cs.sgs.gr);
-	  printf("\n");
-	  print_player_turn(c, PRINT_PLAYER_TURN_SHOW_HAND_MODE_DEFAULT);
-	  break;
 	case EVENT_STICH_DONE:
 	  if (e->stich_winner == c->cs.my_gupid) {
 		printf("You won the Stich! \\o/");
@@ -625,8 +671,23 @@ io_handle_event(client *c, event *e) {
 	  } else {
 		printf("You lost the Stich. Gid good.");
 	  }
-	  printf("\n");
-	  print_player_turn(c, PRINT_PLAYER_TURN_SHOW_HAND_MODE_DEFAULT);
+
+	  if (c->cs.sgs.stich_num < 10) {
+		printf("\n");
+		print_player_turn(c, PRINT_PLAYER_TURN_SHOW_HAND_MODE_DEFAULT);
+	  }
+	  break;
+	case EVENT_ANNOUNCE_SCORES:
+	  print_event_announce(c, e);
+	  break;
+	case EVENT_ROUND_DONE:
+	  printf("Tallied scores after the current round:\n");
+	  for (int i = 0; i < 4; ++i) {
+		player *pl = c->pls[i];
+		if (pl)
+		  printf("\t%s: %d\n", pl->gupid == c->cs.my_gupid ? "YOU" : pl->name,
+				 c->cs.sgs.score[i]);
+	  }
 	  break;
 	default:
 	  printf("Something (%s) happened", event_name_table[e->type]);
