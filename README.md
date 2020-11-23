@@ -1,10 +1,10 @@
-# skat [![GitHub license](https://img.shields.io/github/license/Dichloromethane/skat)](https://github.com/Dichloromethane/skat/blob/master/LICENSE)
+# skat [![GitHub License](https://img.shields.io/github/license/Dichloromethane/skat)](https://github.com/Dichloromethane/skat/blob/master/LICENSE)
 
 [![Repo Size](https://img.shields.io/github/repo-size/Dichloromethane/skat.svg)](https://github.com/Dichloromethane/skat)
 [![Release Status](https://img.shields.io/badge/status-alpha-orange)](https://github.com/Dichloromethane/skat)
-[![GitHub Workflow Status](https://img.shields.io/github/workflow/status/Dichloromethane/skat/build?label=build)](https://github.com/Dichloromethane/skat/actions?query=workflow%3Abuild)
-[![GitHub Workflow Status](https://img.shields.io/github/workflow/status/Dichloromethane/skat/shellcheck?label=shellcheck)](https://github.com/Dichloromethane/skat/actions?query=workflow%3Ashellcheck)
-[![GitHub Workflow Status](https://img.shields.io/github/workflow/status/Dichloromethane/skat/markdownlint?label=markdownlint)](https://github.com/Dichloromethane/skat/actions?query=workflow%3Amarkdownlint)
+[![build](https://github.com/Dichloromethane/skat/workflows/build/badge.svg)](https://github.com/Dichloromethane/skat/actions?query=workflow%3Abuild)
+[![shellcheck](https://github.com/Dichloromethane/skat/workflows/shellcheck/badge.svg)](https://github.com/Dichloromethane/skat/actions?query=workflow%3Ashellcheck)
+[![markdownlint](https://github.com/Dichloromethane/skat/workflows/markdownlint/badge.svg)](https://github.com/Dichloromethane/skat/actions?query=workflow%3Amarkdownlint)
 ---
 
 **Skat** is a client-server application to play a round of Skat with multiple players.
