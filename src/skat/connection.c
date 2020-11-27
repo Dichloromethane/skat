@@ -133,11 +133,6 @@ establish_connection_server(server *s, int fd, pthread_t handler) {
   package_clean(&p);
   retrieve_package(&c, &p);
 
-  // TODO: remove this so we can actually resume a player or add a new player in
-  // between rounds
-  /* CH_ASSERT(s->ss.sgs.cgphase == GAME_PHASE_SETUP, &c,
-			CONN_ERROR_INVALID_JOIN_TIME, err);*/
-
   if (p.type == PACKAGE_JOIN) {
 	payload_join *pl_join = p.payload.pl_j;
 
@@ -366,6 +361,8 @@ establish_connection_client(client *c, int socket_fd, pthread_t handler,
   if (p.type == PACKAGE_ERROR) {
 	DERROR_PRINTF("Encountered error %s while connecting to server",
 				  conn_error_name_table[p.payload.pl_er->type]);
+	printf("\nConnection error: %s\n",
+		   conn_error_name_table[p.payload.pl_er->type]);
 	return NULL;
   }
 
@@ -386,6 +383,8 @@ establish_connection_client(client *c, int socket_fd, pthread_t handler,
   if (p.type == PACKAGE_ERROR) {
 	DERROR_PRINTF("Encountered error %s while resyncing with server",
 				  conn_error_name_table[p.payload.pl_er->type]);
+	printf("\nConnection error while resyncing: %s\n",
+		   conn_error_name_table[p.payload.pl_er->type]);
 	return NULL;
   }
 

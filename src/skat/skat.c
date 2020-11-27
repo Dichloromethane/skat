@@ -35,7 +35,7 @@ get_score_delta_normal_game(game_rules *gs, reiz_state *rs, uint64_t game_value,
 	grundwert = reizen_get_grundwert(gs);
 	*won = false;
 	*lt = LOSS_TYPE_LOST_UEBERREIZT;
-	return -2 * div_ru(rs->reizwert, grundwert) * grundwert;
+	return -2 * ceil_div(rs->reizwert, grundwert) * grundwert;
   }
 
   *lt = LOSS_TYPE_WON;

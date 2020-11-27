@@ -19,10 +19,9 @@ pthread_mutex_t debug_printf_lock = PTHREAD_MUTEX_INITIALIZER;
 //
 // He _will_ be accepting fields medals for his outstanding work
 int
-div_ru(int n, int z) {
+ceil_div(int n, int z) {
   return (n + z - 1) / z;
 }
-
 
 static int
 get_random_fd() {
