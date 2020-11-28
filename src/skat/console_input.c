@@ -99,9 +99,9 @@ print_reizen_info(client *c, event *e) {
 	  else
 		printf("%s hat gepasst at reizwert %u.", actor->name, rs->reizwert);
 	}
-  }
 
-  printf("\n");
+	printf("\n");
+  }
 
   if (rs->rphase == REIZ_PHASE_MITTELHAND_TO_VORHAND
 	  || rs->rphase == REIZ_PHASE_HINTERHAND_TO_WINNER) {
@@ -184,15 +184,14 @@ print_info_exec(void *p) {
   printf("Game Phase: %s\n", game_phase_name_table[phase]);
 
   if (phase == GAME_PHASE_REIZEN) {
-	printf("rphase=%s, waiting_teller=%d, reizwert=%u, winner=%d\n",
-		   reiz_phase_name_table[c->cs.sgs.rs.rphase],
-		   c->cs.sgs.rs.waiting_teller, c->cs.sgs.rs.reizwert,
-		   c->cs.sgs.rs.winner);
 	printf("Your hand:");
 	print_card_collection(&c->cs.sgs, &c->cs.my_hand,
 						  CARD_SORT_MODE_PREGAME_HAND,
 						  CARD_COLOR_MODE_ONLY_CARD_COLOR);
-	printf("\n");
+	printf("\nrphase=%s, waiting_teller=%d, reizwert=%u, winner=%d\n",
+		   reiz_phase_name_table[c->cs.sgs.rs.rphase],
+		   c->cs.sgs.rs.waiting_teller, c->cs.sgs.rs.reizwert,
+		   c->cs.sgs.rs.winner);
 	print_reizen_info(c, NULL);
 	printf("\n");
   } else if (phase == GAME_PHASE_PLAY_STICH_C1
