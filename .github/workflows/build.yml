@@ -1,6 +1,6 @@
 name: build
 
-on: [ "push", "pull_request" ]
+on: [ push, pull_request ]
 
 jobs:
   build:
@@ -13,8 +13,8 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libglfw3-dev libfreetype-dev build-essential bear
+          sudo apt-get install -y libglfw3-dev libfreetype-dev build-essential
 
       - name: Run Build
         run: |
-          make all
+          make all_
