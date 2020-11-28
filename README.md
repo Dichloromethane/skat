@@ -61,7 +61,7 @@ You lost the Stich. Gid good.
 It is xXxSkatProfi9000xXx's turn.
 ```
 
-```
+```sh
 Scores for current round:
         YOU: 0
         iTitus: 0
