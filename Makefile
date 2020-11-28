@@ -113,7 +113,7 @@ delete_marker:
 
 bear:: clean
 bear:: | $(BUILDDIRS)
-	bear --output $(COMP_COMMANDS) -- $(MAKE) all_
+	bear --output $(COMP_COMMANDS) -- $(MAKE) all_ || bear -o $(COMP_COMMANDS) $(MAKE) all_
 
 clean:
 	$(RM) $(DEP) $(OBJ)
