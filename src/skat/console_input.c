@@ -194,6 +194,7 @@ print_info_exec(void *p) {
 						  CARD_COLOR_MODE_ONLY_CARD_COLOR);
 	printf("\n");
 	print_reizen_info(c, NULL);
+	printf("\n");
   } else if (phase == GAME_PHASE_PLAY_STICH_C1
 			 || phase == GAME_PHASE_PLAY_STICH_C2
 			 || phase == GAME_PHASE_PLAY_STICH_C3) {
