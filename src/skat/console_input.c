@@ -582,13 +582,11 @@ print_event_announce(client *c, event *e) {
 					->name
 
   if (c->cs.sgs.gr.type != GAME_TYPE_RAMSCH) {
-	printf("This round is over. The Spielwert was %d", e->rr.spielwert);
+	printf("This round is over. The Spielwert was %d.\n", e->rr.spielwert);
 	if (e->rr.schwarz)
 	  printf("The Gegenpartei was played schwarz\n");
 	else if (e->rr.schneider)
 	  printf("The Gegenpartei was played into schneider\n");
-	else
-	  printf("\n");
   } else
 	printf("This round of Ramschen is over\n");
 
