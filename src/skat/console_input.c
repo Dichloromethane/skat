@@ -44,10 +44,12 @@ static void
 print_reizen_info(client *c, event *e) {
   reiz_state *rs = &c->cs.sgs.rs;
 
-  if (e->type == EVENT_DISTRIBUTE_CARDS) {
-	printf("Reizen begin!");
-  } else if (e->type == EVENT_REIZEN_DONE) {
-	printf("Reizen done at reizwert %u!", rs->reizwert);
+  if (e != NULL) {
+	if (e->type == EVENT_DISTRIBUTE_CARDS) {
+	  printf("Reizen begin!");
+	} else if (e->type == EVENT_REIZEN_DONE) {
+	  printf("Reizen done at reizwert %u!", rs->reizwert);
+	}
   }
 
   int teller_gupid, listener_gupid;
@@ -65,8 +67,8 @@ print_reizen_info(client *c, event *e) {
   } else
 	__builtin_unreachable();
 
-  int is_actor = c->cs.my_gupid == e->acting_player;
-  player *actor = e->acting_player == -1
+  int is_actor = e != NULL && c->cs.my_gupid == e->acting_player;
+  player *actor = e == NULL || e->acting_player == -1
 						  ? NULL
 						  : (c->pls[e->acting_player] ?: disconnected_player);
 
@@ -80,21 +82,23 @@ print_reizen_info(client *c, event *e) {
 							 ? NULL
 							 : (c->pls[listener_gupid] ?: disconnected_player);
 
-  if (e->type == EVENT_REIZEN_NUMBER) {
-	if (is_actor)
-	  printf("YOU reizt %u.", rs->reizwert);
-	else
-	  printf("%s reizt %u.", actor->name, rs->reizwert);
-  } else if (e->type == EVENT_REIZEN_CONFIRM) {
-	if (is_actor)
-	  printf("YOU confirmed the reizwert %u.", rs->reizwert);
-	else
-	  printf("%s confirmed the reizwert %u.", actor->name, rs->reizwert);
-  } else if (e->type == EVENT_REIZEN_PASSE) {
-	if (is_actor)
-	  printf("YOU hast gepasst at reizwert %u.", rs->reizwert);
-	else
-	  printf("%s hat gepasst at reizwert %u.", actor->name, rs->reizwert);
+  if (e != NULL) {
+	if (e->type == EVENT_REIZEN_NUMBER) {
+	  if (is_actor)
+		printf("YOU reizt %u.", rs->reizwert);
+	  else
+		printf("%s reizt %u.", actor->name, rs->reizwert);
+	} else if (e->type == EVENT_REIZEN_CONFIRM) {
+	  if (is_actor)
+		printf("YOU confirmed the reizwert %u.", rs->reizwert);
+	  else
+		printf("%s confirmed the reizwert %u.", actor->name, rs->reizwert);
+	} else if (e->type == EVENT_REIZEN_PASSE) {
+	  if (is_actor)
+		printf("YOU hast gepasst at reizwert %u.", rs->reizwert);
+	  else
+		printf("%s hat gepasst at reizwert %u.", actor->name, rs->reizwert);
+	}
   }
 
   printf("\n");
@@ -130,7 +134,7 @@ print_reizen_info(client *c, event *e) {
 	  printf("%s is deciding whether to play or ramsch.", teller->name);
   }
 
-  if (e->type == EVENT_REIZEN_DONE) {
+  if (e != NULL && e->type == EVENT_REIZEN_DONE) {
 	if (c->cs.ist_alleinspieler) {
 	  printf("You are playing alone.\n");
 	  if (c->cs.sgs.gr.type != GAME_TYPE_RAMSCH) {
@@ -184,6 +188,12 @@ print_info_exec(void *p) {
 		   reiz_phase_name_table[c->cs.sgs.rs.rphase],
 		   c->cs.sgs.rs.waiting_teller, c->cs.sgs.rs.reizwert,
 		   c->cs.sgs.rs.winner);
+	printf("Your hand:");
+	print_card_collection(&c->cs.sgs, &c->cs.my_hand,
+						  CARD_SORT_MODE_PREGAME_HAND,
+						  CARD_COLOR_MODE_ONLY_CARD_COLOR);
+	printf("\n");
+	print_reizen_info(c, NULL);
   } else if (phase == GAME_PHASE_PLAY_STICH_C1
 			 || phase == GAME_PHASE_PLAY_STICH_C2
 			 || phase == GAME_PHASE_PLAY_STICH_C3) {
@@ -200,7 +210,7 @@ print_info_exec(void *p) {
 	}
 
 	if (c->cs.sgs.stich_num > 0) {
-	  printf("Last Stich (num=%d, vorhand=%s, winner=%s):", c->cs.sgs.stich_num,
+	  printf("Last Stich (vorhand=%s, winner=%s):",
 			 (c->pls[c->cs.sgs.active_players[last_stich->vorhand]]
 					  ?: disconnected_player)
 					 ->name,
