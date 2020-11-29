@@ -520,16 +520,14 @@ client_play_card_callback(void *v) {
   char buf[4];
   card_get_name(&args->hdr.e.card, buf);
   printf("Successfully played card %s. Cards currently on table:", buf);
-  if (args->hdr.c->cs.sgs.curr_stich.played_cards > 0) {
+  if (args->hdr.c->cs.sgs.curr_stich.played_cards > 0) {// 1 or 2 cards played
 	print_card_array(&args->hdr.c->cs.sgs, NULL,
 					 args->hdr.c->cs.sgs.curr_stich.cs,
 					 args->hdr.c->cs.sgs.curr_stich.played_cards,
 					 CARD_COLOR_MODE_ONLY_CARD_COLOR);
-	if (args->hdr.c->cs.sgs.stich_num < 10) {
-	  printf("\n");
-	  print_player_turn(args->hdr.c, PRINT_PLAYER_TURN_SHOW_HAND_MODE_DEFAULT);
-	}
-  } else {
+	printf("\n");
+	print_player_turn(args->hdr.c, PRINT_PLAYER_TURN_SHOW_HAND_MODE_DEFAULT);
+  } else {// 3 cards played, player turn info printed on EVENT_STICH_DONE
 	print_card_array(&args->hdr.c->cs.sgs, NULL,
 					 args->hdr.c->cs.sgs.last_stich.cs,
 					 args->hdr.c->cs.sgs.last_stich.played_cards,
@@ -686,18 +684,16 @@ io_handle_event(client *c, event *e) {
 	case EVENT_PLAY_CARD:
 	  card_get_name(&e->card, buf);
 	  printf("Card %s played. Cards currently on table:", buf);
-	  if (c->cs.sgs.curr_stich.played_cards > 0) {
+	  if (c->cs.sgs.curr_stich.played_cards > 0) {// 1 or 2 cards played
 		print_card_array(&c->cs.sgs, NULL, c->cs.sgs.curr_stich.cs,
 						 c->cs.sgs.curr_stich.played_cards,
 						 CARD_COLOR_MODE_ONLY_CARD_COLOR);
-	  } else {
+		printf("\n");
+		print_player_turn(c, PRINT_PLAYER_TURN_SHOW_HAND_MODE_DEFAULT);
+	  } else {// 3 cards played
 		print_card_array(&c->cs.sgs, NULL, c->cs.sgs.last_stich.cs,
 						 c->cs.sgs.last_stich.played_cards,
 						 CARD_COLOR_MODE_ONLY_CARD_COLOR);
-	  }
-	  if (c->cs.sgs.curr_stich.played_cards < 3) {
-		printf("\n");
-		print_player_turn(c, PRINT_PLAYER_TURN_SHOW_HAND_MODE_DEFAULT);
 	  }
 	  break;
 	case EVENT_STICH_DONE:
