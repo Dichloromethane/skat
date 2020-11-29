@@ -690,7 +690,7 @@ io_handle_event(client *c, event *e) {
 						 CARD_COLOR_MODE_ONLY_CARD_COLOR);
 		printf("\n");
 		print_player_turn(c, PRINT_PLAYER_TURN_SHOW_HAND_MODE_DEFAULT);
-	  } else {// 3 cards played
+	  } else {// 3 cards played, player turn info printed on EVENT_STICH_DONE
 		print_card_array(&c->cs.sgs, NULL, c->cs.sgs.last_stich.cs,
 						 c->cs.sgs.last_stich.played_cards,
 						 CARD_COLOR_MODE_ONLY_CARD_COLOR);
