@@ -5,6 +5,7 @@
 [![build](https://github.com/Dichloromethane/skat/workflows/build/badge.svg)](https://github.com/Dichloromethane/skat/actions?query=workflow%3Abuild)
 [![shellcheck](https://github.com/Dichloromethane/skat/workflows/shellcheck/badge.svg)](https://github.com/Dichloromethane/skat/actions?query=workflow%3Ashellcheck)
 [![markdownlint](https://github.com/Dichloromethane/skat/workflows/markdownlint/badge.svg)](https://github.com/Dichloromethane/skat/actions?query=workflow%3Amarkdownlint)
+
 ---
 
 **Skat** is a client-server application to play a round of Skat with multiple players.
@@ -36,6 +37,47 @@ The command line client can be executed with the following command:
 ```sh
 ./skat_client "playername"
 ```
+
+---
+
+## roadmap
+
+- add `msg` or `say` command to chat with other users
+- inform player who is not playing that he is only watching on round begin
+- list possible commands in reizen phase
+- "YOU hast gepasst at reizwert 18." - fix the language
+- "This round is over. The Spielwert was 20" - language!
+- context sensitive help: for example in turn phase
+- add kibitzen feature - the waiting player can see the cards of the other players
+- add command to print seating order
+
+- too much information here:
+
+```sh
+Card Kr9 played. Cards currently on table: KrA(71) Kr7(65) Kr9(67)
+It is xXxSkatProfi9000xXx's turn.
+> --
+You lost the Stich. Gid good.
+It is xXxSkatProfi9000xXx's turn.
+```
+
+```sh
+Scores for current round:
+        YOU: 0
+        iTitus: 0
+        xXxSkatProfi9000xXx: 20
+
+> --
+Tallied scores after the current round:
+        YOU: 3
+        iTitus: 0
+        xXxSkatProfi9000xXx: 20
+        Marcel: 0
+```
+
+I should not have points.
+
+- `Your hand:` when hand empty print message that you are watching
 
 ---
 
