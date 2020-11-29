@@ -715,6 +715,7 @@ io_handle_event(client *c, event *e) {
 
 	  if (c->cs.sgs.stich_num < 10) {
 		printf("\n");
+		if (c->cs.sgs.curr_stich.played_cards < 3)
 		print_player_turn(c, PRINT_PLAYER_TURN_SHOW_HAND_MODE_DEFAULT);
 	  }
 	  break;
