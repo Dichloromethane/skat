@@ -12,7 +12,7 @@
 
 The application is programmed in **C** and therefore unbeatably **fast**. It is possible to play Skat via the **command line** or via a **graphical client**.
 
-Currently only **Linux** is supported as operating system. It is currently tested on **Debian / Ubuntu**.
+Currently only **Linux** is supported as operating system. It is currently tested on **Debian / Ubuntu / Arch** both on **x86_64** and **ppc64le**.
 
 ---
 
