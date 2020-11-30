@@ -569,8 +569,7 @@ client_play_card_callback(void *v) {
   printf("--\n");
 
   if (args->hdr.e.type == EVENT_ILLEGAL_ACTION) {
-	printf("Big anlak! You tried to play a card, but it -sadly- was the "
-		   "wrong "
+	printf("Big anlak! You tried to play a card, but it -sadly- was the wrong "
 		   "card");
 	goto end;
   }
