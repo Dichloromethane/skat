@@ -90,6 +90,8 @@ typedef struct skat_server_state {
   card_id skat[2];
 
   card_collection initial_alleinspieler_hand;
+  card_collection initial_skat;
+  card_collection initial_alleinspieler_hand_with_skat;
 
   // indexed by active player, has to be initialized after reizen
   card_collection *stiche[3];

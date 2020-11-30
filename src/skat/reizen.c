@@ -127,8 +127,8 @@ reizen_get_game_value(skat_server_state *ss, int won, int schneider,
 
   int grundwert = reizen_get_grundwert(&ss->sgs.gr);
 
-  int8_t s_spitzen =
-		  reizen_count_spitzen(&ss->sgs.gr, &ss->initial_alleinspieler_hand);
+  int8_t s_spitzen = reizen_count_spitzen(
+		  &ss->sgs.gr, &ss->initial_alleinspieler_hand_with_skat);
   int mit = s_spitzen > 0;
   uint64_t spitzen = !mit ? -s_spitzen : s_spitzen;
 

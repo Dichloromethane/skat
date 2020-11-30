@@ -1,0 +1,7 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Skat Client (Günther)" type="CLionNativeAppRunConfigurationType" PROGRAM_PARAMS="Günther" REDIRECT_INPUT="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="skat" TARGET_NAME="skat_client" CONFIG_NAME="skat_client" version="1" RUN_PATH="$PROJECT_DIR$/skat_client">
+    <method v="2">
+      <option name="CLION.COMPOUND.BUILD" enabled="true" />
+    </method>
+  </configuration>
+</component>

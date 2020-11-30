@@ -44,4 +44,6 @@ print_game_rules_info(const game_rules *const gr) {
 	printf(" Schwarz");
   if (gr->ouvert)
 	printf(" Ouvert");
+
+  printf(".\n");
 }

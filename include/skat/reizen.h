@@ -56,7 +56,7 @@ uint16_t reizen_get_game_value(skat_server_state *cs, int won, int schneider,
 
 int reizen_get_grundwert(game_rules const *gr);
 
-typedef enum {
+typedef enum loss_type {
   LOSS_TYPE_INVALID = 0,
   LOSS_TYPE_WON,// ERROR: Success
   LOSS_TYPE_WON_DURCHMARSCH,
@@ -65,11 +65,14 @@ typedef enum {
   LOSS_TYPE_LOST_UEBERREIZT
 } loss_type;
 
-typedef struct {
-  int round_winner;   /* indexed by ap */
-  int round_score[3]; /* indexed by ap */
+typedef struct round_result {
+  int round_winner;              /* indexed by ap */
+  unsigned int player_points[3]; /* indexed by ap */
+  uint8_t player_stich_card_count[3]; /* indexed by ap */
+  int round_score[3];            /* indexed by ap */
   int spielwert;
-  int lt : 4; /* loss type */
+  unsigned normal_end : 1;
+  unsigned loss_type : 3;
   unsigned schneider : 1;
   unsigned schwarz : 1;
 } round_result;

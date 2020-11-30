@@ -44,17 +44,22 @@ get_score_delta_normal_game(game_rules *gs, reiz_state *rs, uint64_t game_value,
 
 void
 skat_calculate_game_result(skat_server_state *ss, round_result *rr) {
-  uint8_t result;
-  int result2 __attribute__((unused));
-  unsigned result3;
   uint64_t game_value;
   loss_type lt = LOSS_TYPE_INVALID;
   int as = ss->sgs.alleinspieler;
   bool won, schneider, schwarz, durchmarsch;
+
+  rr->normal_end = ss->sgs.stich_num == 9;
+  for (int i = 0; i < 3; i++) {
+	card_collection_get_score(ss->stiche[i], &rr->player_points[i]);
+
+	card_collection_get_card_count(ss->stiche[i],
+								   &rr->player_stich_card_count[i]);
+  }
+
   switch (ss->sgs.gr.type) {
 	case GAME_TYPE_NULL:
-	  card_collection_get_card_count(ss->stiche[as], &result);
-	  won = result != 0;
+	  won = rr->player_stich_card_count[as] == 0;
 	  game_value = reizen_get_game_value(ss, won, false, false);
 	  rr->spielwert = game_value;
 	  rr->schneider = 0;
@@ -63,18 +68,18 @@ skat_calculate_game_result(skat_server_state *ss, round_result *rr) {
 	  rr->round_score[as] = get_score_delta_normal_game(
 			  &ss->sgs.gr, &ss->sgs.rs, game_value, &won, &lt);
 	  rr->round_winner = won ? as : -1;
-	  rr->lt = lt;
+	  rr->loss_type = lt;
 	  break;
 	case GAME_TYPE_GRAND:
 	case GAME_TYPE_COLOR:
-	  card_collection_get_score(ss->stiche[as], &result3);
-	  if ((schneider = result3 >= 90)) {
-		card_collection_get_card_count(ss->stiche[as], &result);
-		schwarz = result == 32;
+	  (void) 0;
+	  unsigned int as_points = rr->player_points[as];
+	  if ((schneider = as_points >= 90)) {
+		schwarz = rr->player_stich_card_count[as] == 32;
 	  } else {
 		schwarz = false;
 	  }
-	  won = result3 > 60 && (schneider || !ss->sgs.gr.schneider_angesagt)
+	  won = as_points > 60 && (schneider || !ss->sgs.gr.schneider_angesagt)
 			&& (schwarz || !ss->sgs.gr.schneider_angesagt);
 	  game_value = reizen_get_game_value(ss, won, schneider, schwarz);
 	  rr->spielwert = game_value;
@@ -84,7 +89,7 @@ skat_calculate_game_result(skat_server_state *ss, round_result *rr) {
 	  rr->round_score[as] = get_score_delta_normal_game(
 			  &ss->sgs.gr, &ss->sgs.rs, game_value, &won, &lt);
 	  rr->round_winner = won ? as : -1;
-	  rr->lt = lt;
+	  rr->loss_type = lt;
 	  break;
 	case GAME_TYPE_RAMSCH:
 	  memset(rr->round_score, '\0', sizeof rr->round_score);
@@ -95,8 +100,8 @@ skat_calculate_game_result(skat_server_state *ss, round_result *rr) {
 	  durchmarsch = false;
 	  lt = LOSS_TYPE_RAMSCH;
 	  for (int i = 0; i < 3; i++) {
-		card_collection_get_card_count(ss->stiche[i], &result);
-		if (result == 30) {// The two cards in the skat don't count
+		// The two cards in the skat don't count
+		if (rr->player_stich_card_count[i] == 30) {
 		  durchmarsch = true;
 		  rr->round_winner = i;
 		  rr->round_score[i] = 120;
@@ -104,14 +109,13 @@ skat_calculate_game_result(skat_server_state *ss, round_result *rr) {
 		  break;
 		}
 	  }
-	  rr->lt = lt;
+	  rr->loss_type = lt;
 	  if (durchmarsch)
 		break;
 	  for (int i = 0; i < 3; i++) {
 		// TODO: needs more virgins
 		//   Also add configuration options for ramsch rules
-		card_collection_get_score(ss->stiche[i], &result3);
-		rr->round_score[i] = -result3;
+		rr->round_score[i] = -rr->player_points[i];
 	  }
 	  break;
 	default:
@@ -296,16 +300,16 @@ apply_action_between_rounds(skat_server_state *ss, action *a, player *pl,
 	  e.acting_player = pl->gupid;
 	  e.type = EVENT_START_ROUND;
 
-	  if (ss->sgs.active_players[0] == -1) {
-		for (int i = 0, j = 0; i < 4; i++)
-		  if (server_is_player_active(s, i))
-			ss->sgs.active_players[j++] = s->pls[i]->gupid;
+	  if (ss->sgs.active_players[0] == -1) {// first round
+		for (int gupid = 0, ap = 0; ap < 3; gupid++)
+		  if (server_is_player_active(s, gupid))
+			ss->sgs.active_players[ap++] = s->pls[gupid]->gupid;
 	  } else if (s->ncons == 3) {// we don't have a spectator
 		perm(ss->sgs.active_players, 3, 0x12);
-	  } else {
+	  } else {// we have a spectator
 		pm = 0;
-		for (int i = 0; i < 3; i++)
-		  pm |= 1 << ss->sgs.active_players[i];
+		for (int ap = 0; ap < 3; ap++)
+		  pm |= 1 << ss->sgs.active_players[ap];
 		ix = __builtin_ctz(~pm);
 		perm(ss->sgs.active_players, 3, 0x12);
 		ss->sgs.active_players[2] = s->pls[ix]->gupid;
@@ -345,6 +349,8 @@ apply_action_between_rounds(skat_server_state *ss, action *a, player *pl,
 	  card_collection_empty(&ss->player_hands[2]);
 
 	  card_collection_empty(&ss->initial_alleinspieler_hand);
+	  card_collection_empty(&ss->initial_skat);
+	  card_collection_empty(&ss->initial_alleinspieler_hand_with_skat);
 
 #if defined(DISTRIBUTE_SORTED_CARDS) && (DISTRIBUTE_SORTED_CARDS)
 	  // distributing manually for debugging:
@@ -414,9 +420,11 @@ finish_reizen(skat_server_state *ss, server *s, event *e) {
   } else {
 	ss->sgs.alleinspieler = ss->sgs.rs.winner;
 
-	ss->initial_alleinspieler_hand = ss->player_hands[ss->sgs.alleinspieler];
-	card_collection_add_card_array(&ss->initial_alleinspieler_hand, ss->skat,
-								   2);
+	ss->initial_alleinspieler_hand = ss->initial_alleinspieler_hand_with_skat =
+			ss->player_hands[ss->sgs.alleinspieler];
+	card_collection_add_card_array(&ss->initial_skat, ss->skat, 2);
+	card_collection_add_card_array(&ss->initial_alleinspieler_hand_with_skat,
+								   ss->skat, 2);
 
 	for (int ap = 0; ap < 3; ap++)
 	  ss->stiche[ap] =
@@ -617,8 +625,10 @@ apply_action_skat_aufnehmen(skat_server_state *ss, action *a, player *pl,
 	  return GAME_PHASE_SKAT_AUFNEHMEN;
 	case ACTION_SKAT_LEAVE:
 	  ss->sgs.took_skat = 0;
-	  card_collection_add_card_array(&ss->stiche_buf[ss->sgs.alleinspieler],
-									 ss->skat, 2);
+	  if (ss->sgs.gr.type != GAME_TYPE_NULL) {
+		card_collection_add_card_array(&ss->stiche_buf[ss->sgs.alleinspieler],
+									   ss->skat, 2);
+	  }
 
 	  e.type = EVENT_SKAT_LEAVE;
 
@@ -634,8 +644,10 @@ apply_action_skat_aufnehmen(skat_server_state *ss, action *a, player *pl,
 		return GAME_PHASE_INVALID;
 	  }
 
-	  card_collection_add_card_array(&ss->stiche_buf[ss->sgs.alleinspieler],
-									 a->skat_press_cards, 2);
+	  if (ss->sgs.gr.type != GAME_TYPE_NULL) {
+		card_collection_add_card_array(&ss->stiche_buf[ss->sgs.alleinspieler],
+									   a->skat_press_cards, 2);
+	  }
 
 	  ss->player_hands[ss->sgs.alleinspieler] = tmp;
 
@@ -799,6 +811,8 @@ apply_action_stich(skat_server_state *ss, action *a, player *pl, server *s,
 	  card_collection_add_card_array(ss->stiche[winner], ss->sgs.curr_stich.cs,
 									 3);
 
+	  ss->sgs.stich_num++;
+
 	  e.type = EVENT_STICH_DONE;
 	  e.answer_to = -1;
 	  e.acting_player = -1;
@@ -809,9 +823,17 @@ apply_action_stich(skat_server_state *ss, action *a, player *pl, server *s,
 	  ss->sgs.curr_stich =
 			  (stich){.vorhand = ss->sgs.last_stich.winner, .winner = -1};
 
-	  if (ss->sgs.stich_num++ < 9)
+	  // cancel game instantly in null spiel if alleinspieler wins a stich
+	  if (ss->sgs.gr.type == GAME_TYPE_NULL
+		  && ss->sgs.alleinspieler == winner) {
+		// TODO: for general game cancel (giving up, showing cards etc.) give
+		// all remaining cards to alleinspieler?
+		goto round_done;
+	  } else if (ss->sgs.stich_num <= 9) {
 		return GAME_PHASE_PLAY_STICH_C1;
+	  }
 
+	round_done:
 	  skat_calculate_game_result(ss, &e.rr);
 
 	  e.answer_to = -1;
@@ -1119,14 +1141,9 @@ skat_client_state_apply(skat_client_state *cs, event *e, client *c) {
 		return 0;
 	  }
 
-	  for (int i = 0; i < 3; ++i) {
-		if (cs->sgs.active_players[i] == e->stich_winner) {
-		  cs->sgs.curr_stich.winner = i;
-		  break;
-		}
-	  }
+	  cs->sgs.curr_stich.winner = c->pls[e->stich_winner]->ap;
 
-	  if (cs->sgs.stich_num++ < 9)
+	  if (++cs->sgs.stich_num <= 9)
 		cs->sgs.cgphase = GAME_PHASE_PLAY_STICH_C1;
 	  else
 		cs->sgs.cgphase = GAME_PHASE_CLIENT_WAIT_ANNOUNCE_SCORES;
@@ -1140,11 +1157,12 @@ skat_client_state_apply(skat_client_state *cs, event *e, client *c) {
 	  DEBUG_PRINTF("Scores are being announced, everyone is shivering with "
 				   "excitement");
 
-	  if (cs->sgs.cgphase != GAME_PHASE_CLIENT_WAIT_ANNOUNCE_SCORES) {
+	  // Allow round done in all phases for game cancel
+	  /*if (cs->sgs.cgphase != GAME_PHASE_CLIENT_WAIT_ANNOUNCE_SCORES) {
 		DERROR_PRINTF("Invalid game phase %s for ANNOUNCE_SCORES",
 					  game_phase_name_table[cs->sgs.cgphase]);
 		return 0;
-	  }
+	  }*/
 
 	  cs->sgs.cgphase = GAME_PHASE_CLIENT_WAIT_ROUND_DONE;
 
