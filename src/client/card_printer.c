@@ -1,4 +1,4 @@
-#include "skat/card_printer.h"
+#include "client/card_printer.h"
 #include "skat/skat.h"
 #include "skat/util.h"
 #include <stdio.h>

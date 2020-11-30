@@ -6,6 +6,19 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+void *
+handle_console_input(void *v) {
+  return NULL;
+}
+
+void
+io_handle_event(client *c, event *ev) {}
+
+static void
+print_usage(const char *const name) {
+  printf("Usage: %s [-p port]\n", name);
+}
+
 int
 main(int argc, char **argv) {
   int opt;
@@ -27,7 +40,7 @@ main(int argc, char **argv) {
 
 		__attribute__((fallthrough));
 	  default:
-		printf("Usage: %s [-p port]\n", argv[0]);
+		print_usage(argv[0]);
 		exit(EXIT_FAILURE);
 	}
   }

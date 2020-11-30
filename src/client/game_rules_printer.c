@@ -1,4 +1,4 @@
-#include "skat/game_rules.h"
+#include "client/game_rules_printer.h"
 #include <stdio.h>
 
 void

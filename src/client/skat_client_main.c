@@ -9,12 +9,12 @@
 #include <string.h>
 #include <unistd.h>
 
+int start_GRAPHICAL(int fullscreen);
+
 static void
 print_usage(const char *const name) {
   printf("Usage: %s [-r] [-g] [-f] [-h host] [-p port] name\n", name);
 }
-
-int start_GRAPHICAL(int fullscreen);
 
 int
 main(int argc, char **argv) {

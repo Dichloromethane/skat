@@ -4,7 +4,7 @@
 #include "skat/util.h"
 
 #if defined(CONSOLE_INPUT) && CONSOLE_INPUT
-#include "skat/console_input.h"
+#include "client/console_input.h"
 #else
 #error "Not yet supported, use the console implementation instead"
 #endif
