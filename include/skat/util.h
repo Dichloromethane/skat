@@ -13,6 +13,9 @@
 #define MIN(a, b) (a < b ? a : b)
 #define MAX(a, b) (a > b ? a : b)
 
+#define _CONCAT(x, y) x##y
+#define CONCAT(x, y)  _CONCAT(x, y)
+
 int ceil_div(int, int);
 size_t util_rand_int(size_t min, size_t max);
 size_t round_to_next_pow2(size_t n);

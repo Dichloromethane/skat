@@ -993,7 +993,7 @@ skat_client_handle_reizen_events(skat_client_state *cs, event *e, client *c) {
 		else if (sum == 2)
 		  cs->my_partner = 1;
 		else
-		  cs->my_partner = 3;
+		  cs->my_partner = 0;
 	  }
 
 	  return 1;
@@ -1223,7 +1223,7 @@ skat_resync_player(skat_server_state *ss, skat_client_state *cs, player *pl) {
 	else if (sum == 2)
 	  cs->my_partner = 1;
 	else
-	  cs->my_partner = 3;
+	  cs->my_partner = 0;
   }
 }
 

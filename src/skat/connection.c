@@ -46,6 +46,24 @@ static int
 retrieve_package(connection *c, package *p) {
   package_clean(p);
 
+  /*
+retrieve_package(connection *c, byte_buffer *bb) {
+
+   //byte_buffer_empty(bb); ?
+
+   uint64_t len;
+   ssize_t res;
+   res = read(c->fd, &len, sizeof(uint64_t));
+   if (res < 0 || (size_t) res != sizeof(uint64_t)) { ... }
+
+   byte_buffer_create_size(bb, len);
+   if (len > 0) {
+     res = read(c->fd, bb->buf, len);
+     if (res < 0 || (size_t) res != len) { ... }
+     bb->bytes_used = len;
+   }
+   */
+
   ssize_t res;
   res = read(c->fd, p, sizeof(package));
   if (res < 0 || (size_t) res != sizeof(package)) {

@@ -26,19 +26,42 @@
 								: "DISCONNECTED"))
 
 static void
-print_player_scores(const client *const c) {
-  printf("Current total player scores in seating order:\n");
-  for (int ap = 0; ap < 3; ap++) {
-	int gupid = c->cs.sgs.active_players[ap];
-	printf("\t%s[gupid=%d, ap=%d]: %d\n", player_name_lookup_ap(ap), gupid, ap,
-		   c->cs.sgs.score[gupid]);
-  }
-  printf("Current total spectator scores:\n");
-  for (int gupid = 0; gupid < 4; gupid++) {
-	player *pl = c->pls[gupid];
-	if (pl != NULL && pl->ap == -1)
-	  printf("\t%s[gupid=%d, ap=%d]: %d\n", player_name_lookup_gupid(gupid),
-			 gupid, pl->ap, c->cs.sgs.score[gupid]);
+print_players(const client *const c) {
+  switch (c->cs.sgs.cgphase) {
+	case GAME_PHASE_INVALID:
+	  break;
+	case GAME_PHASE_SETUP:
+	  printf("Current players:\n");
+	  for (int gupid = 0; gupid < 4; gupid++) {
+		player *pl = c->pls[gupid];
+		if (pl != NULL)
+		  printf("\t%s[gupid=%d]\n", player_name_lookup_gupid(gupid), gupid);
+	  }
+	  break;
+	case GAME_PHASE_BETWEEN_ROUNDS:
+	  printf("Current players:\n");
+	  for (int gupid = 0; gupid < 4; gupid++) {
+		player *pl = c->pls[gupid];
+		if (pl != NULL)
+		  printf("\t%s[gupid=%d]: %d\n", player_name_lookup_gupid(gupid), gupid,
+				 c->cs.sgs.score[gupid]);
+	  }
+	  break;
+	default:
+	  printf("Current total player scores in seating order:\n");
+	  for (int ap = 0; ap < 3; ap++) {
+		int gupid = c->cs.sgs.active_players[ap];
+		printf("\t%s[gupid=%d, ap=%d]: %d\n", player_name_lookup_ap(ap), gupid,
+			   ap, c->cs.sgs.score[gupid]);
+	  }
+	  printf("Current total spectator scores:\n");
+	  for (int gupid = 0; gupid < 4; gupid++) {
+		player *pl = c->pls[gupid];
+		if (pl != NULL && pl->ap == -1)
+		  printf("\t%s[gupid=%d]: %d\n", player_name_lookup_gupid(gupid), gupid,
+				 c->cs.sgs.score[gupid]);
+	  }
+	  break;
   }
 }
 
@@ -205,11 +228,14 @@ print_info_exec(void *p) {
   printf("You are %s[gupid=%d, ap=%d]\n", c->pls[c->cs.my_gupid]->name,
 		 c->cs.my_gupid, c->cs.my_active_player_index);
 
-  if (c->cs.my_active_player_index == -1) {
+  if (c->cs.sgs.cgphase != GAME_PHASE_INVALID
+	  && c->cs.sgs.cgphase != GAME_PHASE_SETUP
+	  && c->cs.sgs.cgphase != GAME_PHASE_BETWEEN_ROUNDS
+	  && c->cs.my_active_player_index == -1) {
 	printf("You are spectating\n");
   }
 
-  print_player_scores(c);
+  print_players(c);
 
   printf("Game Phase: %s\n", game_phase_name_table[phase]);
 
@@ -226,6 +252,46 @@ print_info_exec(void *p) {
 		   c->cs.sgs.rs.winner);
 	print_reizen_info(c, NULL);
 	printf("\n");
+  } else if (phase == GAME_PHASE_SKAT_AUFNEHMEN) {
+	if (c->cs.my_active_player_index == -1) {
+	  printf("%s is playing alone\n",
+			 player_name_lookup_ap(c->cs.sgs.alleinspieler));
+	} else {
+	  if (c->cs.ist_alleinspieler) {
+		printf("You are playing alone\n");
+	  } else {
+		printf("You are playing with %s\n",
+			   player_name_lookup_ap(c->cs.my_partner));
+	  }
+	}
+
+	if (c->cs.my_active_player_index != -1) {
+	  printf(" Your cards:");
+	  print_card_collection(&c->cs.sgs, &c->cs.my_hand,
+							CARD_SORT_MODE_PREGAME_HAND,
+							CARD_COLOR_MODE_ONLY_CARD_COLOR);
+	  printf("\n");
+	}
+  } else if (phase == GAME_PHASE_SPIELANSAGE) {
+	if (c->cs.my_active_player_index == -1) {
+	  printf("%s is playing alone\n",
+			 player_name_lookup_ap(c->cs.sgs.alleinspieler));
+	} else {
+	  if (c->cs.ist_alleinspieler) {
+		printf("You are playing alone\n");
+	  } else {
+		printf("You are playing with %s\n",
+			   player_name_lookup_ap(c->cs.my_partner));
+	  }
+	}
+
+	if (c->cs.my_active_player_index != -1) {
+	  printf(" Your cards:");
+	  print_card_collection(&c->cs.sgs, &c->cs.my_hand,
+							CARD_SORT_MODE_PREGAME_HAND,
+							CARD_COLOR_MODE_ONLY_CARD_COLOR);
+	  printf("\n");
+	}
   } else if (phase == GAME_PHASE_PLAY_STICH_C1
 			 || phase == GAME_PHASE_PLAY_STICH_C2
 			 || phase == GAME_PHASE_PLAY_STICH_C3) {
@@ -461,7 +527,7 @@ client_ready_callback(void *v) {
 	else
 	  printf("YOU are playing\n");
 
-	print_player_scores(c);
+	print_players(c);
   } else {
 	printf("ERROR: Received invalid event type %s after ready\n",
 		   event_name_table[e->type]);
@@ -782,7 +848,7 @@ io_handle_event(client *c, event *e) {
 	  else
 		printf("YOU are playing\n");
 
-	  print_player_scores(c);
+	  print_players(c);
 	  break;
 	case EVENT_DISTRIBUTE_CARDS:
 	  if (c->cs.my_active_player_index != -1) {
@@ -859,7 +925,7 @@ io_handle_event(client *c, event *e) {
 	  print_event_announce(c, e);
 	  break;
 	case EVENT_ROUND_DONE:
-	  print_player_scores(c);
+	  print_players(c);
 	  break;
 	default:
 	  printf("Something (%s) happened\n", event_name_table[e->type]);

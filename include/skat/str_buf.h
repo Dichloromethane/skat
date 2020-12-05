@@ -2,7 +2,7 @@
 
 #include <stddef.h>
 
-#define STR_BUF_DEFAULT_MIN_CAPACITY = (16)
+#define STR_BUF_DEFAULT_MIN_CAPACITY (16)
 
 typedef struct {
   size_t len; // actual string length
@@ -23,10 +23,10 @@ size_t str_buf_utf8_length(const str_buf *sb);
 
 /*
 void str_buf_set(str_buf *sb, const char *str);
-void str_buf_n_set(str_buf *sb, const char *str, size_t len);
+void str_buf_n_set(str_buf *sb, const char *str, size_t bytes_used);
 
 void str_buf_replace(str_buf *sb, const char *str, size_t index);
-void str_buf_n_replace(str_buf *sb, const char *str, size_t len, size_t index);
+void str_buf_n_replace(str_buf *sb, const char *str, size_t bytes_used, size_t index);
 */
 
 void str_buf_append(str_buf *sb_existing, const str_buf *str_buf_new);

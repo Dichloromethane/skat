@@ -206,9 +206,9 @@ server_resync_player(server *s, player *pl, payload_resync **pl_rs) {
   }
 
   DEBUG_PRINTF(
-		  "Resync payload contents: names='%s', aps={ %d, %d, %d, %d }, "
+		  "Resync payload contents: names=REDACTED, aps={ %d, %d, %d, %d }, "
 		  "name_lengths={ %zu, %zu, %zu, %zu }",
-		  (*pl_rs)->player_names, (*pl_rs)->active_player_indices[0],
+		  /*(*pl_rs)->player_names,*/ (*pl_rs)->active_player_indices[0],
 		  (*pl_rs)->active_player_indices[1],
 		  (*pl_rs)->active_player_indices[2],
 		  (*pl_rs)->active_player_indices[3], (*pl_rs)->player_name_lengths[0],

@@ -48,6 +48,10 @@ main(int argc, char **argv) {
   printf("port=%ld\n", port);
 
   server *s = malloc(sizeof(server));
+  if (s == NULL) {
+	__builtin_unreachable();
+  }
+
   server_init(s, (int) port);
   server_run(s);
   __builtin_unreachable();

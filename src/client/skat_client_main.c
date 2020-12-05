@@ -82,6 +82,10 @@ main(int argc, char **argv) {
   }
 
   client *c = malloc(sizeof(client));
+  if (c == NULL) {
+	__builtin_unreachable();
+  }
+
   client_init(c, host, (int) port, name);
   client_run(c, resume);
   __builtin_unreachable();

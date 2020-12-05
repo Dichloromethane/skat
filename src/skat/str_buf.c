@@ -82,14 +82,14 @@ str_buf_set(str_buf *sb, const char *str) {
 }
 
 void
-str_buf_n_set(str_buf *sb, const char *str, size_t len) {
-  sb->len = len;
+str_buf_n_set(str_buf *sb, const char *str, size_t bytes_used) {
+  sb->bytes_used = bytes_used;
 
-  str_buf_ensure_capacity(sb, sb->len + 1);
+  str_buf_ensure_capacity(sb, sb->bytes_used + 1);
 
-  if (len > 0)
-	strncpy(sb->buf, str, sb->len);
-  sb->buf[sb->len] = '\0';
+  if (bytes_used > 0)
+	strncpy(sb->buf, str, sb->bytes_used);
+  sb->buf[sb->bytes_used] = '\0';
 }
 
 void
@@ -98,21 +98,21 @@ str_buf_replace(str_buf *sb, const char *str, size_t index) {
 }
 
 void
-str_buf_n_replace(str_buf *sb, const char *str, size_t len, size_t index) {
-  if (index >= sb->len) {
+str_buf_n_replace(str_buf *sb, const char *str, size_t bytes_used, size_t index) {
+  if (index >= sb->bytes_used) {
 	DERROR_PRINTF("Cannot replace outside of str_buf");
 	exit(EXIT_FAILURE);
   }
 
-  if (len == 0)
+  if (bytes_used == 0)
 	return;
 
-  sb->len = MAX(sb->len, index + len);
+  sb->bytes_used = MAX(sb->bytes_used, index + bytes_used);
 
-  str_buf_ensure_capacity(sb, sb->len + 1);
+  str_buf_ensure_capacity(sb, sb->bytes_used + 1);
 
-  strncpy(&sb->buf[index], str, len);
-  sb->buf[sb->len] = '\0';
+  strncpy(&sb->buf[index], str, bytes_used);
+  sb->buf[sb->bytes_used] = '\0';
 }
 */
 
