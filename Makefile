@@ -7,13 +7,13 @@ WARNINGS=-Wall -Wextra -Wno-unused-parameter -Wno-unknown-pragmas -Wfatal-errors
 
 CPPFLAGS=-MMD -MP -pthread $(INCLUDEDIR_FLAGS) -D _GNU_SOURCE # -I /usr/include/libpng16
 #CFLAGS=-O3 -ftree-vectorize -mcpu=native -mtune=native -flto $(EXTRA_CFLAGS)
-CFLAGS=-std=gnu17 -O0 -ggdb3 -flto -fasynchronous-unwind-tables -fsanitize=address -fsanitize=undefined -fsanitize=leak #-fanalyzer
+CFLAGS=-std=gnu17 -O0 -ggdb3 -flto -fasynchronous-unwind-tables #-fsanitize=address -fsanitize=undefined -fsanitize=leak -fanalyzer
 
 LDFLAGS=
 
 LDLIBS=-pthread -lrt -lc
 LDLIBS_SERVER=$(LDLIBS)
-LDLIBS_CLIENT=$(LDLIBS) -lglfw -lGL -ldl -lfreetype -lm # -lGLU -lX11 -lXrandr -lXi -lpng16 -lz
+LDLIBS_CLIENT=$(LDLIBS) -lglfw -lGL -ldl -lfreetype -lm
 
 TOOLSDIR=tools/
 

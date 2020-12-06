@@ -53,8 +53,8 @@ round_to_next_pow2(size_t n) {
 }
 
 void
-perm(int *a, int size, int mask) {
-  int r[size];
+perm_i8(int8_t *a, int size, int mask) {
+  int8_t r[size];
   int mes, mem;
 
   if (size <= 1)

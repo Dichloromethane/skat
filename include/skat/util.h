@@ -19,7 +19,7 @@
 int ceil_div(int, int);
 size_t util_rand_int(size_t min, size_t max);
 size_t round_to_next_pow2(size_t n);
-void perm(int *, int, int);
+void perm_i8(int8_t *, int, int);
 
 #define THREAD_NAME_SIZE (16)
 

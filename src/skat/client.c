@@ -340,7 +340,7 @@ client_reizen_passe(client *c, client_action_callback *cac) {
 }
 
 void
-client_reizen_number(client *c, int next_reizwert,
+client_reizen_number(client *c, uint16_t next_reizwert,
 					 client_action_callback *cac) {
   action a;
 
@@ -406,26 +406,19 @@ client_skat_press(client *c, card_id cid1, card_id cid2,
 void
 client_handle_resync(client *c, payload_resync *pl) {
   DEBUG_PRINTF("Resyncing client state");
+
   c->cs = pl->scs;
 
-  size_t offset = 0;
-  for (int i = 0; i < 4; i++) {
-	if (c->pls[i])
-	  free(c->pls[i]);
+  for (int gupid = 0; gupid < 4; gupid++) {
+	player *p = c->pls[gupid];
+	if (p != NULL)
+	  free(p);
 
-	size_t len = pl->player_name_lengths[i];
-	if (len > 0) {
-	  c->pls[i] = malloc(sizeof(player) + len + 1);
-	  c->pls[i]->gupid = i;
-	  c->pls[i]->ap = pl->active_player_indices[i];
-	  c->pls[i]->name_length = len;
-
-	  memcpy(c->pls[i]->name, pl->player_names + offset, len * sizeof(char));
-	  c->pls[i]->name[len] = '\0';
-	  offset += len;
-	} else {
-	  c->pls[i] = NULL;
-	}
+	char *name = pl->player_names[gupid];
+	if (name != NULL)
+	  c->pls[gupid] = create_player(gupid, pl->aps[gupid], name);
+	else
+	  c->pls[gupid] = NULL;
   }
 }
 

@@ -43,23 +43,23 @@ print_players(const client *const c) {
 	  for (int gupid = 0; gupid < 4; gupid++) {
 		player *pl = c->pls[gupid];
 		if (pl != NULL)
-		  printf("\t%s[gupid=%d]: %d\n", player_name_lookup_gupid(gupid), gupid,
-				 c->cs.sgs.score[gupid]);
+		  printf("\t%s[gupid=%d]: %ld\n", player_name_lookup_gupid(gupid),
+				 gupid, c->cs.sgs.score[gupid]);
 	  }
 	  break;
 	default:
 	  printf("Current total player scores in seating order:\n");
 	  for (int ap = 0; ap < 3; ap++) {
-		int gupid = c->cs.sgs.active_players[ap];
-		printf("\t%s[gupid=%d, ap=%d]: %d\n", player_name_lookup_ap(ap), gupid,
+		int8_t gupid = c->cs.sgs.active_players[ap];
+		printf("\t%s[gupid=%d, ap=%d]: %ld\n", player_name_lookup_ap(ap), gupid,
 			   ap, c->cs.sgs.score[gupid]);
 	  }
 	  printf("Current total spectator scores:\n");
 	  for (int gupid = 0; gupid < 4; gupid++) {
 		player *pl = c->pls[gupid];
 		if (pl != NULL && pl->ap == -1)
-		  printf("\t%s[gupid=%d]: %d\n", player_name_lookup_gupid(gupid), gupid,
-				 c->cs.sgs.score[gupid]);
+		  printf("\t%s[gupid=%d]: %ld\n", player_name_lookup_gupid(gupid),
+				 gupid, c->cs.sgs.score[gupid]);
 	  }
 	  break;
   }
@@ -68,7 +68,7 @@ print_players(const client *const c) {
 static void
 print_player_turn(const client *const c,
 				  const print_player_turn_show_hand_mode mode) {
-  int player_turn =
+  int8_t player_turn =
 		  c->cs.sgs.active_players[(c->cs.sgs.curr_stich.vorhand
 									+ c->cs.sgs.curr_stich.played_cards)
 								   % 3];
@@ -99,7 +99,7 @@ print_reizen_info(client *c, event *e) {
 	  printf("Reizen done at reizwert %u!\n", rs->reizwert);
   }
 
-  int teller_gupid, listener_gupid;
+  int8_t teller_gupid, listener_gupid;
   if (rs->rphase == REIZ_PHASE_INVALID || rs->rphase == REIZ_PHASE_DONE) {
 	teller_gupid = listener_gupid = -1;
   } else if (rs->rphase == REIZ_PHASE_MITTELHAND_TO_VORHAND) {
@@ -111,8 +111,9 @@ print_reizen_info(client *c, event *e) {
   } else if (rs->rphase == REIZ_PHASE_WINNER) {
 	teller_gupid = c->cs.sgs.active_players[rs->winner];
 	listener_gupid = -1;
-  } else
+  } else {
 	__builtin_unreachable();
+  }
 
   int is_actor = e != NULL && c->cs.my_gupid == e->acting_player;
   const char *actor_name =
@@ -716,7 +717,7 @@ print_ramsch_announce(client *c, event *e) {
 
   printf("\nScores for current round:\n");
   for (int i = 0; i < 3; ++i) {
-	printf("\t%s: %d\n", player_name_lookup_ap(i), e->rr.round_score[i]);
+	printf("\t%s: %ld\n", player_name_lookup_ap(i), e->rr.round_score[i]);
   }
 }
 
@@ -732,7 +733,7 @@ print_event_announce(client *c, event *e) {
   int alleinspieler_is_winner = e->rr.round_winner != -1;
   const char *winner1_name = NULL, *winner2_name = NULL, *loser1_name = NULL,
 			 *loser2_name = NULL;
-  int winner1_ap = -1, winner2_ap = -1, loser1_ap = -1, loser2_ap = -1;
+  int8_t winner1_ap = -1, winner2_ap = -1, loser1_ap = -1, loser2_ap = -1;
   if (alleinspieler_is_winner) {// the alleinspieler won
 	winner1_ap = c->cs.sgs.alleinspieler;
 	switch (c->cs.sgs.alleinspieler) {
@@ -806,7 +807,7 @@ print_event_announce(client *c, event *e) {
 
   printf("\nScores for the this round:\n");
   for (int i = 0; i < 3; ++i) {
-	printf("\t%s: %d\n", player_name_lookup_ap(i), e->rr.round_score[i]);
+	printf("\t%s: %ld\n", player_name_lookup_ap(i), e->rr.round_score[i]);
   }
 }
 

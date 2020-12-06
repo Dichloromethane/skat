@@ -1,6 +1,7 @@
 #ifndef PACKAGE_C_HDR
 #define PACKAGE_C_HDR
 
+#include "skat/byte_buf.h"
 #include "skat/connection.h"
 #include <stdint.h>
 #include <stdlib.h>
@@ -31,17 +32,18 @@
 PACKAGE_HDR_TABLE_BEGIN
   FIRST_PACKAGE(INVALID),
   PACKAGE(ERROR),
-  PACKAGE(RESYNC),
-  PACKAGE(CONFIRM_RESYNC),
   PACKAGE(JOIN),
   PACKAGE(CONFIRM_JOIN),
-  PACKAGE(NOTIFY_JOIN),
-  PACKAGE(CONN_RESUME),
+  PACKAGE(RESUME),
   PACKAGE(CONFIRM_RESUME),
+  PACKAGE(RESYNC),
+  PACKAGE(NOTIFY_JOIN),
+  PACKAGE(NOTIFY_LEAVE),
   PACKAGE(ACTION),
   PACKAGE(EVENT),
-  PACKAGE(DISCONNECT),
-  PACKAGE(NOTIFY_LEAVE)
+  PACKAGE(REQUEST_RESYNC),
+  PACKAGE(CONFIRM_RESYNC),
+  PACKAGE(DISCONNECT)
 PACKAGE_HDR_TABLE_END
 
 #ifndef PACKAGE_HDR_TO_STRING
@@ -56,64 +58,62 @@ typedef struct {
 
 typedef struct {
   uint16_t network_protocol_version;
-  size_t name_length;
-  char name[];
+  char *name;
 } payload_join;
 
-typedef payload_join payload_resume;
-
-typedef struct payload_notify_join {
-  int gupid;
-  int ap;
-  size_t name_length;
-  char name[];
-} payload_notify_join;
-
-typedef struct payload_notify_leave {
-  int gupid;
-} payload_notify_leave;
-
 typedef struct {
-  int gupid;
+  int8_t gupid;
 } payload_confirm_join;
+
+typedef payload_join payload_resume;
 
 typedef payload_confirm_join payload_confirm_resume;
 
 typedef struct {
   skat_client_state scs;
-  int active_player_indices[4];// gupid -> ap
-  size_t player_name_lengths[4];
-  char player_names[];
+  int8_t aps[4];// gupid -> ap
+  char *player_names[4];
 } payload_resync;
 
-typedef struct {
-  event ev;
-} payload_event;
+typedef struct payload_notify_join {
+  int8_t gupid;
+  int8_t ap;
+  char *name;
+} payload_notify_join;
+
+typedef struct payload_notify_leave {
+  int8_t gupid;
+} payload_notify_leave;
 
 typedef struct {
   action ac;
 } payload_action;
 
 typedef struct {
+  event ev;
+} payload_event;
+
+typedef struct {
   package_type type;
-  size_t payload_size;
   union {
-	void *v;
-	payload_error *pl_er;
-	payload_join *pl_j;
-	payload_resume *pl_rm;
-	payload_notify_join *pl_nj;
-	payload_notify_leave *pl_nl;
-	payload_confirm_join *pl_cj;
-	payload_confirm_resume *pl_cr;
-	payload_resync *pl_rs;
-	payload_event *pl_ev;
-	payload_action *pl_a;
-  } payload;
+	payload_error pl_er;
+	payload_join pl_j;
+	payload_resume pl_rm;
+	payload_notify_join pl_nj;
+	payload_notify_leave pl_nl;
+	payload_confirm_join pl_cj;
+	payload_confirm_resume pl_cr;
+	payload_resync pl_rs;
+	payload_event pl_ev;
+	payload_action pl_a;
+  };
 } package;
 
 void package_clean(package *);
 void package_free(package *);
+
+void package_read(package *p, byte_buf *bb);
+void package_write(const package *p, byte_buf *bb);
 
 #endif
 #endif

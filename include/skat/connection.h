@@ -81,7 +81,7 @@ typedef struct {
 
 typedef struct {
   connection c;
-  int gupid;
+  int8_t gupid;
 } connection_s2c;
 
 typedef struct {

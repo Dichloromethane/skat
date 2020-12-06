@@ -1,6 +1,6 @@
 #pragma once
 
-#define NETWORK_PROTOCOL_VERSION (2u)
+#define NETWORK_PROTOCOL_VERSION (3u)
 
 #define DEFAULT_PORT (55555)
 #define DEFAULT_HOST "localhost"

@@ -15,7 +15,7 @@ int card_collection_remove_card_array(card_collection *, const card_id *,
 int card_collection_get_card_count(const card_collection *, uint8_t *);
 int card_collection_get_card(const card_collection *, const uint8_t *,
 							 card_id *);
-int card_collection_get_score(const card_collection *, unsigned int *);
+int card_collection_get_score(const card_collection *, uint8_t *);
 int card_collection_empty(card_collection *);
 int card_collection_fill(card_collection *);
 int card_collection_draw_random(const card_collection *, card_id *);

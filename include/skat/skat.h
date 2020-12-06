@@ -64,24 +64,25 @@ typedef struct shared_game_state {
   reiz_state rs;
   game_rules gr;
 
-  int active_players[3];// map active player -> gupid
+  int8_t active_players[3];// map active player -> gupid
 
-  int score[4];// indexed by gupid
+  int64_t score[4];// indexed by gupid
 
   stich curr_stich;
   stich last_stich;
-  int stich_num;    // 0-9
-  int alleinspieler;// indexed by active player
-  int took_skat;
+  uint8_t stich_num;// 0-9
+
+  int8_t alleinspieler;// indexed by active player
+  bool took_skat;
 } shared_game_state;
 
 typedef struct skat_client_state {
   shared_game_state sgs;
   card_collection my_hand;
-  int my_gupid;              // gupid
-  int my_active_player_index;// active_player
-  int my_partner;            // active_player
-  int ist_alleinspieler;
+  int8_t my_gupid;              // gupid
+  int8_t my_active_player_index;// active_player
+  int8_t my_partner;            // active_player
+  bool ist_alleinspieler;
 } skat_client_state;
 
 typedef struct skat_server_state {

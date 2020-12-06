@@ -128,3 +128,21 @@ stich_card_legal(const game_rules *const gr, const stich *const stich,
   return 0;
 }
 #pragma clang diagnostic pop
+
+void
+read_stich(stich *this, byte_buf *bb) {
+  for (int i = 0; i < 3; i++)
+    this->cs[i] = byte_buf_read_u8(bb);
+  this->played_cards = byte_buf_read_u8(bb);
+  this->vorhand = byte_buf_read_i8(bb);
+  this->winner = byte_buf_read_i8(bb);
+}
+
+void
+write_stich(const stich *this, byte_buf *bb) {
+  for (int i = 0; i < 3; i++)
+    byte_buf_write_u8(bb, this->cs[i]);
+  byte_buf_write_u8(bb, this->played_cards);
+  byte_buf_write_i8(bb, this->vorhand);
+  byte_buf_write_i8(bb, this->winner);
+}

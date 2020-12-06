@@ -2,6 +2,7 @@
 #define REIZEN_HDR
 
 #include "skat/game_rules.h"
+#include <stdbool.h>
 #include <stdint.h>
 
 #ifndef STRINGIFY
@@ -42,9 +43,9 @@ extern char *reiz_phase_name_table[];
 
 typedef struct reiz_state {
   reiz_phase rphase;
-  int waiting_teller;
+  bool waiting_teller;
   uint16_t reizwert;
-  int winner;// ap
+  int8_t winner;// ap
 } reiz_state;
 
 struct skat_server_state;
@@ -66,13 +67,13 @@ typedef enum loss_type {
 } loss_type;
 
 typedef struct round_result {
-  int round_winner;              /* indexed by ap */
-  unsigned int player_points[3]; /* indexed by ap */
+  int8_t round_winner;                /* indexed by ap */
+  uint8_t player_points[3];           /* indexed by ap */
   uint8_t player_stich_card_count[3]; /* indexed by ap */
-  int round_score[3];            /* indexed by ap */
-  int spielwert;
-  unsigned normal_end : 1;
+  int64_t round_score[3];             /* indexed by ap */
+  uint16_t spielwert;
   unsigned loss_type : 3;
+  unsigned normal_end : 1;
   unsigned schneider : 1;
   unsigned schwarz : 1;
 } round_result;

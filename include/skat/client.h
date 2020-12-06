@@ -59,7 +59,7 @@ void client_set_gamerules(client *c, game_rules gr, client_action_callback *);
 
 void client_reizen_confirm(client *, client_action_callback *);
 void client_reizen_passe(client *, client_action_callback *);
-void client_reizen_number(client *c, int next_reizwert,
+void client_reizen_number(client *c, uint16_t next_reizwert,
 						  client_action_callback *cac);
 
 void client_skat_take(client *, client_action_callback *);

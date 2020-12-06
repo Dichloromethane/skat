@@ -58,20 +58,20 @@ EVENT_HDR_TABLE_END
 typedef struct {
   event_type type;
   action_id answer_to;
-  int acting_player;// gupid
+  int8_t acting_player;// gupid
   union {
-	int current_active_players[3];// indexed by ap, contains gupid
+	int8_t current_active_players[3];// indexed by ap, contains gupid
 	card_collection hand;
 	uint16_t reizwert;
 	struct {
-	  int alleinspieler;// ap
+	  int8_t alleinspieler;// ap
 	  uint16_t reizwert_final;
 	};
 	card_id skat[2];
 	card_id skat_press_cards[2];
 	card_id card;
-	int stich_winner;  // gupid
-	int score_total[4];// indexed by gupid
+	int8_t stich_winner;  // gupid
+	int64_t score_total[4];// indexed by gupid
 	game_rules gr;
 	round_result rr;
   };

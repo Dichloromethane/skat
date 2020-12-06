@@ -10,7 +10,7 @@ player_equals_by_name(const player *const p1, const player *const p2) {
 }
 
 player *
-create_player(int gupid, int ap, const char *const name) {
+create_player(int8_t gupid, int8_t ap, const char *const name) {
   size_t name_length = strlen(name);
   player *pl = malloc(sizeof(player) + name_length + 1);
   pl->gupid = gupid;

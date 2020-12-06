@@ -1,5 +1,6 @@
 #pragma once
 
+#include "skat/byte_buf.h"
 #include "skat/card.h"
 
 typedef enum game_type {
@@ -18,3 +19,6 @@ typedef struct game_rules {
   unsigned schwarz_angesagt : 1;
   unsigned ouvert : 1;
 } game_rules;
+
+void read_game_rules(game_rules *this, byte_buf *bb);
+void write_game_rules(const game_rules *this, byte_buf *bb);

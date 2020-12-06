@@ -1,6 +1,7 @@
 #pragma once
 
 #include "skat/util.h"
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 
@@ -23,9 +24,14 @@ void byte_buf_trim_to_len(byte_buf *this);
 
 void byte_buf_empty(byte_buf *this);
 
+void byte_buf_dump(byte_buf *this);
+
 char *byte_buf_read_str(byte_buf *this);
 void byte_buf_write_str(byte_buf *this, const char *str);
 void byte_buf_write_strn(byte_buf *this, const char *str, size_t len);
+
+bool byte_buf_read_bool(byte_buf *this);
+void byte_buf_write_bool(byte_buf *this, bool b);
 
 #define DECL_RW_INT_FUN(name, type) \
   type CONCAT(byte_buf_read_, name)(byte_buf * this); \

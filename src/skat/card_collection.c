@@ -145,7 +145,7 @@ card_collection_get_card(const card_collection *const col,
 
 int
 card_collection_get_score(const card_collection *const col,
-						  unsigned int *const score) {
+						  uint8_t *const score) {
   unsigned int total_score = 0;
 
   for (uint8_t card_index = 0; card_index < 32; card_index++) {

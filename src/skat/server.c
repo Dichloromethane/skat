@@ -42,7 +42,7 @@ server_prepare_exit(server *s) {
 }
 
 int
-server_is_player_active(server *s, int gupid) {
+server_is_player_active(server *s, int8_t gupid) {
   return (s->playermask >> gupid) & 1;
 }
 
@@ -79,41 +79,41 @@ server_distribute_event(server *s, event *ev,
 }
 
 connection_s2c *
-server_get_free_connection(server *s, int *n) {
+server_get_free_connection(server *s, int8_t *gupid_out) {
   int pm, i;
   if (s->ncons > 4)
 	return NULL;
   pm = ~s->playermask;
   i = __builtin_ctz(pm);
-  *n = i;
+  *gupid_out = i;
   return &s->conns[i];
 }
 
 void
-server_add_player_for_connection(server *s, player *pl, int gupid) {
+server_add_player_for_connection(server *s, player *p, int8_t gupid) {
   if (s->pls[gupid])
 	free(s->pls[gupid]);
-  s->pls[gupid] = pl;
-  pl->gupid = gupid;
+  s->pls[gupid] = p;
+  p->gupid = gupid;
   s->ncons++;
   s->playermask |= 1 << gupid;
 }
 
 void
-server_resume_player_for_connection(server *s, int gupid) {
+server_resume_player_for_connection(server *s, int8_t gupid) {
   s->ncons++;
   s->playermask |= 1 << gupid;
 }
 
 connection_s2c *
-server_get_connection_by_pname(server *s, char *pname, int *n) {
+server_get_connection_by_pname(server *s, char *pname, int8_t *gupid_out) {
   for (int i = 0; i < 4; i++) {
 	if (!s->pls[i])
 	  continue;
 	DEBUG_PRINTF("Comparing \"%s\" to \"%s\"", s->pls[i]->name, pname);
 	if (!strncmp(s->pls[i]->name, pname, s->pls[i]->name_length)) {
-	  if (n)
-		*n = i;
+	  if (gupid_out)
+		*gupid_out = i;
 	  DEBUG_PRINTF("Found 'em");
 	  return &s->conns[i];
 	}
@@ -123,7 +123,7 @@ server_get_connection_by_pname(server *s, char *pname, int *n) {
 }
 
 connection_s2c *
-server_get_connection_by_gupid(server *s, int gupid) {
+server_get_connection_by_gupid(server *s, int8_t gupid) {
   return &s->conns[gupid];
 }
 
@@ -168,54 +168,21 @@ server_release_state_lock(server *s) {
 			   thread_name_buf);
 }
 
-size_t
-server_resync_player(server *s, player *pl, payload_resync **pl_rs) {
-  DEBUG_PRINTF("Resync requested by player '%s'", pl->name);
+void
+server_resync_player(server *s, player *p, payload_resync *pl_rs) {
+  DEBUG_PRINTF("Resync requested by player '%s'", p->name);
 
-  int active_player_indices[4];
-  size_t player_name_lengths[4];
-  size_t player_names_length = 0;
-
-  for (int i = 0; i < 4; i++) {
-	if (server_is_player_active(s, i)) {
-	  active_player_indices[i] = s->pls[i]->ap;
-	  player_names_length += (player_name_lengths[i] = s->pls[i]->name_length);
+  for (int gupid = 0; gupid < 4; gupid++) {
+	if (server_is_player_active(s, gupid)) {
+	  pl_rs->aps[gupid] = s->pls[gupid]->ap;
+	  pl_rs->player_names[gupid] = strdup(s->pls[gupid]->name);
 	} else {
-	  active_player_indices[i] = -1;
-	  player_name_lengths[i] = 0;
+	  pl_rs->aps[gupid] = -1;
+	  pl_rs->player_names[gupid] = NULL;
 	}
   }
 
-  size_t payload_size =
-		  sizeof(payload_resync) + player_names_length * sizeof(char);
-  *pl_rs = malloc(payload_size);
-
-  skat_resync_player(&s->ss, &(*pl_rs)->scs, pl);
-
-  memcpy((*pl_rs)->active_player_indices, active_player_indices,
-		 sizeof(active_player_indices));
-  memcpy((*pl_rs)->player_name_lengths, player_name_lengths,
-		 sizeof(player_name_lengths));
-  size_t offset = 0;
-  for (int i = 0; i < 4; i++) {
-	if (player_name_lengths[i] > 0) {
-	  memcpy((*pl_rs)->player_names + offset, s->pls[i]->name,
-			 player_name_lengths[i] * sizeof(char));
-	  offset += player_name_lengths[i];
-	}
-  }
-
-  DEBUG_PRINTF(
-		  "Resync payload contents: names=REDACTED, aps={ %d, %d, %d, %d }, "
-		  "name_lengths={ %zu, %zu, %zu, %zu }",
-		  /*(*pl_rs)->player_names,*/ (*pl_rs)->active_player_indices[0],
-		  (*pl_rs)->active_player_indices[1],
-		  (*pl_rs)->active_player_indices[2],
-		  (*pl_rs)->active_player_indices[3], (*pl_rs)->player_name_lengths[0],
-		  (*pl_rs)->player_name_lengths[1], (*pl_rs)->player_name_lengths[2],
-		  (*pl_rs)->player_name_lengths[3]);
-
-  return payload_size;
+  skat_resync_player(&s->ss, &pl_rs->scs, p);
 }
 
 void
@@ -250,7 +217,7 @@ server_tick(server *s) {
 }
 
 void
-server_notify_join(server *s, int gupid) {
+server_notify_join(server *s, int8_t gupid) {
   player *pl = s->pls[gupid];
   DEBUG_PRINTF("Player '%s' joined with gupid %d", pl->name, gupid);
   skat_state_notify_join(&s->ss, pl, s);

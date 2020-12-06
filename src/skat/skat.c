@@ -23,10 +23,10 @@ skat_state_notify_join(skat_server_state *ss, player *pl, server *s) {
   DTODO_PRINTF("TODO: implement notify_join");// TODO: implement
 }
 
-static int
-get_score_delta_normal_game(game_rules *gs, reiz_state *rs, uint64_t game_value,
+static int64_t
+get_score_delta_normal_game(game_rules *gs, reiz_state *rs, uint16_t game_value,
 							bool *won, loss_type *lt) {
-  int grundwert;
+  uint16_t grundwert;
   // TODO: Make sense of the skat rules
   if (!*won) {
 	*lt = LOSS_TYPE_LOST;
@@ -46,7 +46,7 @@ void
 skat_calculate_game_result(skat_server_state *ss, round_result *rr) {
   uint64_t game_value;
   loss_type lt = LOSS_TYPE_INVALID;
-  int as = ss->sgs.alleinspieler;
+  int8_t as = ss->sgs.alleinspieler;
   bool won, schneider, schwarz, durchmarsch;
 
   rr->normal_end = ss->sgs.stich_num == 9;
@@ -72,8 +72,8 @@ skat_calculate_game_result(skat_server_state *ss, round_result *rr) {
 	  break;
 	case GAME_TYPE_GRAND:
 	case GAME_TYPE_COLOR:
-	  (void) 0;
-	  unsigned int as_points = rr->player_points[as];
+	  (void) 0; // switch-case hack to declare a variable
+	  uint8_t as_points = rr->player_points[as];
 	  if ((schneider = as_points >= 90)) {
 		schwarz = rr->player_stich_card_count[as] == 32;
 	  } else {
@@ -93,7 +93,7 @@ skat_calculate_game_result(skat_server_state *ss, round_result *rr) {
 	  break;
 	case GAME_TYPE_RAMSCH:
 	  memset(rr->round_score, '\0', sizeof rr->round_score);
-	  rr->spielwert = -1;
+	  rr->spielwert = 0;
 	  rr->schneider = 0;
 	  rr->schwarz = 0;
 	  rr->round_winner = -1;
@@ -305,13 +305,13 @@ apply_action_between_rounds(skat_server_state *ss, action *a, player *pl,
 		  if (server_is_player_active(s, gupid))
 			ss->sgs.active_players[ap++] = s->pls[gupid]->gupid;
 	  } else if (s->ncons == 3) {// we don't have a spectator
-		perm(ss->sgs.active_players, 3, 0x12);
+		perm_i8(ss->sgs.active_players, 3, 0x12);
 	  } else {// we have a spectator
 		pm = 0;
 		for (int ap = 0; ap < 3; ap++)
 		  pm |= 1 << ss->sgs.active_players[ap];
 		ix = __builtin_ctz(~pm);
-		perm(ss->sgs.active_players, 3, 0x12);
+		perm_i8(ss->sgs.active_players, 3, 0x12);
 		ss->sgs.active_players[2] = s->pls[ix]->gupid;
 	  }
 
@@ -336,7 +336,7 @@ apply_action_between_rounds(skat_server_state *ss, action *a, player *pl,
 	  ss->sgs.stich_num = 0;
 	  ss->sgs.alleinspieler = -1;
 	  ss->sgs.rs.rphase = REIZ_PHASE_INVALID;
-	  ss->sgs.rs.waiting_teller = -1;
+	  ss->sgs.rs.waiting_teller = 0;
 	  ss->sgs.rs.reizwert = 0;
 	  ss->sgs.rs.winner = -1;
 	  memset(ss->stiche, '\0', 3 * sizeof(ss->stiche[0]));
@@ -653,7 +653,7 @@ apply_action_skat_aufnehmen(skat_server_state *ss, action *a, player *pl,
 
 	  e.type = EVENT_SKAT_PRESS;
 
-	  memset(e.skat, '\0', sizeof(e.skat_press_cards));
+	  memset(e.skat_press_cards, '\0', sizeof(e.skat_press_cards));
 
 	  void mask_skat_press_cards(event * ev, player * pl) {
 		if (ss->sgs.alleinspieler == pl->ap)
@@ -754,7 +754,7 @@ apply_action_stich(skat_server_state *ss, action *a, player *pl, server *s,
 				   int ind) {
   event e;
   player *expected_player;
-  int expected_player_gupid;
+  int8_t expected_player_gupid;
   int curr, result;
   int winnerv;// indexed by vorhand + ap
   int winner; // indexed by ap
