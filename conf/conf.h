@@ -14,6 +14,8 @@
 #define CONSOLE_INPUT           1
 #define DISTRIBUTE_SORTED_CARDS 0
 
+#define DEBUG_BYTE_BUF 1
+
 #define HAS_DEBUG_PRINTF         1
 #define HAS_DEBUG_LOCK_PRINTF    0
 #define HAS_DEBUG_TICK_PRINTF    0

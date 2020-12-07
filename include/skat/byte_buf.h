@@ -7,6 +7,20 @@
 
 #define BYTE_BUF_DEFAULT_MIN_CAPACITY (16)
 
+typedef enum byte_buf_type {
+  BB_TYPE_INVALID = 0,
+  BB_TYPE_VAR_I8,
+  BB_TYPE_VAR_I16,
+  BB_TYPE_VAR_I32,
+  BB_TYPE_VAR_I64,
+  BB_TYPE_VAR_U8,
+  BB_TYPE_VAR_U16,
+  BB_TYPE_VAR_U32,
+  BB_TYPE_VAR_U64,
+  BB_TYPE_BOOL,
+  BB_TYPE_STR
+} byte_buf_type;
+
 typedef struct byte_buf {
   size_t pos;       // position in buffer
   size_t bytes_used;// actual buffer length
@@ -24,7 +38,7 @@ void byte_buf_trim_to_len(byte_buf *this);
 
 void byte_buf_empty(byte_buf *this);
 
-void byte_buf_dump(byte_buf *this);
+void byte_buf_dump(const byte_buf *this);
 
 char *byte_buf_read_str(byte_buf *this);
 void byte_buf_write_str(byte_buf *this, const char *str);

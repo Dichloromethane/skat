@@ -72,7 +72,7 @@ skat_calculate_game_result(skat_server_state *ss, round_result *rr) {
 	  break;
 	case GAME_TYPE_GRAND:
 	case GAME_TYPE_COLOR:
-	  (void) 0; // switch-case hack to declare a variable
+	  (void) 0;// switch-case label hack to create a local variable
 	  uint8_t as_points = rr->player_points[as];
 	  if ((schneider = as_points >= 90)) {
 		schwarz = rr->player_stich_card_count[as] == 32;
@@ -636,7 +636,7 @@ apply_action_skat_aufnehmen(skat_server_state *ss, action *a, player *pl,
 
 	  return GAME_PHASE_SPIELANSAGE;
 	case ACTION_SKAT_PRESS:
-	  (void) 0;// label hack to create a local variable
+	  (void) 0;// switch-case label hack to create a local variable
 	  card_collection tmp = ss->player_hands[ss->sgs.alleinspieler];
 	  if (card_collection_remove_card_array(&tmp, a->skat_press_cards, 2)) {
 		DEBUG_PRINTF("Cannot press cards %d & %d", a->skat_press_cards[0],

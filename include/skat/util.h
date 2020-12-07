@@ -56,7 +56,7 @@ extern pthread_mutex_t debug_printf_lock;
 #define DEBUG_PRINTF_LABEL(label, fmt, ...) \
   do { \
 	pthread_mutex_lock(&debug_printf_lock); \
-	DEBUG_PRINTF_RAW(label " (%s:%d)\n     " fmt "\n", __func__, __LINE__, \
+	DEBUG_PRINTF_RAW(label " (%s:%s:%d)\n     " fmt "\n", __FILE__, __func__, __LINE__, \
 					 ##__VA_ARGS__); \
 	pthread_mutex_unlock(&debug_printf_lock); \
   } while (0)
