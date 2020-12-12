@@ -42,16 +42,13 @@ send_package(connection *c, package *p) {
   package_write(p, &bb);
 
   uint32_t len = bb.bytes_used;
-  DPRINTF_COND(DEBUG_PACKAGE, "Sending byte buf of size %u", len);
+
   if (DEBUG_PACKAGE) {
-	pthread_mutex_lock(&debug_printf_lock);
-	fflush(stdout);
-	fflush(stderr);
-	printf("Send: ");
-	byte_buf_dump(&bb);
-	fflush(stdout);
-	fflush(stderr);
-	pthread_mutex_unlock(&debug_printf_lock);
+	str_buf buf;
+	str_buf_new_size(&buf, 128);
+	byte_buf_dump(&bb, &buf);
+	DPRINTF_COND(DEBUG_PACKAGE, "Send package: %s", buf.buf);
+	str_buf_free(&buf);
   }
 
   len = htonl(len);
@@ -106,16 +103,12 @@ retrieve_package(connection *c, package *p) {
   }
   bb.bytes_used = len;
 
-  DPRINTF_COND(DEBUG_PACKAGE, "Retrieved byte buf of size %u", len);
   if (DEBUG_PACKAGE) {
-	pthread_mutex_lock(&debug_printf_lock);
-	fflush(stdout);
-	fflush(stderr);
-	printf("Receive: ");
-	byte_buf_dump(&bb);
-	fflush(stdout);
-	fflush(stderr);
-	pthread_mutex_unlock(&debug_printf_lock);
+	str_buf buf;
+	str_buf_new_size(&buf, 128);
+	byte_buf_dump(&bb, &buf);
+	DPRINTF_COND(DEBUG_PACKAGE, "Receive package: %s", buf.buf);
+	str_buf_free(&buf);
   }
 
   package_read(p, &bb);

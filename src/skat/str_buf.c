@@ -5,7 +5,12 @@
 #include <string.h>
 
 void
-str_buf_new_empty(str_buf *sb, size_t minimum_size) {
+str_buf_new_empty(str_buf *sb) {
+  str_buf_new_size(sb, STR_BUF_DEFAULT_MIN_CAPACITY);
+}
+
+void
+str_buf_new_size(str_buf *sb, size_t minimum_size) {
   sb->len = 0;
   if (minimum_size == 0) {
 	sb->size = 0;
@@ -98,10 +103,9 @@ str_buf_replace(str_buf *sb, const char *str, size_t index) {
 }
 
 void
-str_buf_n_replace(str_buf *sb, const char *str, size_t bytes_used, size_t index) {
-  if (index >= sb->bytes_used) {
-	DERROR_PRINTF("Cannot replace outside of str_buf");
-	exit(EXIT_FAILURE);
+str_buf_n_replace(str_buf *sb, const char *str, size_t bytes_used, size_t index)
+{ if (index >= sb->bytes_used) { DERROR_PRINTF("Cannot replace outside of
+str_buf"); exit(EXIT_FAILURE);
   }
 
   if (bytes_used == 0)
@@ -129,6 +133,17 @@ str_buf_append_char(str_buf *sb_existing, char c) {
 void
 str_buf_append_str(str_buf *sb_existing, const char *str) {
   str_buf_append_n_str(sb_existing, str, strlen(str));
+}
+
+void
+str_buf_append_strf(str_buf *sb_existing, const char *fmt, ...) {
+  va_list ap;
+  va_start(ap, fmt);
+  char *str;
+  size_t len = vasprintf(&str, fmt, ap);
+  va_end(ap);
+
+  str_buf_append_n_str(sb_existing, str, len);
 }
 
 void

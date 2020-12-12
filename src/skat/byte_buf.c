@@ -77,49 +77,50 @@ byte_buf_empty(byte_buf *this) {
 }
 
 void
-byte_buf_dump(const byte_buf *this) {
-  printf("byte_buf[pos=%zu,bytes_used=%zu,size=%zu]:", this->pos,
-		 this->bytes_used, this->size);
+byte_buf_dump(const byte_buf *this, str_buf *buf) {
+  str_buf_append_strf(buf,
+					  "byte_buf[pos=%zu,bytes_used=%zu,size=%zu]:", this->pos,
+					  this->bytes_used, this->size);
 #if defined(DEBUG_BYTE_BUF) && DEBUG_BYTE_BUF
   byte_buf copy = *this;
   copy.pos = 0;
   while (copy.pos < copy.bytes_used) {
 	switch ((byte_buf_type) copy.buf[copy.pos]) {
 	  case BB_TYPE_VAR_I8:
-		printf(" i8:%" PRId8, byte_buf_read_i8(&copy));
+		str_buf_append_strf(buf, " i8:%" PRId8, byte_buf_read_i8(&copy));
 		break;
 	  case BB_TYPE_VAR_I16:
-		printf(" i16:%" PRId16, byte_buf_read_i16(&copy));
+		str_buf_append_strf(buf, " i16:%" PRId16, byte_buf_read_i16(&copy));
 		break;
 	  case BB_TYPE_VAR_I32:
-		printf(" i32:%" PRId32, byte_buf_read_i32(&copy));
+		str_buf_append_strf(buf, " i32:%" PRId32, byte_buf_read_i32(&copy));
 		break;
 	  case BB_TYPE_VAR_I64:
-		printf(" i64:%" PRId64, byte_buf_read_i64(&copy));
+		str_buf_append_strf(buf, " i64:%" PRId64, byte_buf_read_i64(&copy));
 		break;
 	  case BB_TYPE_VAR_U8:
-		printf(" u8:%" PRIu8, byte_buf_read_u8(&copy));
+		str_buf_append_strf(buf, " u8:%" PRIu8, byte_buf_read_u8(&copy));
 		break;
 	  case BB_TYPE_VAR_U16:
-		printf(" u16:%" PRIu16, byte_buf_read_u16(&copy));
+		str_buf_append_strf(buf, " u16:%" PRIu16, byte_buf_read_u16(&copy));
 		break;
 	  case BB_TYPE_VAR_U32:
-		printf(" u32:%" PRIu32, byte_buf_read_u32(&copy));
+		str_buf_append_strf(buf, " u32:%" PRIu32, byte_buf_read_u32(&copy));
 		break;
 	  case BB_TYPE_VAR_U64:
-		printf(" u64:%" PRIu64, byte_buf_read_u64(&copy));
+		str_buf_append_strf(buf, " u64:%" PRIu64, byte_buf_read_u64(&copy));
 		break;
 	  case BB_TYPE_BOOL:
-		printf(" b:%u", byte_buf_read_bool(&copy));
+		str_buf_append_strf(buf, " b:%u", byte_buf_read_bool(&copy));
 		break;
 	  case BB_TYPE_STR:
 		(void) 0;// switch-case label hack to create a local variable
 		char *str = byte_buf_read_str(&copy);
-		printf(" s:'%s'", str);
+		str_buf_append_strf(buf, " s:'%s'", str);
 		free(str);
 		break;
 	  default:
-		printf(" ?:%02x", copy.buf[copy.pos++]);
+		str_buf_append_strf(buf, " ?:%02x", copy.buf[copy.pos++]);
 		break;
 	}
   }

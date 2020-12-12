@@ -1,5 +1,6 @@
 #pragma once
 
+#include "skat/str_buf.h"
 #include "skat/util.h"
 #include <stdbool.h>
 #include <stddef.h>
@@ -38,7 +39,7 @@ void byte_buf_trim_to_len(byte_buf *this);
 
 void byte_buf_empty(byte_buf *this);
 
-void byte_buf_dump(const byte_buf *this);
+void byte_buf_dump(const byte_buf *this, str_buf *buf);
 
 char *byte_buf_read_str(byte_buf *this);
 void byte_buf_write_str(byte_buf *this, const char *str);
