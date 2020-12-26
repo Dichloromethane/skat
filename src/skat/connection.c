@@ -78,9 +78,10 @@ retrieve_package(connection *c, package *p) {
   uint32_t len;
   ssize_t res = read(c->fd, &len, sizeof(uint32_t));
   if (res < 0 || (size_t) res != sizeof(uint32_t)) {
-	DERROR_PRINTF("Connection %d unexpectedly terminated while trying to "
-				  "retrieve next package length",
-				  c->fd);
+	DERROR_PRINTF(
+			"Connection %d unexpectedly terminated while trying to retrieve "
+			"next package length. Expected %zu bytes, but got %zd bytes.",
+			c->fd, sizeof(uint32_t), res);
 	return 0;
   }
 
@@ -97,8 +98,8 @@ retrieve_package(connection *c, package *p) {
   res = read(c->fd, bb.buf, len);
   if (res < 0 || (size_t) res != len) {
 	DERROR_PRINTF("Connection %d unexpectedly terminated while retrieving "
-				  "byte buf of size %u",
-				  c->fd, len);
+				  "byte buf. Expected %u bytes but got %zd bytes.",
+				  c->fd, len, res);
 	return 0;
   }
   bb.bytes_used = len;
