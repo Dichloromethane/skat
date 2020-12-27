@@ -86,9 +86,12 @@ byte_buf_dump(const byte_buf *this, str_buf *buf) {
   copy.pos = 0;
   while (copy.pos < copy.bytes_used) {
 	switch ((byte_buf_type) copy.buf[copy.pos]) {
-	  case BB_TYPE_VAR_I8:
+	  case BB_TYPE_I8:
 		str_buf_append_strf(buf, " i8:%" PRId8, byte_buf_read_i8(&copy));
 		break;
+      case BB_TYPE_U8:
+        str_buf_append_strf(buf, " u8:%" PRIu8, byte_buf_read_u8(&copy));
+        break;
 	  case BB_TYPE_VAR_I16:
 		str_buf_append_strf(buf, " i16:%" PRId16, byte_buf_read_i16(&copy));
 		break;
@@ -97,9 +100,6 @@ byte_buf_dump(const byte_buf *this, str_buf *buf) {
 		break;
 	  case BB_TYPE_VAR_I64:
 		str_buf_append_strf(buf, " i64:%" PRId64, byte_buf_read_i64(&copy));
-		break;
-	  case BB_TYPE_VAR_U8:
-		str_buf_append_strf(buf, " u8:%" PRIu8, byte_buf_read_u8(&copy));
 		break;
 	  case BB_TYPE_VAR_U16:
 		str_buf_append_strf(buf, " u16:%" PRIu16, byte_buf_read_u16(&copy));
@@ -216,6 +216,48 @@ byte_buf_write_bool(byte_buf *this, bool b) {
   this->bytes_used++;
 }
 
+void
+byte_buf_write_i8(byte_buf *this, int8_t b) {
+  write_type(this, BB_TYPE_I8);
+
+  byte_buf_ensure_capacity(this, this->pos + 1);
+  this->buf[this->pos++] = b;
+  this->bytes_used++;
+}
+
+int8_t
+byte_buf_read_i8(byte_buf *this) {
+  check_type(this, BB_TYPE_I8);
+
+  if (this->pos >= this->bytes_used) {
+	DERROR_PRINTF("Cannot read i8, end of byte buf reached");
+	exit(EXIT_FAILURE);
+  }
+
+  return this->buf[this->pos++];
+}
+
+void
+byte_buf_write_u8(byte_buf *this, uint8_t b) {
+  write_type(this, BB_TYPE_U8);
+
+  byte_buf_ensure_capacity(this, this->pos + 1);
+  this->buf[this->pos++] = b;
+  this->bytes_used++;
+}
+
+uint8_t
+byte_buf_read_u8(byte_buf *this) {
+  check_type(this, BB_TYPE_U8);
+
+  if (this->pos >= this->bytes_used) {
+	DERROR_PRINTF("Cannot read u8, end of byte buf reached");
+	exit(EXIT_FAILURE);
+  }
+
+  return this->buf[this->pos++];
+}
+
 #define DEF_READ_INT_FUN(name, ret_type, signed_type, unsigned_type, bb_type) \
   ret_type name(byte_buf *this) { \
 	check_type(this, bb_type); \
@@ -271,7 +313,6 @@ byte_buf_write_bool(byte_buf *this, bool b) {
   DEF_WRITE_INT_FUN(CONCAT(byte_buf_write_u, name), unsigned_type, \
 					signed_type, unsigned_type, unsigned_bb_type)
 
-DEF_RW_INT_FUN(8, int8_t, uint8_t, BB_TYPE_VAR_I8, BB_TYPE_VAR_U8)
 DEF_RW_INT_FUN(16, int16_t, uint16_t, BB_TYPE_VAR_I16, BB_TYPE_VAR_U16)
 DEF_RW_INT_FUN(32, int32_t, uint32_t, BB_TYPE_VAR_I32, BB_TYPE_VAR_U32)
 DEF_RW_INT_FUN(64, int64_t, uint64_t, BB_TYPE_VAR_I64, BB_TYPE_VAR_U64)
