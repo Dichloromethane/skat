@@ -6,10 +6,10 @@
 #include "skat/game_rules.h"
 
 typedef struct stich {
-  card_id cs[3];// indexedby vorhand + active player
+  card_id cs[3];// indexed by vorhand + active player
   uint8_t played_cards;
-  int8_t vorhand;// indexed active player
-  int8_t winner; // indexed active player
+  int8_t vorhand;// indexed by active player
+  int8_t winner; // indexed by active player
 } stich;
 
 int stich_get_winner(const game_rules *gr, const stich *stich, int *result);
