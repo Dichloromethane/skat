@@ -222,14 +222,14 @@ read_payload_action(payload_action *p, byte_buf *bb) {
 
   switch (p->ac.type) {
 	case ACTION_PLAY_CARD:
-	  p->ac.card = byte_buf_read_u8(bb);
+	  p->ac.card = byte_buf_read_i8(bb);
 	  break;
 	case ACTION_REIZEN_NUMBER:
 	  p->ac.reizwert = byte_buf_read_u16(bb);
 	  break;
 	case ACTION_SKAT_PRESS:
 	  for (int i = 0; i < 2; i++)
-		p->ac.skat_press_cards[i] = byte_buf_read_u8(bb);
+		p->ac.skat_press_cards[i] = byte_buf_read_i8(bb);
 	  break;
 	case ACTION_CALL_GAME:
 	  read_game_rules(&p->ac.gr, bb);
@@ -254,14 +254,14 @@ write_payload_action(const payload_action *p, byte_buf *bb) {
 
   switch (p->ac.type) {
 	case ACTION_PLAY_CARD:
-	  byte_buf_write_u8(bb, p->ac.card);
+	  byte_buf_write_i8(bb, p->ac.card);
 	  break;
 	case ACTION_REIZEN_NUMBER:
 	  byte_buf_write_u16(bb, p->ac.reizwert);
 	  break;
 	case ACTION_SKAT_PRESS:
 	  for (int i = 0; i < 2; i++)
-		byte_buf_write_u8(bb, p->ac.skat_press_cards[i]);
+		byte_buf_write_i8(bb, p->ac.skat_press_cards[i]);
 	  break;
 	case ACTION_CALL_GAME:
 	  write_game_rules(&p->ac.gr, bb);
@@ -305,14 +305,14 @@ read_payload_event(payload_event *p, byte_buf *bb) {
 	  break;
 	case EVENT_SKAT_TAKE:
 	  for (int i = 0; i < 2; i++)
-		p->ev.skat[i] = byte_buf_read_u8(bb);
+		p->ev.skat[i] = byte_buf_read_i8(bb);
 	  break;
 	case EVENT_SKAT_PRESS:
 	  for (int i = 0; i < 2; i++)
-		p->ev.skat_press_cards[i] = byte_buf_read_u8(bb);
+		p->ev.skat_press_cards[i] = byte_buf_read_i8(bb);
 	  break;
 	case EVENT_PLAY_CARD:
-	  p->ev.card = byte_buf_read_u8(bb);
+	  p->ev.card = byte_buf_read_i8(bb);
 	  break;
 	case EVENT_STICH_DONE:
 	  p->ev.stich_winner = byte_buf_read_i8(bb);
@@ -331,9 +331,9 @@ read_payload_event(payload_event *p, byte_buf *bb) {
 	  for (int i = 0; i < 3; i++)
 		p->ev.rr.player_stich_card_count[i] = byte_buf_read_u8(bb);
 	  for (int i = 0; i < 3; i++)
-		p->ev.rr.player_stich_card_count[i] = byte_buf_read_i64(bb);
+		p->ev.rr.round_score[i] = byte_buf_read_i64(bb);
 	  p->ev.rr.spielwert = byte_buf_read_u16(bb);
-	  p->ev.rr.loss_type = byte_buf_read_u8(bb);
+	  p->ev.rr.loss_type = (unsigned int) byte_buf_read_i8(bb);
 	  p->ev.rr.normal_end = byte_buf_read_bool(bb);
 	  p->ev.rr.schneider = byte_buf_read_bool(bb);
 	  p->ev.rr.schwarz = byte_buf_read_bool(bb);
@@ -376,14 +376,14 @@ write_payload_event(const payload_event *p, byte_buf *bb) {
 	  break;
 	case EVENT_SKAT_TAKE:
 	  for (int i = 0; i < 2; i++)
-		byte_buf_write_u8(bb, p->ev.skat[i]);
+		byte_buf_write_i8(bb, p->ev.skat[i]);
 	  break;
 	case EVENT_SKAT_PRESS:
 	  for (int i = 0; i < 2; i++)
-		byte_buf_write_u8(bb, p->ev.skat_press_cards[i]);
+		byte_buf_write_i8(bb, p->ev.skat_press_cards[i]);
 	  break;
 	case EVENT_PLAY_CARD:
-	  byte_buf_write_u8(bb, p->ev.card);
+	  byte_buf_write_i8(bb, p->ev.card);
 	  break;
 	case EVENT_STICH_DONE:
 	  byte_buf_write_i8(bb, p->ev.stich_winner);
@@ -404,7 +404,7 @@ write_payload_event(const payload_event *p, byte_buf *bb) {
 	  for (int i = 0; i < 3; i++)
 		byte_buf_write_i64(bb, p->ev.rr.player_stich_card_count[i]);
 	  byte_buf_write_u16(bb, p->ev.rr.spielwert);
-	  byte_buf_write_u8(bb, p->ev.rr.loss_type);
+	  byte_buf_write_i8(bb, p->ev.rr.loss_type);
 	  byte_buf_write_bool(bb, p->ev.rr.normal_end);
 	  byte_buf_write_bool(bb, p->ev.rr.schneider);
 	  byte_buf_write_bool(bb, p->ev.rr.schwarz);
