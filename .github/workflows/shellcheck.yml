@@ -7,7 +7,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out the Repository
-        uses: actions/checkout@master
+        uses: actions/checkout@v2
 
       - name: Run ShellCheck
         uses: ludeeus/action-shellcheck@master
