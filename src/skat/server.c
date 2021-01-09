@@ -50,7 +50,7 @@ int
 server_has_player_name(server *s, char *pname) {
   for (int i = 0; i < 4; i++)// otherwise we can't recover connections
 	if (s->pls[i] != NULL
-		&& !strncmp(s->pls[i]->name, pname, s->pls[i]->name_length))
+		&& !strncmp(s->pls[i]->name, pname, s->pls[i]->name_length + 1))
 	  return 1;
   return 0;
 }
@@ -111,13 +111,13 @@ server_get_connection_by_pname(server *s, char *pname, int8_t *gupid_out) {
 	if (!s->pls[i])
 	  continue;
 	DEBUG_PRINTF("Comparing \"%s\" to \"%s\"", s->pls[i]->name, pname);
-	if (!strncmp(s->pls[i]->name, pname, s->pls[i]->name_length)) {
+	if (!strncmp(s->pls[i]->name, pname, s->pls[i]->name_length + 1)) {
 	  if (gupid_out)
 		*gupid_out = i;
 	  DEBUG_PRINTF("Found 'em");
 	  return &s->conns[i];
 	}
-  };
+  }
   DEBUG_PRINTF("Didn't find 'em");
   return NULL;
 }
