@@ -444,7 +444,7 @@ conn_resync_player(server *s, connection_s2c *c) {
 
   send_package(&c->c, &p);
 
-  // package free-ed inside conn_await_package(...)
+  // package free()ed inside conn_await_package(...)
   // TODO: deal with PACKAGE_ERROR ?
   int still_connected =
 		  conn_await_package(&c->c, &p, conf_resync_confirm_acceptor);
