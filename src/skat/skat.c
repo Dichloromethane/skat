@@ -862,6 +862,17 @@ apply_action(skat_server_state *ss, action *a, player *pl, server *s) {
   DEBUG_PRINTF("Applying action %s in skat state %s",
 			   action_name_table[a->type],
 			   game_phase_name_table[ss->sgs.cgphase]);
+  if (a->type == ACTION_MESSAGE) {
+	event e;
+	e.type = EVENT_MESSAGE;
+	e.message = a->message;
+	e.answer_to = a->id;
+	e.acting_player = pl->gupid;
+	DEBUG_PRINTF("%s send message: \"%s\"", pl->name, a->message);
+    server_distribute_event(s, &e, NULL);
+	return ss->sgs.cgphase;
+  }
+
   switch (ss->sgs.cgphase) {
 	case GAME_PHASE_SETUP:
 	  return apply_action_setup(ss, a, pl, s);

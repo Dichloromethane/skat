@@ -38,7 +38,8 @@ ACTION_HDR_TABLE_BEGIN
   ACTION(SKAT_LEAVE),
   ACTION(SKAT_PRESS),
   ACTION(PLAY_CARD),
-  ACTION(CALL_GAME)
+  ACTION(CALL_GAME),
+  ACTION(MESSAGE)
 ACTION_HDR_TABLE_END
 
 
@@ -56,6 +57,7 @@ typedef struct {
 	uint16_t reizwert;
 	card_id skat_press_cards[2];
 	game_rules gr;
+	char *message;
   };
 } action;
 

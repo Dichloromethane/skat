@@ -48,7 +48,8 @@ EVENT_HDR_TABLE_BEGIN
   EVENT(STICH_DONE),
   EVENT(ANNOUNCE_SCORES),
   EVENT(ROUND_DONE),
-  EVENT(GAME_CALLED)
+  EVENT(GAME_CALLED),
+  EVENT(MESSAGE)
 EVENT_HDR_TABLE_END
 
 #ifndef EVENT_HDR_TO_STRING
@@ -74,6 +75,7 @@ typedef struct {
 	int64_t score_total[4];// indexed by gupid
 	game_rules gr;
 	round_result rr;
+	char *message;
   };
 } event;
 

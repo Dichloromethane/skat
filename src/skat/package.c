@@ -234,6 +234,9 @@ read_payload_action(payload_action *p, byte_buf *bb) {
 	case ACTION_CALL_GAME:
 	  read_game_rules(&p->ac.gr, bb);
 	  break;
+	case ACTION_MESSAGE:
+	  p->ac.message = byte_buf_read_str(bb);
+	  break;
 	case ACTION_READY:
 	case ACTION_REIZEN_CONFIRM:
 	case ACTION_REIZEN_PASSE:
@@ -266,6 +269,9 @@ write_payload_action(const payload_action *p, byte_buf *bb) {
 	case ACTION_CALL_GAME:
 	  write_game_rules(&p->ac.gr, bb);
 	  break;
+	case ACTION_MESSAGE:
+	  byte_buf_write_str(bb, p->ac.message);
+	  break;
 	case ACTION_READY:
 	case ACTION_REIZEN_CONFIRM:
 	case ACTION_REIZEN_PASSE:
@@ -280,7 +286,7 @@ write_payload_action(const payload_action *p, byte_buf *bb) {
 }
 
 static void
-free_payload_action(payload_action *p) {}
+free_payload_action(payload_action *p) { }
 
 static void
 read_payload_event(payload_event *p, byte_buf *bb) {
@@ -337,6 +343,10 @@ read_payload_event(payload_event *p, byte_buf *bb) {
 	  p->ev.rr.normal_end = byte_buf_read_bool(bb);
 	  p->ev.rr.schneider = byte_buf_read_bool(bb);
 	  p->ev.rr.schwarz = byte_buf_read_bool(bb);
+	  break;
+	
+	case EVENT_MESSAGE:
+	  p->ev.message = byte_buf_read_str(bb);
 	  break;
 	case EVENT_ILLEGAL_ACTION:
 	case EVENT_START_GAME:
@@ -409,6 +419,9 @@ write_payload_event(const payload_event *p, byte_buf *bb) {
 	  byte_buf_write_bool(bb, p->ev.rr.schneider);
 	  byte_buf_write_bool(bb, p->ev.rr.schwarz);
 	  break;
+	case EVENT_MESSAGE:
+	  byte_buf_write_str(bb, p->ev.message);
+	  break;
 	case EVENT_ILLEGAL_ACTION:
 	case EVENT_START_GAME:
 	case EVENT_REIZEN_CONFIRM:
@@ -425,7 +438,10 @@ write_payload_event(const payload_event *p, byte_buf *bb) {
 }
 
 static void
-free_payload_event(payload_event *p) {}
+free_payload_event(payload_event *p) {
+  if (p->ev.type == EVENT_MESSAGE) 
+	free(p->ev.message);
+}
 
 void
 package_read(package *p, byte_buf *bb) {

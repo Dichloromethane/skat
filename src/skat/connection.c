@@ -507,12 +507,13 @@ conn_handle_events_server(connection_s2c *c) {
   package p;
 
   package_clean(&p);
-  p.type = PACKAGE_EVENT;
 
   for (;;) {
+  p.type = PACKAGE_EVENT;
 	conn_dequeue_event_blocking(&c->c, &p.pl_ev.ev);
 	DEBUG_PRINTF("Sending new event to server");
 	send_package(&c->c, &p);
+	package_free(&p);
   }
 }
 
