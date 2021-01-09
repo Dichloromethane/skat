@@ -344,7 +344,6 @@ read_payload_event(payload_event *p, byte_buf *bb) {
 	  p->ev.rr.schneider = byte_buf_read_bool(bb);
 	  p->ev.rr.schwarz = byte_buf_read_bool(bb);
 	  break;
-
 	case EVENT_MESSAGE:
 	  p->ev.message = byte_buf_read_str(bb);
 	  break;
