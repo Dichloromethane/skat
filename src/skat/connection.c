@@ -129,6 +129,8 @@ conn_error(connection *c, conn_error_type cet) {
 
   DERROR_PRINTF("Connection error: %s", conn_error_name_table[cet]);
   send_package(c, &p);
+
+  package_free(&p);
 }
 
 static void
@@ -220,6 +222,8 @@ establish_connection_server(server *s, int fd, pthread_t handler) {
 
 	send_package(&s2c->c, &p);
 
+    package_free(&p);
+
 	return s2c;
   } else if (p.type == PACKAGE_RESUME) {
 	payload_resume *pl_resume = &p.pl_rm;
@@ -264,6 +268,8 @@ establish_connection_server(server *s, int fd, pthread_t handler) {
 	p.pl_cr.gupid = gupid;
 
 	send_package(&s2c->c, &p);
+
+    package_free(&p);
 
 	return s2c;
   }
@@ -399,7 +405,7 @@ establish_connection_client(client *c, int socket_fd, pthread_t handler,
   p.type = PACKAGE_REQUEST_RESYNC;
   send_package(&c2s->c, &p);
 
-  // package free-ed inside conn_await_package(...)
+  // package free()ed inside conn_await_package(...)
   if (!conn_await_package(&c2s->c, &p, conf_resync_acceptor))
 	return NULL;
 
@@ -418,7 +424,7 @@ establish_connection_client(client *c, int socket_fd, pthread_t handler,
   p.type = PACKAGE_CONFIRM_RESYNC;
   send_package(&c2s->c, &p);
 
-  package_clean(&p);
+  package_free(&p);
 
   return c2s;
 
@@ -509,7 +515,7 @@ conn_handle_events_server(connection_s2c *c) {
   package_clean(&p);
 
   for (;;) {
-  p.type = PACKAGE_EVENT;
+	p.type = PACKAGE_EVENT;
 	conn_dequeue_event_blocking(&c->c, &p.pl_ev.ev);
 	DEBUG_PRINTF("Sending new event to server");
 	send_package(&c->c, &p);
@@ -522,12 +528,13 @@ conn_handle_actions_client(connection_c2s *conn) {
   package p;
 
   package_clean(&p);
-  p.type = PACKAGE_ACTION;
 
   for (;;) {
+	p.type = PACKAGE_ACTION;
 	conn_dequeue_action_blocking(&conn->c, &p.pl_a.ac);
 	DEBUG_PRINTF("Sending new action to server");
 	send_package(&conn->c, &p);
+	package_free(&p);
   }
 }
 
@@ -564,7 +571,7 @@ conn_notify_disconnect(connection_s2c *c, player *pl) {
 
   send_package(&c->c, &p);
 
-  package_clean(&p);
+  package_free(&p);
 }
 
 void

@@ -286,7 +286,7 @@ write_payload_action(const payload_action *p, byte_buf *bb) {
 }
 
 static void
-free_payload_action(payload_action *p) { }
+free_payload_action(payload_action *p) {}
 
 static void
 read_payload_event(payload_event *p, byte_buf *bb) {
@@ -344,7 +344,7 @@ read_payload_event(payload_event *p, byte_buf *bb) {
 	  p->ev.rr.schneider = byte_buf_read_bool(bb);
 	  p->ev.rr.schwarz = byte_buf_read_bool(bb);
 	  break;
-	
+
 	case EVENT_MESSAGE:
 	  p->ev.message = byte_buf_read_str(bb);
 	  break;
@@ -439,7 +439,7 @@ write_payload_event(const payload_event *p, byte_buf *bb) {
 
 static void
 free_payload_event(payload_event *p) {
-  if (p->ev.type == EVENT_MESSAGE) 
+  if (p->ev.type == EVENT_MESSAGE)
 	free(p->ev.message);
 }
 

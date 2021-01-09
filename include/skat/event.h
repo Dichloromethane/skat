@@ -71,7 +71,7 @@ typedef struct {
 	card_id skat[2];
 	card_id skat_press_cards[2];
 	card_id card;
-	int8_t stich_winner;  // gupid
+	int8_t stich_winner;   // gupid
 	int64_t score_total[4];// indexed by gupid
 	game_rules gr;
 	round_result rr;

@@ -869,7 +869,7 @@ apply_action(skat_server_state *ss, action *a, player *pl, server *s) {
 	e.answer_to = a->id;
 	e.acting_player = pl->gupid;
 	DEBUG_PRINTF("%s send message: \"%s\"", pl->name, a->message);
-    server_distribute_event(s, &e, NULL);
+	server_distribute_event(s, &e, NULL);
 	return ss->sgs.cgphase;
   }
 
