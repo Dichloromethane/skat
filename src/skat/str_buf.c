@@ -23,13 +23,20 @@ str_buf_new_size(str_buf *sb, size_t minimum_size) {
 }
 
 void
-str_buf_new_from_char(str_buf *sb, const char *initial_str) {
+str_buf_new_from_char_copy(str_buf *sb, const char *initial_str) {
   sb->len = strlen(initial_str);
   sb->size = round_to_next_pow2(sb->len + 1);
   sb->buf = realloc(NULL, sb->size * sizeof(char));
 
   strncpy(sb->buf, initial_str, sb->len);
   sb->buf[sb->len] = '\0';
+}
+
+void
+str_buf_new_from_char_move(str_buf *sb, char *initial_str) {
+  sb->len = strlen(initial_str);
+  sb->size = sb->len + 1;
+  sb->buf = initial_str;
 }
 
 void

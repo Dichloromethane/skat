@@ -64,6 +64,15 @@ struct client_play_card_args {
 
 typedef struct {
   client_action_callback_hdr hdr;
+} client_say_callback_args;
+
+struct client_say_args {
+  client *c;
+  str_buf message;
+};
+
+typedef struct {
+  client_action_callback_hdr hdr;
 } client_play_card_callback_args;
 
 void *handle_console_input(void *v);

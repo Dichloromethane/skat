@@ -115,5 +115,8 @@ void package_free(package *);
 void package_read(package *p, byte_buf *bb);
 void package_write(const package *p, byte_buf *bb);
 
+void free_payload_event(payload_event *p);
+void free_payload_action(payload_action *p);
+
 #endif
 #endif

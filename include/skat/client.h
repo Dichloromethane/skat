@@ -66,5 +66,7 @@ void client_skat_take(client *, client_action_callback *);
 void client_skat_leave(client *, client_action_callback *);
 void client_skat_press(client *, card_id, card_id, client_action_callback *);
 
+void client_say(client *, str_buf);
+
 void client_init(client *c, char *host, int port, char *name);
 void client_run(client *c, int resume);

@@ -13,7 +13,8 @@ typedef struct {
 
 void str_buf_new_empty(str_buf *sb);
 void str_buf_new_size(str_buf *sb, size_t minimum_size);
-void str_buf_new_from_char(str_buf *sb, const char *initial_str);
+void str_buf_new_from_char_copy(str_buf *sb, const char *initial_str);
+void str_buf_new_from_char_move(str_buf *sb, char *initial_str);
 void str_buf_free(str_buf *sb);
 
 void str_buf_ensure_capacity(str_buf *sb, size_t minimum_size);

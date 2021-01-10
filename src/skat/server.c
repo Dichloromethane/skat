@@ -69,12 +69,14 @@ server_distribute_event(server *s, event *ev,
   event e;
   DEBUG_PRINTF("Distributing event of type %s", event_name_table[ev->type]);
   FOR_EACH_ACTIVE(s, i, {
+	e = *ev;
+	if (e.type == EVENT_MESSAGE) {
+	  e.message = strdup(e.message);
+	}
 	if (mask_event) {
-	  e = *ev;
 	  mask_event(&e, s->pls[i]);
-	  server_send_event(s, &e, s->pls[i]);
-	} else
-	  server_send_event(s, ev, s->pls[i]);
+	}
+	server_send_event(s, &e, s->pls[i]);
   });
 }
 

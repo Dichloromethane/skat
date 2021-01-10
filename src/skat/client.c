@@ -404,6 +404,20 @@ client_skat_press(client *c, card_id cid1, card_id cid2,
 }
 
 void
+client_say(client *c, str_buf message) {
+    action a;
+
+    memset(&a, '\0', sizeof(a));
+
+    a.type = ACTION_MESSAGE;
+    a.id = -1;
+    a.message = message;
+
+    DEBUG_PRINTF("Enqueueing say action");
+    conn_enqueue_action(&c->c2s.c, &a);
+}
+
+void
 client_handle_resync(client *c, payload_resync *pl) {
   DEBUG_PRINTF("Resyncing client state");
 

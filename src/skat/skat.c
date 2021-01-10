@@ -865,10 +865,10 @@ apply_action(skat_server_state *ss, action *a, player *pl, server *s) {
   if (a->type == ACTION_MESSAGE) {
 	event e;
 	e.type = EVENT_MESSAGE;
-	e.message = a->message;
+	e.message = a->message.buf;
 	e.answer_to = a->id;
 	e.acting_player = pl->gupid;
-	DEBUG_PRINTF("%s send message: \"%s\"", pl->name, a->message);
+	DEBUG_PRINTF("%s send message: \"%s\"", pl->name, e.message);
 	server_distribute_event(s, &e, NULL);
 	return ss->sgs.cgphase;
   }
@@ -1191,6 +1191,9 @@ skat_client_state_apply(skat_client_state *cs, event *e, client *c) {
 
 	  cs->sgs.cgphase = GAME_PHASE_BETWEEN_ROUNDS;
 
+	  return 1;
+	case EVENT_MESSAGE:
+	  DEBUG_PRINTF("Received message: <%d> %s", e->acting_player, e->message);
 	  return 1;
 	default:
 	  DERROR_PRINTF(

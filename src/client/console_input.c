@@ -697,6 +697,32 @@ execute_play_card(client *c, card_id cid) {
 /* --------------------------------
    End execute play card logic */
 
+/* Begin say logic
+   -------------------------------- */
+
+static void
+client_say_wrapper(void *v) {
+  struct client_say_args *args = v;
+  client_say(args->c, args->message);
+  free(args);
+}
+
+static void
+execute_say(client *c, str_buf message) {
+  async_callback acb;
+
+  struct client_say_args *args = malloc(sizeof(struct client_say_args));
+  args->c = c;
+  args->message = message;
+
+  acb = (async_callback){.do_stuff = client_say_wrapper, .data = args};
+
+  exec_async(&c->acq, &acb);
+}
+
+/* --------------------------------
+   End say logic */
+
 static void
 print_ramsch_announce(client *c, event *e) {
   printf("This round of Ramschen is over.\n");
@@ -928,6 +954,11 @@ io_handle_event(client *c, event *e) {
 	case EVENT_ROUND_DONE:
 	  print_players(c);
 	  break;
+	case EVENT_MESSAGE:
+	  printf("<%s> %s\n", player_name_lookup_gupid(e->acting_player),
+			 e->message);
+	  free(e->message);
+	  break;
 	default:
 	  printf("Something (%s) happened\n", event_name_table[e->type]);
   }
@@ -1133,6 +1164,20 @@ handle_console_input(void *v) {
 		card_id cid;
 		if (!command_parse_arg_u8(cmd, 1, 0, 0, CARD_ID_MAX, &cid))
 		  execute_play_card(c, cid);
+	  }
+	}
+
+	// say <message>
+	else if (!command_equals(cmd, &result, 1, "say") && result) {
+	  if (command_check_arg_length(cmd, 0, &result) || result) {
+		printf("Expected more than 0 args for say, but got %zu\n",
+			   cmd->args_length);
+	  } else {
+		str_buf message;
+		str_buf_new_from_char_copy(&message, cmd->args[0]);
+		FOR_EACH_ARG(cmd, arg, 1,
+					 { str_buf_append_strf(&message, " %s", arg); });
+		execute_say(c, message);
 	  }
 	}
 

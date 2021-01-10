@@ -57,7 +57,7 @@ typedef struct {
 	uint16_t reizwert;
 	card_id skat_press_cards[2];
 	game_rules gr;
-	char *message;
+	str_buf message;
   };
 } action;
 

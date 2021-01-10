@@ -235,7 +235,7 @@ read_payload_action(payload_action *p, byte_buf *bb) {
 	  read_game_rules(&p->ac.gr, bb);
 	  break;
 	case ACTION_MESSAGE:
-	  p->ac.message = byte_buf_read_str(bb);
+	  str_buf_new_from_char_move(&p->ac.message, byte_buf_read_str(bb));
 	  break;
 	case ACTION_READY:
 	case ACTION_REIZEN_CONFIRM:
@@ -270,7 +270,7 @@ write_payload_action(const payload_action *p, byte_buf *bb) {
 	  write_game_rules(&p->ac.gr, bb);
 	  break;
 	case ACTION_MESSAGE:
-	  byte_buf_write_str(bb, p->ac.message);
+	  byte_buf_write_strn(bb, p->ac.message.buf, p->ac.message.len);
 	  break;
 	case ACTION_READY:
 	case ACTION_REIZEN_CONFIRM:
@@ -284,9 +284,6 @@ write_payload_action(const payload_action *p, byte_buf *bb) {
 	  break;
   }
 }
-
-static void
-free_payload_action(payload_action *p) {}
 
 static void
 read_payload_event(payload_event *p, byte_buf *bb) {
@@ -434,12 +431,6 @@ write_payload_event(const payload_event *p, byte_buf *bb) {
 	case EVENT_INVALID:
 	  break;
   }
-}
-
-static void
-free_payload_event(payload_event *p) {
-  if (p->ev.type == EVENT_MESSAGE)
-	free(p->ev.message);
 }
 
 void

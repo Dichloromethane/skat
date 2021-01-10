@@ -290,7 +290,7 @@ start_GRAPHICAL(int fullscreen) {
   glGetIntegerv(GL_MAX_ARRAY_TEXTURE_LAYERS, &maxArrayTextureLayers);
   DEBUG_PRINTF("Max Array Texture Layers: %d", maxArrayTextureLayers);
 
-  str_buf_new_from_char(&input, "\1TQuBroJuOpThLgDq0123456789 /j\1");
+  str_buf_new_from_char_copy(&input, "\1TQuBroJuOpThLgDq0123456789 /j\1");
   line_render_init();
   text_render_init();
   prepare_triangle();
