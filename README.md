@@ -42,7 +42,7 @@ The command line client can be executed with the following command:
 
 ## roadmap
 
-- list possible commands in reizen phase & context sensitive help
+- context sensitive help
 - add kibitzen feature - the waiting player can see the cards of the other players
 - ouvert
 
