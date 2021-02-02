@@ -42,11 +42,9 @@ The command line client can be executed with the following command:
 
 ## roadmap
 
-- add `msg` or `say` command to chat with other users
 - list possible commands in reizen phase & context sensitive help
-- "YOU hast gepasst at reizwert 18." - fix the language
-- "This round is over. The Spielwert was 20" - language!
 - add kibitzen feature - the waiting player can see the cards of the other players
+- ouvert
 
 ---
 
