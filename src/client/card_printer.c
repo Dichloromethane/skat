@@ -15,7 +15,7 @@ print_card_array(const shared_game_state *const sgs,
 				 const size_t length, const card_color_mode color_mode) {
   char buf[4];
   card card;
-  for (uint8_t i = 0; i < length; i++) {
+  for (size_t i = 0; i < length; i++) {
 	const card_id *const cid = &arr[i];
 
 	int error = card_get(cid, &card);
