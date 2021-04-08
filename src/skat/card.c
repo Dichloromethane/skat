@@ -8,8 +8,8 @@ const char *const CARD_COLOR_NAMES = "KaHePiKr";
 
 int
 card_get(const card_id *const cid, card *const c) {
-  card_type ct = *cid & 0b1111u;
-  card_color cc = (*cid & 0b1110000u) >> 4u;
+  card_type ct = (card_type) (*cid & 0b1111u);
+  card_color cc = (card_color) ((*cid & 0b1110000u) >> 4u);
 
   if (cc <= COLOR_INVALID || cc > COLOR_KREUZ || ct <= CARD_TYPE_INVALID
 	  || ct > CARD_TYPE_B)

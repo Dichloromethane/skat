@@ -135,8 +135,8 @@ start_client_conn(client *c, const char *host, int p, int resume) {
 	  If socket(2) (or connect(2)) fails, we (close the socket
 	  and) try the next address. */
 
-  int socket_fd;
-  struct addrinfo *rp;
+  int socket_fd = -1;
+  struct addrinfo *rp = NULL;
   for (rp = result; rp != NULL; rp = rp->ai_next) {
 	socket_fd = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol);
 	if (socket_fd == -1) {

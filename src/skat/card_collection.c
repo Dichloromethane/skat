@@ -16,8 +16,8 @@ card_collection_index_from_id(const card_id *const cid,
 static int
 card_collection_id_from_index(const uint8_t *const card_index,
 							  card_id *const result_cid) {
-  card c = (card){.ct = (*card_index & 0b111u) + 1,
-				  .cc = ((*card_index & 0b11000u) >> 3u) + 1};
+  card c = (card){.ct = (card_type) ((*card_index & 0b111u) + 1),
+				  .cc = (card_color) (((*card_index & 0b11000u) >> 3u) + 1)};
   return card_get_id(&c, result_cid);
 }
 
@@ -146,7 +146,7 @@ card_collection_get_card(const card_collection *const col,
 int
 card_collection_get_score(const card_collection *const col,
 						  uint8_t *const score) {
-  unsigned int total_score = 0;
+  uint8_t total_score = 0;
 
   for (uint8_t card_index = 0; card_index < 32; card_index++) {
 	int result;
@@ -191,7 +191,7 @@ card_collection_draw_random(card_collection const *const col,
 	return 1;
   }
 
-  uint8_t i = util_rand_int(0, count);
+  uint8_t i = (uint8_t) util_rand_int(0, count);
   if (card_collection_get_card(col, &i, cid)) {
 	DERROR_PRINTF("Could not draw random card: randomly selected index %d does "
 				  "not exist; count=%d, collection=%#x",
