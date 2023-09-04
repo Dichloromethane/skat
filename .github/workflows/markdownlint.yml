@@ -7,7 +7,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out the Repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Run markdownlint (mdl)
         uses: bewuethr/mdl-action@master
