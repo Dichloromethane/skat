@@ -20,13 +20,13 @@ jobs:
           make all_
 
       - name: Save Server
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: skat_server
           path: skat_server
 
       - name: Save Client
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: skat_client
           path: skat_client
